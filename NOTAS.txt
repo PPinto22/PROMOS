@@ -1,0 +1,17 @@
+- Instalar boost
+sudo apt-get install libboost-all-dev
+-- Ajustar nome da biblioteca de python
+cd /usr/lib/x86_64-linux-gnu
+sudo ln -s libboost_python-py35.so libboost_python3.so
+
+- (Usar ambiente virtual python)
+
+- Instalar dependencias de python
+pip install progressbar2
+pip install opencv-python
+pip install matplotlib
+
+- Compilar (Instruções do README)
+export MN_BUILD=boost
+python setup.py build_ext
+python setup.py install
