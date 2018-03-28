@@ -1,17 +1,10 @@
 #!/usr/bin/python3
-import os
 import sys
+
 sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
-import time
-import random as rnd
-import subprocess as comm
-import cv2
-import numpy as np
 import pickle as pickle
 import MultiNEAT as NEAT
-from MultiNEAT import GetGenomeList, ZipFitness, EvaluateGenomeList_Serial, EvaluateGenomeList_Parallel
-
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from util import EvaluateGenomeList_Serial, GetGenomeList
 
 # the simple 2D substrate with 3 input points, 2 hidden and 1 output for XOR
 
@@ -151,7 +144,7 @@ def getbest(i):
     pop.RNG.Seed(i)
 
     for generation in range(2000):
-        genome_list = NEAT.GetGenomeList(pop)
+        genome_list = GetGenomeList(pop)
         # if sys.platform == 'linux':
         #    fitnesses = EvaluateGenomeList_Parallel(genome_list, evaluate, display=False)
         # else:

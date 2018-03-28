@@ -1,4 +1,6 @@
-build/
+build/*
+!build/.gitkeep
+build-debug/
 datadump/*
 *.test
 *.csv
@@ -6,15 +8,10 @@ datadump/*
 *.gen
 *.xml
 *core*
-/Release/
-cmake-debug/
-cmake-release/
-/Debug/
 /dist/
 .idea/
 **.so
 **.pyd
-_MultiNEAT.cpp
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/

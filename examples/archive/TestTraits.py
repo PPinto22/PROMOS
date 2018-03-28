@@ -142,7 +142,7 @@ def PrintGenomeTraits(g):
 
 for generation in range(1000):
 
-    genome_list = NEAT.GetGenomeList(pop)
+    genome_list = GetGenomeList(pop)
     fitness_list = NEAT.EvaluateGenomeList_Serial(genome_list, evaluate, display=False)
     NEAT.ZipFitness(genome_list, fitness_list)
 

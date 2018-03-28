@@ -1,21 +1,18 @@
 #!/usr/bin/python3
-import sys
-sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
 
 import time
 import random as rnd
 import cv2
-import numpy as np
 import math
 import MultiNEAT as NEAT
-from MultiNEAT.viz import Draw
+from viz import Draw
 import pygame
 from pygame.locals import *
 from pygame.color import *
 
 import pymunk as pm
 from pymunk import Vec2d
-from pymunk.pygame_util import draw, from_pygame
+from pymunk.pygame_util import draw
 
 collision_type_wall = 0
 collision_type_nn = 1

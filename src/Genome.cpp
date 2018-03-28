@@ -248,7 +248,8 @@ namespace NEAT
                    unsigned int a_NumInputs,
                    unsigned int a_NumHidden, // ignored for seed type == 0, specifies number of hidden units if seed type == 1
                    unsigned int a_NumOutputs,
-                   bool a_FS_NEAT, ActivationFunction a_OutputActType,
+                   bool a_FS_NEAT,
+                   ActivationFunction a_OutputActType,
                    ActivationFunction a_HiddenActType,
                    unsigned int a_SeedType,
                    const Parameters &a_Parameters,

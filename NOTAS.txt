@@ -6,12 +6,18 @@ sudo ln -s libboost_python-py35.so libboost_python3.so
 
 - (Usar ambiente virtual python)
 
-- Instalar dependencias de python
+- Instalar dependencias de python (Estes packages sao opcionais, principalmente para visualizacao)
 pip install progressbar2
 pip install opencv-python
 pip install matplotlib
+pip install pygame
+pip install pymunk==4.0.0
+cd [python_env]/lib/python3.5/site-packages/pymunk; 2to3 -w *.py
 
-- Compilar (Instruções do README)
-export MN_BUILD=boost
-python setup.py build_ext
-python setup.py install
+- Compilar
+cd build
+cmake ..
+make
+
+- Adicionar biblioteca a PYTHONPATH (por exemplo, com virtualenvwrapper)
+add2virtualenv [project_root]/build

@@ -4,14 +4,14 @@ import random as rnd
 import cv2
 import numpy as np
 import MultiNEAT as NEAT
-from MultiNEAT.viz import Draw
+from viz import Draw
 import pygame
 from pygame.locals import *
 from pygame.color import *
 
 import pymunk as pm
 from pymunk import Vec2d
-from pymunk.pygame_util import draw, from_pygame
+from pymunk.pygame_util import draw
 import progressbar as pbar
 import pickle
 
@@ -279,14 +279,14 @@ def main():
         print('============================================================')
         print("Please wait for the initial evaluation to complete.")
         fitnesses = []
-        for _, genome in enumerate(NEAT.GetGenomeList(pop)):
+        for _, genome in enumerate(GetGenomeList(pop)):
             print('Evaluating',_)
             fast_mode, gid, fitness, bh = evaluate((genome.GetID(), genome, space, screen, fast_mode))
             fitnesses.append(fitness)
-        for genome, fitness in zip(NEAT.GetGenomeList(pop), fitnesses):
+        for genome, fitness in zip(GetGenomeList(pop), fitnesses):
             genome.SetFitness(fitness)
             genome.SetEvaluated()
-        maxf = max([x.GetFitness() for x in NEAT.GetGenomeList(pop)])
+        maxf = max([x.GetFitness() for x in GetGenomeList(pop)])
 
         print('======================')
         print('rtNEAT phase')
@@ -294,7 +294,7 @@ def main():
 
         for i in range(max_evaluations):
             # get best fitness in population and print it
-            fitness_list = [x.GetFitness() for x in NEAT.GetGenomeList(pop)]
+            fitness_list = [x.GetFitness() for x in GetGenomeList(pop)]
             best = max(fitness_list)
             evhist.append(best)
             if best > best_ever:
@@ -325,7 +325,7 @@ def main():
         print('============================================================')
         print("Please wait for the initial evaluation to complete.")
         fitnesses = []
-        for _, genome in enumerate(NEAT.GetGenomeList(pop)):
+        for _, genome in enumerate(GetGenomeList(pop)):
             print('Evaluating',_)
             fast_mode, gid, fitness, behavior = evaluate((genome.GetID(), genome, space, screen, fast_mode))
             # associate the behavior with the genome
@@ -334,7 +334,7 @@ def main():
         # recompute sparseness
         def sparseness(genome):
             distances = []
-            for g in NEAT.GetGenomeList(pop):
+            for g in GetGenomeList(pop):
                 d = genome.behavior.distance_to( g.behavior )
                 distances.append(d)
             # get the distances from the archive as well
@@ -354,7 +354,7 @@ def main():
         quick_add_counter = 0
 
         # initial fitness assignment
-        for _, genome in enumerate(NEAT.GetGenomeList(pop)):
+        for _, genome in enumerate(GetGenomeList(pop)):
             genome.SetFitness( sparseness(genome) )
             genome.SetEvaluated()
 
@@ -367,7 +367,7 @@ def main():
 
             # recompute sparseness for each individual
             if evaluations % ns_recompute_sparseness_each == 0:
-                for _, genome in enumerate(NEAT.GetGenomeList(pop)):
+                for _, genome in enumerate(GetGenomeList(pop)):
                     genome.SetFitness( sparseness(genome) )
                     genome.SetEvaluated()
 

@@ -1,19 +1,11 @@
 #!/usr/bin/python3
 
 
-import os
-import sys
 #sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
 import time
-import random as rnd
-import cv2
 import numpy as np
-import pickle as pickle
 import MultiNEAT as NEAT
-from MultiNEAT import EvaluateGenomeList_Serial
-from MultiNEAT import GetGenomeList, ZipFitness
-
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from util import EvaluateGenomeList_Serial
 
 
 def evaluate(genome):
@@ -112,7 +104,7 @@ def getbest(i):
 
     generations = 0
     for generation in range(1000):
-        genome_list = NEAT.GetGenomeList(pop)
+        genome_list = GetGenomeList(pop)
         fitness_list = EvaluateGenomeList_Serial(genome_list, evaluate, display=False)
         NEAT.ZipFitness(genome_list, fitness_list)
         pop.Epoch()

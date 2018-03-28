@@ -1,19 +1,11 @@
 #!/usr/bin/python3
-import os
 import sys
 sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
 
-import time
-import random as rnd
-import subprocess as comm
 import cv2
 import numpy as np
-import pickle as pickle
 import MultiNEAT as NEAT
-from MultiNEAT import GetGenomeList, ZipFitness
-from MultiNEAT import EvaluateGenomeList_Serial
-
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from util import EvaluateGenomeList_Serial
 
 params = NEAT.Parameters()
 params.PopulationSize = 200
@@ -170,7 +162,7 @@ def getbest(run):
     pop = NEAT.Population(g, params, True, 1.0, run)
     for generation in range(1000):
         # Evaluate genomes
-        genome_list = NEAT.GetGenomeList(pop)
+        genome_list = GetGenomeList(pop)
 
         fitnesses = EvaluateGenomeList_Serial(genome_list, evaluate_xor, display=False)
         [genome.SetFitness(fitness) for genome, fitness in zip(genome_list, fitnesses)]
