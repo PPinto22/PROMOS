@@ -2,7 +2,7 @@
 
 import pickle as pickle
 import MultiNEAT as NEAT
-from util import EvaluateGenomeList_Serial, GetGenomeList
+from archive.util import EvaluateGenomeList_Serial, GetGenomeList
 
 # the simple 2D substrate with 3 input points, 2 hidden and 1 output for XOR
 

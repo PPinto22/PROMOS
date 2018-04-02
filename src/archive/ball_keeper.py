@@ -5,7 +5,7 @@ import random as rnd
 import cv2
 import math
 import MultiNEAT as NEAT
-from viz import Draw
+from archive.viz import Draw
 import pygame
 from pygame.locals import *
 from pygame.color import *

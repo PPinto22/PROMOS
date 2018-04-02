@@ -5,8 +5,8 @@ import MultiNEAT as NEAT
 import cv2
 import numpy as np
 
-from viz import DrawPhenotype
-from util import EvaluateGenomeList_Serial, GetGenomeList
+from archive.viz import DrawPhenotype
+from archive.util import EvaluateGenomeList_Serial, GetGenomeList
 
 params = NEAT.Parameters()
 params.PopulationSize = 200

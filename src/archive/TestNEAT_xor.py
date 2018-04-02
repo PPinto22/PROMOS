@@ -3,7 +3,7 @@
 import time
 import numpy as np
 import MultiNEAT as NEAT
-from util import EvaluateGenomeList_Serial, GetGenomeList, ZipFitness
+from archive.util import EvaluateGenomeList_Serial, GetGenomeList, ZipFitness
 
 
 def evaluate(genome):

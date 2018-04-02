@@ -4,7 +4,7 @@ import time
 import random as rnd
 import MultiNEAT as NEAT
 
-from util import GetGenomeList, ZipFitness, EvaluateGenomeList_Serial
+from archive.util import GetGenomeList, ZipFitness, EvaluateGenomeList_Serial
 
 
 def evaluate(genome):

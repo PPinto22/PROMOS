@@ -4,7 +4,7 @@ import random as rnd
 import cv2
 import numpy as np
 import MultiNEAT as NEAT
-from viz import Draw
+from archive.viz import Draw
 import pygame
 from pygame.locals import *
 from pygame.color import *
@@ -15,7 +15,7 @@ from pymunk.pygame_util import draw
 import progressbar as pbar
 import pickle
 
-from util import GetGenomeList
+from archive.util import GetGenomeList
 
 ns_on = 1
 
