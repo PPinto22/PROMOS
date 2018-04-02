@@ -67,12 +67,11 @@ params.MutateLinkTraitsProb = 0
 rng = NEAT.RNG()
 rng.TimeSeed()
 
-
 substrate = NEAT.Substrate([(-1., -1., 0.0), (-.5, -1., 0.0), (0.0, -1., 0.0),
                             (.5, -1., 0.0), (1.0, -1., 0.0), (0.0, -1.0, -1.0),
-    ],
+                            ],
                            [],
-                           [(-1., 1., 0.0), (1.0,1.0,0.0)])
+                           [(-1., 1., 0.0), (1.0, 1.0, 0.0)])
 
 substrate.m_allow_input_hidden_links = False
 substrate.m_allow_input_output_links = False
@@ -91,13 +90,14 @@ substrate.m_output_nodes_activation = NEAT.ActivationFunction.SIGNED_SIGMOID
 substrate.m_link_threshold = 0.2
 substrate.m_max_weight_and_bias = 8.0
 
+
 class NN_agent:
     def __init__(self, space, brain, start_x):
         self.startpos = (start_x, 80)
         self.radius = 20
         self.mass = 50000
 
-        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0,0))
+        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.body = pm.Body(self.mass, self.inertia)
         self.shape = pm.Circle(self.body, self.radius)
         self.shape.collision_type = collision_type_nn
@@ -109,7 +109,7 @@ class NN_agent:
         self.body.velocity_limit = 1500
 
         self.body.velocity = (230, 0)
-        self.force = (0,0)
+        self.force = (0, 0)
 
         self.brain = brain
         self.in_air = False
@@ -117,6 +117,7 @@ class NN_agent:
     def touch_floor(self, space, arbiter):
         self.in_air = False
         return True
+
     def leave_floor(self, space, arbiter):
         self.in_air = True
         return True
@@ -128,7 +129,7 @@ class NN_agent:
 
     def move(self, x):
         if not self.in_air:
-            #self.body.force = (x, 0)
+            # self.body.force = (x, 0)
             self.body.velocity = (x, self.body.velocity[1])
 
     def interact(self, ball):
@@ -136,8 +137,8 @@ class NN_agent:
         inputs: x - ball_x, log(ball_y), log(y), ball_vx, ball_vy, in_air, 1
         output: x velocity [-1 .. 1]*const, jump (if > 0.5 )
         """
-        inputs = [(self.body.position[0] - ball.body.position[0])/300,
-#                  math.log(ball.body.position[1]),
+        inputs = [(self.body.position[0] - ball.body.position[0]) / 300,
+                  #                  math.log(ball.body.position[1]),
                   math.log(self.body.position[1]),
                   ball.body.velocity[0] / 300,
                   ball.body.velocity[1] / 300,
@@ -158,7 +159,7 @@ class Ball:
     def __init__(self, space, start_x, start_vx):
         self.mass = 1500
         self.radius = 30
-        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0,0))
+        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.body = pm.Body(self.mass, self.inertia)
         self.shape = pm.Circle(self.body, self.radius)
         self.shape.collision_type = collision_type_ball
@@ -182,9 +183,10 @@ class Ball:
 screen_size_x, screen_size_y = 600, 600
 max_timesteps = 15000
 
+
 def flipy(y):
     """Small hack to convert chipmunk physics to pygame coordinates"""
-    return -y+screen_size_y
+    return -y + screen_size_y
 
 
 def evaluate(genome, space, screen, fast_mode, start_x, start_vx, bot_startx):
@@ -198,10 +200,10 @@ def evaluate(genome, space, screen, fast_mode, start_x, start_vx, bot_startx):
     agent = NN_agent(space, net, bot_startx)
     ball = Ball(space, start_x, start_vx)
 
-    space.add_collision_handler(collision_type_nn,   collision_type_floor,
+    space.add_collision_handler(collision_type_nn, collision_type_floor,
                                 agent.touch_floor, None, None, agent.leave_floor)
     space.add_collision_handler(collision_type_ball, collision_type_floor,
-                                ball.touch_floor,  None, None, ball.leave_floor)
+                                ball.touch_floor, None, None, ball.leave_floor)
 
     tstep = 0
     avg_ball_height = 0
@@ -222,7 +224,7 @@ def evaluate(genome, space, screen, fast_mode, start_x, start_vx, bot_startx):
                 ball.body.velocity = (ball.body.velocity[0], ball.body.velocity[1] + 200)
 
         ### Update physics
-        dt = 1.0/50.0
+        dt = 1.0 / 50.0
         space.step(dt)
 
         # The NN interacts with the world on each 20 timesteps
@@ -233,7 +235,7 @@ def evaluate(genome, space, screen, fast_mode, start_x, start_vx, bot_startx):
         # stopping conditions
         if not ball.in_air:
             break
-        #if abs(agent.body.velocity[0]) < 50: # never stop on one place!
+        # if abs(agent.body.velocity[0]) < 50: # never stop on one place!
         #    break
 
         if not fast_mode:
@@ -251,7 +253,7 @@ def evaluate(genome, space, screen, fast_mode, start_x, start_vx, bot_startx):
             pygame.display.flip()
             clock.tick(50)
 
-    fitness = tstep #+ avg_ball_height/tstep
+    fitness = tstep  # + avg_ball_height/tstep
     if ball.body.position[1] < 0:
         fitness = 0
 
@@ -267,17 +269,16 @@ def main():
     screen = pygame.display.set_mode((600, 600))
     pygame.display.set_caption("NEAT ball keeper [Press F to turn on/off fast mode, arrow keys to move ball]")
 
-
     ### Physics stuff
     space = pm.Space()
     space.gravity = Vec2d(0.0, -500.0)
 
     # walls - the left-top-right walls
     body = pm.Body()
-    walls= [pm.Segment(body, (50, 50), (50, 1550), 10)
-                ,pm.Segment(body, (50, 1550), (560, 1550), 10)
-                ,pm.Segment(body, (560, 1550), (560, 50), 10)
-                ]
+    walls = [pm.Segment(body, (50, 50), (50, 1550), 10)
+        , pm.Segment(body, (50, 1550), (560, 1550), 10)
+        , pm.Segment(body, (560, 1550), (560, 50), 10)
+             ]
 
     floor = pm.Segment(body, (50, 50), (560, 50), 10)
     floor.friction = 1.0
@@ -291,10 +292,7 @@ def main():
     space.add(walls)
     space.add(floor)
 
-
-
-
-    g = NEAT.Genome(0, 6, 0, 2, False, 
+    g = NEAT.Genome(0, 6, 0, 2, False,
                     NEAT.ActivationFunction.TANH, NEAT.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 0)
     pop = NEAT.Population(g, params, True, 1.0, rnd.randint(0, 1000))
 
@@ -314,7 +312,8 @@ def main():
         for i, g in enumerate(genome_list):
             total_fitness = 0
             for trial in range(20):
-                f, fast_mode = evaluate(g, space, screen, fast_mode, rnd.randint(80, 400), rnd.randint(-200, 200), rnd.randint(80, 400))
+                f, fast_mode = evaluate(g, space, screen, fast_mode, rnd.randint(80, 400), rnd.randint(-200, 200),
+                                        rnd.randint(80, 400))
                 total_fitness += f
             g.SetFitness(total_fitness / 20)
         print()
@@ -322,10 +321,9 @@ def main():
         best = max([x.GetLeader().GetFitness() for x in pop.Species])
         print('Best fitness:', best, 'Species:', len(pop.Species))
 
-
         # Draw the best genome's phenotype
         if best >= 10000:
-            break # evolution is complete if an individual keeps the ball up for that many timesteps
+            break  # evolution is complete if an individual keeps the ball up for that many timesteps
 
         print("Evaluation took", time.time() - now, "seconds.")
         print("Reproducing..")
@@ -336,16 +334,8 @@ def main():
     # Show the best genome's performance forever
     pygame.display.set_caption("Best genome ever")
     while True:
-        evaluate(pop.Species[0].GetLeader(), space, screen, False, rnd.randint(80, 400), rnd.randint(-200, 200), rnd.randint(80, 400))
+        evaluate(pop.Species[0].GetLeader(), space, screen, False, rnd.randint(80, 400), rnd.randint(-200, 200),
+                 rnd.randint(80, 400))
+
 
 main()
-
-
-
-
-
-
-
-
-
-

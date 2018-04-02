@@ -22,33 +22,33 @@ add_definitions(-DUSE_BOOST_PYTHON)
 add_definitions(-DUSE_BOOST_RANDOM)
 
 set(SOURCE_FILES
-    src/Assert.h
-    src/Genes.h
-    src/Genome.cpp
-    src/Genome.h
-    src/Innovation.cpp
-    src/Innovation.h
-    src/Main.cpp
-    src/NeuralNetwork.cpp
-    src/NeuralNetwork.h
-    src/Parameters.cpp
-    src/Parameters.h
-    src/PhenotypeBehavior.cpp
-    src/PhenotypeBehavior.h
-    src/Population.cpp
-    src/Population.h
-    src/PythonBindings.cpp
-    src/PythonBindings.h
-    src/Random.cpp
-    src/Random.h
-    src/Species.cpp
-    src/Species.h
-    src/Substrate.cpp
-    src/Substrate.h
-    src/Utils.cpp
-    src/Utils.h
-    src/Traits.h
-    src/Traits.cpp)
+    src/MultiNEAT/Assert.h
+    src/MultiNEAT/Genes.h
+    src/MultiNEAT/Genome.cpp
+    src/MultiNEAT/Genome.h
+    src/MultiNEAT/Innovation.cpp
+    src/MultiNEAT/Innovation.h
+    src/MultiNEAT/Main.cpp
+    src/MultiNEAT/NeuralNetwork.cpp
+    src/MultiNEAT/NeuralNetwork.h
+    src/MultiNEAT/Parameters.cpp
+    src/MultiNEAT/Parameters.h
+    src/MultiNEAT/PhenotypeBehavior.cpp
+    src/MultiNEAT/PhenotypeBehavior.h
+    src/MultiNEAT/Population.cpp
+    src/MultiNEAT/Population.h
+    src/MultiNEAT/PythonBindings.cpp
+    src/MultiNEAT/PythonBindings.h
+    src/MultiNEAT/Random.cpp
+    src/MultiNEAT/Random.h
+    src/MultiNEAT/Species.cpp
+    src/MultiNEAT/Species.h
+    src/MultiNEAT/Substrate.cpp
+    src/MultiNEAT/Substrate.h
+    src/MultiNEAT/Utils.cpp
+    src/MultiNEAT/Utils.h
+    src/MultiNEAT/Traits.h
+    src/MultiNEAT/Traits.cpp)
 
 # Executable (main)
 #add_executable(MultiNEAT ${SOURCE_FILES})

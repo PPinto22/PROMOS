@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
-
-#sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
 import time
 import numpy as np
 import MultiNEAT as NEAT
-from util import EvaluateGenomeList_Serial
+from util import EvaluateGenomeList_Serial, GetGenomeList, ZipFitness
 
 
 def evaluate(genome):
@@ -96,17 +94,18 @@ params.MutateLinkTraitsProb = 0
 params.AllowLoops = True
 params.AllowClones = True
 
+
 def getbest(i):
     g = NEAT.Genome(0, 3, 0, 1, False, NEAT.ActivationFunction.UNSIGNED_SIGMOID,
                     NEAT.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 0)
     pop = NEAT.Population(g, params, True, 1.0, i)
-    pop.RNG.Seed(int(time.clock()*100))
+    pop.RNG.Seed(int(time.clock() * 100))
 
     generations = 0
     for generation in range(1000):
         genome_list = GetGenomeList(pop)
         fitness_list = EvaluateGenomeList_Serial(genome_list, evaluate, display=False)
-        NEAT.ZipFitness(genome_list, fitness_list)
+        ZipFitness(genome_list, fitness_list)
         pop.Epoch()
         generations = generation
         best = max(fitness_list)

@@ -1,7 +1,5 @@
 #!/usr/bin/python3
-import sys
 
-sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
 import pickle as pickle
 import MultiNEAT as NEAT
 from util import EvaluateGenomeList_Serial, GetGenomeList
@@ -128,6 +126,7 @@ params.MutateNeuronTraitsProb = 0
 params.MutateLinkTraitsProb = 0
 
 params.AllowLoops = False
+
 
 def getbest(i):
     g = NEAT.Genome(0,

@@ -15,6 +15,8 @@ from pymunk.pygame_util import draw
 import progressbar as pbar
 import pickle
 
+from util import GetGenomeList
+
 ns_on = 1
 
 ns_K = 15
@@ -26,7 +28,6 @@ ns_no_archiving_stagnation_threshold = 150
 ns_Pmin_lowering_multiplier = 0.9
 ns_Pmin_raising_multiplier = 1.1
 ns_quick_archiving_min_evals = 8
-
 
 max_evaluations = 10000
 
@@ -80,7 +81,7 @@ class NN_agent:
         self.radius = 4
         self.mass = 500
 
-        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0,0))
+        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.body = pm.Body(self.mass, self.inertia)
         self.shape = pm.Circle(self.body, self.radius)
         self.shape.collision_type = collision_type_nn
@@ -92,7 +93,7 @@ class NN_agent:
         self.body.velocity_limit = 300
 
         self.body.velocity = (0, 0)
-        self.force = (0,0)
+        self.force = (0, 0)
 
         self.brain = brain
         self.in_air = False
@@ -100,6 +101,7 @@ class NN_agent:
     def touch_floor(self, space, arbiter):
         self.in_air = False
         return True
+
     def leave_floor(self, space, arbiter):
         self.in_air = True
         return True
@@ -112,8 +114,8 @@ class NN_agent:
         inputs: x - ball_x, y - ball_y, self_vx, self_vy, 1
         output: x velocity [-1 .. 1]*const, y velocity [-1 .. 1]*const
         """
-        inputs = [(self.body.position[0] - ball.body.position[0])/300,
-                  (self.body.position[1] - ball.body.position[1])/300,
+        inputs = [(self.body.position[0] - ball.body.position[0]) / 300,
+                  (self.body.position[1] - ball.body.position[1]) / 300,
                   self.body.velocity[0] / 300,
                   self.body.velocity[1] / 300,
                   1.0
@@ -126,12 +128,11 @@ class NN_agent:
         self.move(outputs[0] * 200, outputs[1] * 200)
 
 
-
 class Ball:
     def __init__(self, space):
         self.mass = 1500
         self.radius = 10
-        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0,0))
+        self.inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.body = pm.Body(self.mass, self.inertia)
         self.shape = pm.Circle(self.body, self.radius)
         self.shape.collision_type = collision_type_ball
@@ -143,18 +144,19 @@ class Ball:
         self.body.velocity_limit = 5
         self.in_air = True
 
+
 class Behavior:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
     def distance_to(self, other):
-        return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
+        return np.sqrt((other.x - self.x) ** 2 + (other.y - self.y) ** 2)
 
 
 def flipy(y):
     """Small hack to convert chipmunk physics to pygame coordinates"""
-    return -y+screen_size_y
+    return -y + screen_size_y
 
 
 def evaluate(x):
@@ -182,7 +184,7 @@ def evaluate(x):
                 fast_mode = not fast_mode
 
         ### Update physics
-        dt = 1.0/50.0
+        dt = 1.0 / 50.0
         space.step(dt)
 
         # The NN interacts with the world on each 5 timesteps
@@ -204,7 +206,8 @@ def evaluate(x):
             pygame.display.flip()
             clock.tick(50)
 
-        d = np.sqrt((ball.body.position[0] - agent.body.position[0])**2 + (ball.body.position[1] - agent.body.position[1])**2)
+        d = np.sqrt((ball.body.position[0] - agent.body.position[0]) ** 2 + (
+                    ball.body.position[1] - agent.body.position[1]) ** 2)
 
         if bd > d: bd = d
 
@@ -231,25 +234,24 @@ def main():
     else:
         pygame.display.set_caption("Fitness Search [Press F to turn on/off fast mode]")
 
-
     ### Physics stuff
     space = pm.Space()
     space.gravity = Vec2d(0.0, 0.0)
 
     # walls - the left-top-right walls
     body = pm.Body()
-    walls= [# the enclosure
-            pm.Segment(body, (50, 50), (50, 550), 5),
-            pm.Segment(body, (50, 550), (560, 550), 5),
-            pm.Segment(body, (560, 550), (560, 50), 5),
-            pm.Segment(body, (50, 50), (560, 50), 5),
+    walls = [  # the enclosure
+        pm.Segment(body, (50, 50), (50, 550), 5),
+        pm.Segment(body, (50, 550), (560, 550), 5),
+        pm.Segment(body, (560, 550), (560, 50), 5),
+        pm.Segment(body, (50, 50), (560, 50), 5),
 
-            # the obstacle walls
-            pm.Segment(body, (120, 480), (560, 480), 5),
-            pm.Segment(body, (180, 480), (180, 180), 5),
-            pm.Segment(body, (320, 50), (320, 360), 5),
-            pm.Segment(body, (440, 480), (440, 360), 5),
-            ]
+        # the obstacle walls
+        pm.Segment(body, (120, 480), (560, 480), 5),
+        pm.Segment(body, (180, 480), (180, 180), 5),
+        pm.Segment(body, (320, 50), (320, 360), 5),
+        pm.Segment(body, (440, 480), (440, 360), 5),
+    ]
 
     for s in walls:
         s.friction = 0
@@ -257,14 +259,12 @@ def main():
         s.collision_type = collision_type_wall
     space.add(walls)
 
-
-
     g = NEAT.Genome(0, 5, 0, 2, False,
                     NEAT.ActivationFunction.TANH, NEAT.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 0)
     pop = NEAT.Population(g, params, True, 1.0, rnd.randint(0, 1000))
 
     print('NumLinks:', g.NumLinks())
-    #sys.exit(0)
+    # sys.exit(0)
 
     best_genome_ever = None
     best_ever = 0
@@ -280,7 +280,7 @@ def main():
         print("Please wait for the initial evaluation to complete.")
         fitnesses = []
         for _, genome in enumerate(GetGenomeList(pop)):
-            print('Evaluating',_)
+            print('Evaluating', _)
             fast_mode, gid, fitness, bh = evaluate((genome.GetID(), genome, space, screen, fast_mode))
             fitnesses.append(fitness)
         for genome, fitness in zip(GetGenomeList(pop), fitnesses):
@@ -326,7 +326,7 @@ def main():
         print("Please wait for the initial evaluation to complete.")
         fitnesses = []
         for _, genome in enumerate(GetGenomeList(pop)):
-            print('Evaluating',_)
+            print('Evaluating', _)
             fast_mode, gid, fitness, behavior = evaluate((genome.GetID(), genome, space, screen, fast_mode))
             # associate the behavior with the genome
             genome.behavior = behavior
@@ -335,13 +335,13 @@ def main():
         def sparseness(genome):
             distances = []
             for g in GetGenomeList(pop):
-                d = genome.behavior.distance_to( g.behavior )
+                d = genome.behavior.distance_to(g.behavior)
                 distances.append(d)
             # get the distances from the archive as well
             for ab in archive:
-                distances.append( genome.behavior.distance_to(ab) )
+                distances.append(genome.behavior.distance_to(ab))
             distances = sorted(distances)
-            sp = np.mean(distances[1:ns_K+1])
+            sp = np.mean(distances[1:ns_K + 1])
             return sp
 
         print('======================')
@@ -355,7 +355,7 @@ def main():
 
         # initial fitness assignment
         for _, genome in enumerate(GetGenomeList(pop)):
-            genome.SetFitness( sparseness(genome) )
+            genome.SetFitness(sparseness(genome))
             genome.SetEvaluated()
 
         # the Novelty Search tick
@@ -368,7 +368,7 @@ def main():
             # recompute sparseness for each individual
             if evaluations % ns_recompute_sparseness_each == 0:
                 for _, genome in enumerate(GetGenomeList(pop)):
-                    genome.SetFitness( sparseness(genome) )
+                    genome.SetFitness(sparseness(genome))
                     genome.SetEvaluated()
 
             # tick
@@ -422,14 +422,5 @@ def main():
         hg = pickle.loads(hof[-1])
         evaluate((hg.GetID(), hg, space, screen, False))
 
+
 main()
-
-
-
-
-
-
-
-
-
-

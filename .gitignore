@@ -1,17 +1,11 @@
 build/*
 !build/.gitkeep
 build-debug/
-datadump/*
-*.test
-*.csv
-*.png
-*.gen
-*.xml
-*core*
-/dist/
+data/
 .idea/
 **.so
 **.pyd
+
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/

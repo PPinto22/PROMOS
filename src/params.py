@@ -1,7 +1,7 @@
 import MultiNEAT as NEAT
 
 params = NEAT.Parameters()
-params.PopulationSize = 20
+params.PopulationSize = 5
 params.DynamicCompatibility = True
 params.NormalizeGenomeSize = True
 params.WeightDiffCoeff = 0.1

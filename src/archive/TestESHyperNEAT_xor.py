@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-import sys
-sys.path.insert(0, '/home/peter/code/projects/MultiNEAT') # duh
+
+import MultiNEAT as NEAT
 
 import cv2
 import numpy as np
-import MultiNEAT as NEAT
-from util import EvaluateGenomeList_Serial
+
+from viz import DrawPhenotype
+from util import EvaluateGenomeList_Serial, GetGenomeList
 
 params = NEAT.Parameters()
 params.PopulationSize = 200
@@ -174,14 +175,13 @@ def getbest(run):
         # print("Generation: ", generation)
         # print("max ", max([x.GetLeader().GetFitness() for x in pop.Species]))
 
-
         # Visualize best network's Genome
 
         net = NEAT.NeuralNetwork()
         pop.Species[0].GetLeader().BuildPhenotype(net)
         img = np.zeros((500, 500, 3), dtype=np.uint8)
         img += 10
-        NEAT.DrawPhenotype(img, (0, 0, 500, 500), net)
+        DrawPhenotype(img, (0, 0, 500, 500), net)
         cv2.imshow("CPPN", img)
         # Visualize best network's Pheotype
         net = NEAT.NeuralNetwork()
@@ -189,7 +189,7 @@ def getbest(run):
         img = np.zeros((500, 500, 3), dtype=np.uint8)
         img += 10
 
-        NEAT.DrawPhenotype(img, (0, 0, 500, 500), net, substrate=True)
+        DrawPhenotype(img, (0, 0, 500, 500), net, substrate=True)
         cv2.imshow("NN", img)
         cv2.waitKey(1)
 
