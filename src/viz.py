@@ -278,7 +278,6 @@ else:
             # dims = [len(neuron.substrate_coords) for neuron in nn.neurons]
 
             for neuron in nn.neurons:
-                # TODO(jkoelker) Make the rect_x_size / 15 a variable
                 neuron.x = Scale(neuron.substrate_coords[0], min_x, max_x,
                                  rect_x_size / 15,
                                  rect_x_size - rect_x_size / 15)
@@ -331,7 +330,7 @@ else:
             # if the link is looping back on the same neuron, draw it with
             # ellipse
             if conn.source_neuron_idx == conn.target_neuron_idx:
-                pass  # todo: later
+                pass
 
             else:
                 # Draw a line
