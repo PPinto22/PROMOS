@@ -1,7 +1,3 @@
-//
-// Created by peter on 28.04.17.
-//
-
 #ifndef MULTINEAT_TRAITS_H
 #define MULTINEAT_TRAITS_H
 

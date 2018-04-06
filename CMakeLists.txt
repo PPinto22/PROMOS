@@ -28,7 +28,6 @@ set(SOURCE_FILES
     src/MultiNEAT/Genome.h
     src/MultiNEAT/Innovation.cpp
     src/MultiNEAT/Innovation.h
-    src/MultiNEAT/Main.cpp
     src/MultiNEAT/NeuralNetwork.cpp
     src/MultiNEAT/NeuralNetwork.h
     src/MultiNEAT/Parameters.cpp
@@ -45,16 +44,15 @@ set(SOURCE_FILES
     src/MultiNEAT/Species.h
     src/MultiNEAT/Substrate.cpp
     src/MultiNEAT/Substrate.h
-    src/MultiNEAT/Utils.cpp
-    src/MultiNEAT/Utils.h
     src/MultiNEAT/Traits.h
-    src/MultiNEAT/Traits.cpp)
+    src/MultiNEAT/Traits.cpp
+    src/MultiNEAT/Utils.hpp)
 
-# Executable (main)
-#add_executable(MultiNEAT ${SOURCE_FILES})
-#target_link_libraries(MultiNEAT ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
-
-# Compile shared library (.so, .dll)
+# Shared library (.so, .dll)
 add_library(MultiNEAT SHARED ${SOURCE_FILES})
 target_link_libraries(MultiNEAT ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 set_target_properties(MultiNEAT PROPERTIES PREFIX "")
+
+# Executable (main)
+add_executable(main src/MultiNEAT/Main.cpp)
+target_link_libraries(main MultiNEAT ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})

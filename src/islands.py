@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import numpy as np
 from typing import Dict
+import math
 
 import MultiNEAT as neat
 from evaluators import evaluate_genome_list_serial, evaluate_auc
@@ -8,6 +9,8 @@ from params import params
 from util import read_data, get_genome_list
 
 N_ISLANDS = 4
+MIGRATION_SIZE = 0.1  # Percentage of the population to migrate, rounded up
+MIGRATION_FREQUENCY = 5  # Generations between migrations
 DATA_FILE_PATH = '../data/data.csv'
 
 
@@ -23,6 +26,7 @@ class Island(mp.Process):
         self.dest_q = None  # Send genomes to this destination
         self.data = None
         self.true_targets = None
+        self.population = None
 
     def set_destination(self, other_island):
         self.dest_q = other_island.recep_q
@@ -31,14 +35,27 @@ class Island(mp.Process):
         self.data = data
         self.true_targets = true_targets
 
+    def send_migration(self):
+        # FIXME: Parametros...
+        best_genomes = self.population.GetBestGenomesBySpecies(math.ceil(MIGRATION_SIZE*params.PopulationSize))
+        self.dest_q.put(best_genomes)
+
+    def receive_migration(self):
+        genomes = self.recep_q.get()
+        self.population.ReplaceGenomes(genomes)
+
     def run(self):
         # FIXME: Parametros hardcoded
         g = neat.Genome(0, 11, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
                         neat.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 5)
-        pop = neat.Population(g, params, True, 1.0, self.id_)
+        self.population = neat.Population(g, params, True, 1.0, self.id_)
 
         for generation in range(1000):
-            genome_list = get_genome_list(pop)
+            if generation % MIGRATION_FREQUENCY == 0:
+                self.send_migration()
+                self.receive_migration()
+
+            genome_list = get_genome_list(self.population)
             evaluation_list = evaluate_genome_list_serial(genome_list,
                                                           lambda genome: evaluate_auc(genome, data, true_targets))
 
@@ -47,7 +64,7 @@ class Island(mp.Process):
                                                                                generation,
                                                                                best_evaluation.fitness))
 
-            pop.Epoch()
+            self.population.Epoch()
 
 
 class Master:

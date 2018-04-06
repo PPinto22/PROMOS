@@ -1,29 +1,5 @@
-#ifndef PYTHONBINDINGS_H_
-#define PYTHONBINDINGS_H_
-
-///////////////////////////////////////////////////////////////////////////////////////////
-//    MultiNEAT - Python/C++ NeuroEvolution of Augmenting Topologies Library
-//
-//    Copyright (C) 2012 Peter Chervenski
-//
-//    This program is free software: you can redistribute it and/or modify
-//    it under the terms of the GNU Lesser General Public License as published by
-//    the Free Software Foundation, either version 3 of the License, or
-//    (at your option) any later version.
-//
-//    This program is distributed in the hope that it will be useful,
-//    but WITHOUT ANY WARRANTY; without even the implied warranty of
-//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//    GNU General Public License for more details.
-//
-//    You should have received a copy of the GNU Lesser General Public License
-//    along with this program.  If not, see < http://www.gnu.org/licenses/ >.
-//
-//    Contact info:
-//
-//    Peter Chervenski < spookey@abv.bg >
-//    Shane Ryan < shane.mcdonald.ryan@gmail.com >
-///////////////////////////////////////////////////////////////////////////////////////////
+#ifndef PYTHONBINDINGS_H
+#define PYTHONBINDINGS_H
 
 #ifdef USE_BOOST_PYTHON
 
@@ -39,11 +15,11 @@
 #include "Species.h"
 #include "Parameters.h"
 #include "Random.h"
+#include "Utils.hpp"
 
 namespace py = boost::python;
 using namespace NEAT;
 using namespace py;
-
 
 BOOST_PYTHON_MODULE(MultiNEAT)
 {
@@ -360,6 +336,8 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def("InitPhenotypeBehaviorData", &Population::InitPhenotypeBehaviorData)
             .def("NoveltySearchTick", &Population::NoveltySearchTick)
             .def("Save", &Population::Save)
+            .def("GetBestGenomesBySpecies", &Population::GetBestGenomesBySpecies)
+            .def("ReplaceGenomes", &Population::ReplaceGenomes)
             .def("GetBestFitnessEver", &Population::GetBestFitnessEver)
             .def("GetBestGenome", &Population::GetBestGenome)
             .def("GetSearchMode", &Population::GetSearchMode)
@@ -550,7 +528,8 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
     // These are necessary to let us iterate through the vectors of species, genomes and genes
     class_< std::vector<Genome> >("GenomeList")
-            .def(vector_indexing_suite< std::vector<Genome> >() )
+            .def(vector_indexing_suite< std::vector<Genome> >())
+            .def_pickle(VectorPickleSuite< std::vector<Genome> >())
             ;
 
     class_< std::vector<Species> >("SpeciesList")
@@ -582,4 +561,4 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
 #endif // USE_BOOST_PYTHON
 
-#endif /* PYTHONBINDINGS_H_ */
+#endif /* PYTHONBINDINGS_H */

@@ -1,34 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////////////
-//    MultiNEAT - Python/C++ NeuroEvolution of Augmenting Topologies Library
-//
-//    Copyright (C) 2012 Peter Chervenski
-//
-//    This program is free software: you can redistribute it and/or modify
-//    it under the terms of the GNU Lesser General Public License as published by
-//    the Free Software Foundation, either version 3 of the License, or
-//    (at your option) any later version.
-//
-//    This program is distributed in the hope that it will be useful,
-//    but WITHOUT ANY WARRANTY; without even the implied warranty of
-//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//    GNU General Public License for more details.
-//
-//    You should have received a copy of the GNU Lesser General Public License
-//    along with this program.  If not, see < http://www.gnu.org/licenses/ >.
-//
-//    Contact info:
-//
-//    Peter Chervenski < spookey@abv.bg >
-//    Shane Ryan < shane.mcdonald.ryan@gmail.com >
-///////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-// File:        Population.cpp
-// Description: Implementation of the Population class.
-///////////////////////////////////////////////////////////////////////////////
-
-
-
 #include <algorithm>
 #include <fstream>
 
@@ -38,7 +7,7 @@
 #include "Parameters.h"
 #include "PhenotypeBehavior.h"
 #include "Population.h"
-#include "Utils.h"
+#include "Utils.hpp"
 #include "Assert.h"
 
 
@@ -68,7 +37,7 @@ Population::Population(const Genome& a_Seed, const Parameters& a_Parameters,
         m_Genomes.push_back( t_clone );
     }
 
-    // Now now initialize each genome's weights
+    // Now initialize each genome's weights
     for(unsigned int i=0; i<m_Genomes.size(); i++)
     {
         if (a_RandomizeWeights)
@@ -204,6 +173,50 @@ Population::Population(const char *a_FileName)
     }
 }
 
+std::vector<Genome> Population::GetBestGenomesBySpecies(int quantity){
+    ASSERT(quantity <= m_Genomes.size());
+
+    int found = 0;
+    std::vector<Genome> best_genomes;
+    best_genomes.reserve(quantity);
+    std::map<int,int> offsets;
+
+    // Initialize offsets for each specie
+    for(int i=0; i<m_Species.size(); i++) {
+        offsets[i] = 0;
+    }
+
+    // Find the best genome of each species until found == quantity
+    while(found < quantity) {
+        for (int i = 0; i < m_Species.size() && found < quantity; i++) {
+            if(offsets[i] < m_Species[i].NumIndividuals()){
+                best_genomes.push_back(m_Species[i].m_Individuals[offsets[i]]);
+                offsets[i]++;
+                found++;
+            }
+        }
+    }
+
+    return best_genomes;
+}
+
+void Population::ReplaceGenomes(std::vector<Genome> replacements){
+    ASSERT(replacements.size() <= m_Genomes.size());
+
+    // Indexes of genomes that are available to be replaced
+    std::vector<std::pair<int, int>> genome_idxs;
+    for(int i=0; i<m_Species.size(); i++) {
+        Species specie = m_Species[i];
+        for(int j=0; j<specie.m_Individuals.size(); j++)
+            genome_idxs.emplace_back(i,j);
+    }
+
+    for(int i=0; i<replacements.size(); i++){
+        int rand_i = m_RNG.RandInt(0, static_cast<int>(genome_idxs.size())-1);
+        std::pair<int,int> rand_pair = genome_idxs[rand_i];
+        m_Species[rand_pair.first].m_Individuals.at(rand_pair.second) = replacements[i];
+    }
+}
 
 // Save a whole population to a file
 void Population::Save(const char* a_FileName)
@@ -228,7 +241,6 @@ void Population::Save(const char* a_FileName)
     // bye
     fclose(t_file);
 }
-
 
 // Calculates the current mean population complexity
 void Population::CalculateMPC()
@@ -362,7 +374,7 @@ void Population::CountOffspring()
 
 
 // This little tool function helps ordering the genomes by fitness
-bool species_greater(Species ls, Species rs)
+bool species_greater(const Species& ls, const Species& rs)
 {
     return ((ls.GetBestFitness()) > (rs.GetBestFitness()));
 }
@@ -371,10 +383,9 @@ void Population::Sort()
     ASSERT(m_Species.size() > 0);
 
     // Step through each species and sort its members by fitness
-    for(unsigned int i=0; i<m_Species.size(); i++)
-    {
+    for (auto &m_Specie : m_Species) {
         ASSERT(m_Species[i].NumIndividuals() > 0);
-        m_Species[i].SortIndividuals();
+        m_Specie.SortIndividuals();
     }
 
     // Now sort the species by fitness (best first)

@@ -1,34 +1,5 @@
-#ifndef _POPULATION_H
-#define _POPULATION_H
-
-///////////////////////////////////////////////////////////////////////////////////////////
-//    MultiNEAT - Python/C++ NeuroEvolution of Augmenting Topologies Library
-//
-//    Copyright (C) 2012 Peter Chervenski
-//
-//    This program is free software: you can redistribute it and/or modify
-//    it under the terms of the GNU Lesser General Public License as published by
-//    the Free Software Foundation, either version 3 of the License, or
-//    (at your option) any later version.
-//
-//    This program is distributed in the hope that it will be useful,
-//    but WITHOUT ANY WARRANTY; without even the implied warranty of
-//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//    GNU General Public License for more details.
-//
-//    You should have received a copy of the GNU Lesser General Public License
-//    along with this program.  If not, see < http://www.gnu.org/licenses/ >.
-//
-//    Contact info:
-//
-//    Peter Chervenski < spookey@abv.bg >
-//    Shane Ryan < shane.mcdonald.ryan@gmail.com >
-///////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-// File:        Population.h
-// Description: Definition for the Population class.
-///////////////////////////////////////////////////////////////////////////////
+#ifndef POPULATION_H
+#define POPULATION_H
 
 #include <vector>
 #include <float.h>
@@ -169,6 +140,16 @@ public:
     ////////////////////////////
     // Methods
     ////////////////////////////
+
+    ////////////////////////////
+    // Island methods
+
+    // Get N=quantity of this population's best genomes
+    // The genomes are selected by iteratively picking the best genome of each specie
+    vector<Genome> GetBestGenomesBySpecies(int quantity);
+
+    // Replace random genomes from this population, chosen randomly, with those received as input
+    void ReplaceGenomes(std::vector<Genome> replacements);
 
     // Access
     SearchMode GetSearchMode() const { return m_SearchMode; }
