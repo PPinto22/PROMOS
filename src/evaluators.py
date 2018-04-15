@@ -1,4 +1,5 @@
 import MultiNEAT
+
 import numpy as np
 from collections import namedtuple
 
@@ -41,7 +42,7 @@ def evaluate_auc(genome, data, true_targets):
                 row['idoperator'],
                 row['accmanager'],
                 row['country_name'],
-                1  # Bias
+                # 1  # Bias
             ]
         )
         net.Activate()

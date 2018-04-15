@@ -8,7 +8,7 @@ import numpy as np
 
 from evaluators import evaluate_genome_list_serial, evaluate_auc
 from params import params
-from util import get_genome_list, read_data
+from util import get_genome_list, read_data, get_network_connections
 from viz import Draw
 
 DATA_FILE_PATH = '../data/data.csv'
@@ -18,12 +18,12 @@ if __name__ == '__main__':
     data = read_data(DATA_FILE_PATH)
     true_targets = np.array([row['target'] for row in data])
 
-    g = neat.Genome(0, 11, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
+    g = neat.Genome(0, 10, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
                     neat.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 5)
     pop = neat.Population(g, params, True, 1.0, 0)  # 0 is the RNG seed
     # pop.RNG.Seed(int(time.clock() * 100))
 
-    for generation in range(1000):
+    for generation in range(50):
         print("--- Generation {} ---".format(generation))
         genome_list = get_genome_list(pop)
         evaluation_list = evaluate_genome_list_serial(genome_list,
@@ -35,6 +35,7 @@ if __name__ == '__main__':
         # Plot network
         net = neat.NeuralNetwork()
         best_evaluation.genome.BuildPhenotype(net)
+        print('\n'.join([str(x) for x in (get_network_connections(net))]))
         cv2.imshow("Best Network", Draw(net))
         cv2.waitKey(1)
 

@@ -1,5 +1,3 @@
-// Ignore this file
-
 #include "Genome.h"
 #include "Population.h"
 #include "NeuralNetwork.h"

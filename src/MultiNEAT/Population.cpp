@@ -200,6 +200,7 @@ std::vector<Genome> Population::GetBestGenomesBySpecies(int quantity){
     return best_genomes;
 }
 
+
 void Population::ReplaceGenomes(std::vector<Genome> replacements){
     ASSERT(replacements.size() <= m_Genomes.size());
 
@@ -667,12 +668,6 @@ void Population::Epoch()
     // Reproduction
     /////////////////////////////
 
-
-    // Kill all bad performing individuals
-    // Todo: this baby/adult/killworst scheme is complicated and basically sucks,
-    // I should remove it completely.
-   // for(unsigned int i=0; i<m_Species.size(); i++) m_Species[i].KillWorst(m_Parameters);
-
     // Perform reproduction for each species
     m_TempSpecies.clear();
     m_TempSpecies = m_Species;
@@ -687,11 +682,6 @@ void Population::Epoch()
     }
     m_Species = m_TempSpecies;
 
-
-    // Now we kill off the old parents
-    // Todo: this baby/adult scheme is complicated and basically sucks,
-    // I should remove it completely.
-   // for(unsigned int i=0; i<m_Species.size(); i++) m_Species[i].KillOldParents();
 
     // Here we kill off any empty species too
     // Remove all empty species (cleanup routine for every case..)
@@ -748,10 +738,6 @@ void Population::Epoch()
 }
 
 
-
-
-
-Genome g_dummy; // empty genome
 Genome& Population::AccessGenomeByIndex(unsigned int const a_idx)
 {
     ASSERT(a_idx < m_Genomes.size());

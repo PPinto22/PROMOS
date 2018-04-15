@@ -12,6 +12,21 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+### R
+.Rhistory
+.Rapp.history
+.RData
+*-Ex.R
+/*.Rcheck/
+.Rproj.user/
+.httr-oauth
+/*_cache/
+/cache/
+*.utf8.md
+*.knit.md
+rsconnect/
+
+
 # Distribution / packaging
 .Python
 env/
@@ -32,3 +47,6 @@ eggs/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Data
+data.csv

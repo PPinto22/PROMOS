@@ -1,5 +1,6 @@
 import csv
 import time
+from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
 
 
@@ -10,6 +11,14 @@ def get_genome_list(pop):
         for i in s.Individuals:
             genome_list.append(i)
     return genome_list
+
+
+def get_network_connections(network):
+    for neuron in network.neurons:
+        print('af={}, a={}, b={}, bias={}'.format(neuron.activation_function_type, neuron.a, neuron.b, neuron.bias))
+
+    Connection = namedtuple('Connection', 'source target weight')
+    return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
 
 
 try:

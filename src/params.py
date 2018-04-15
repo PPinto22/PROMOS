@@ -1,7 +1,7 @@
 import MultiNEAT as NEAT
 
 params = NEAT.Parameters()
-params.PopulationSize = 5
+params.PopulationSize = 25
 params.DynamicCompatibility = True
 params.NormalizeGenomeSize = True
 params.WeightDiffCoeff = 0.1
@@ -31,8 +31,8 @@ params.MutateAddNeuronProb = 0.001
 params.MutateAddLinkProb = 0.3
 params.MutateRemLinkProb = 0.0
 
-params.MinActivationA = 4.9
-params.MaxActivationA = 4.9
+params.MinActivationA = 1
+params.MaxActivationA = 1
 
 params.ActivationFunction_SignedSigmoid_Prob = 0.0
 params.ActivationFunction_UnsignedSigmoid_Prob = 1.0

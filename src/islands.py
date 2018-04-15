@@ -9,8 +9,8 @@ from params import params
 from util import read_data, get_genome_list
 
 N_ISLANDS = 4
-MIGRATION_SIZE = 0.1  # Percentage of the population to migrate, rounded up
-MIGRATION_FREQUENCY = 5  # Generations between migrations
+MIGRATION_SIZE = 0.1  # Percentage of the population to migrate (rounded up)
+MIGRATION_FREQUENCY = 1  # Generations between migrations
 DATA_FILE_PATH = '../data/data.csv'
 
 
