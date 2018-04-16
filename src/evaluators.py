@@ -56,16 +56,11 @@ def evaluate_auc(genome, data, true_targets):
     genome.SetEvaluated()
     # print("[DEBUG] Fitness: {}".format(roc_auc))
 
-    return roc_auc, net, Metrics(fpr, tpr, thresholds, roc_auc)
+    return GenomeEvaluation(genome, roc_auc, net, Metrics(fpr, tpr, thresholds, roc_auc))
 
 
-# Evaluates all genomes and returns a returns a list of 'GenomeEvaluation' objects. Evaluator is a callable that is
-# supposed to take Genome as argument and return a tuple (double fitness, NeuralNetwork net, object metrics),
-# where net and metrics are optional (can be None), and metrics is an object defined by the user that wraps any other
-# relevant characteristics of the genome besides its fitness. The evaluator should also set the genome object as
-# evaluated and set its fitness
 def evaluate_genome_list_serial(genome_list, evaluator):
-    return [GenomeEvaluation(genome, *evaluator(genome)) for genome in genome_list]
+    return [evaluator(genome) for genome in genome_list]
 
 
 # TODO: Não testado

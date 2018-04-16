@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import datetime
 
 import MultiNEAT as neat
 
@@ -7,23 +8,28 @@ import MultiNEAT as neat
 import numpy as np
 
 from evaluators import evaluate_genome_list_serial, evaluate_auc
-from params import params
-from util import get_genome_list, read_data, get_network_connections
+from params import get_params
+from util import get_genome_list, read_data, get_network_connections, get_current_datetime_string, write_results
+
 # from viz import Draw
 
 DATA_FILE_PATH = '../data/data.csv'
-
+OUT_DIR = '../results'
+GENERATIONS = 50
 
 if __name__ == '__main__':
+    initial_time = datetime.datetime.now()
     data = read_data(DATA_FILE_PATH)
     true_targets = np.array([row['target'] for row in data])
+    params = get_params()
 
     g = neat.Genome(0, 10, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
                     neat.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 5)
     pop = neat.Population(g, params, True, 1.0, 0)  # 0 is the RNG seed
     # pop.RNG.Seed(int(time.clock() * 100))
 
-    for generation in range(50):
+    all_time_best = None
+    for generation in range(GENERATIONS):
         print("--- Generation {} ---".format(generation))
         genome_list = get_genome_list(pop)
         evaluation_list = evaluate_genome_list_serial(genome_list,
@@ -31,11 +37,12 @@ if __name__ == '__main__':
 
         best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
         print("[DEBUG] Best fitness of generation {}: {}".format(generation, best_evaluation.fitness))
+        if all_time_best is None or best_evaluation.fitness > all_time_best.fitness:
+            all_time_best = best_evaluation
 
         # Plot network
         net = neat.NeuralNetwork()
         best_evaluation.genome.BuildPhenotype(net)
-        print('\n'.join([str(x) for x in (get_network_connections(net))]))
         # cv2.imshow("Best Network", Draw(net))
         # cv2.waitKey(1)
 
@@ -57,3 +64,6 @@ if __name__ == '__main__':
         # plt.pause(0.001)
 
         pop.Epoch()
+
+    write_results('{}/neat_{}.json'.format(OUT_DIR, get_current_datetime_string()), 'neat',
+                  GENERATIONS, datetime.datetime.now() - initial_time, all_time_best, params)

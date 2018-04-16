@@ -51,3 +51,7 @@ pip-delete-this-directory.txt
 data/*
 !data/.gitkeep
 data.csv
+
+# Results
+results/*
+!results/.gitkeep
