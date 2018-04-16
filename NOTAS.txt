@@ -1,5 +1,5 @@
 - Instalar boost
-sudo apt-get install libboost-all-dev
+sudo apt-get install libboost-all-dev (yum install boost-devel; yum install python3-devel)
 -- Ajustar nome da biblioteca de python
 cd /usr/lib/x86_64-linux-gnu
 sudo ln -s libboost_python-py35.so libboost_python3.so

@@ -55,4 +55,4 @@ set_target_properties(MultiNEAT PROPERTIES PREFIX "")
 
 # Executable (main)
 add_executable(main src/MultiNEAT/Main.cpp)
-target_link_libraries(main MultiNEAT ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(main MultiNEAT)
