@@ -1,7 +1,6 @@
 build/*
 !build/.gitkeep
 build-debug/
-data/
 .idea/
 **.so
 **.pyd
@@ -49,4 +48,6 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Data
+data/
+!data/.gitkeep
 data.csv
