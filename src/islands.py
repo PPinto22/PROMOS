@@ -13,8 +13,8 @@ from util import read_data, get_genome_list, write_results, get_current_datetime
 
 N_ISLANDS = 5
 MIGRATION_SIZE = 0.2  # Percentage of the population to migrate (rounded up)
-MIGRATION_FREQUENCY = 2  # Generations between migrations
-GENERATIONS = 5
+MIGRATION_FREQUENCY = 1  # Generations between migrations
+GENERATIONS = 50
 params = get_params()
 
 DATA_FILE_PATH = '../data/data.csv'
@@ -48,11 +48,15 @@ class Island(mp.Process):
 
     def send_migration(self):
         best_genomes = self.population.GetBestGenomesBySpecies(math.ceil(MIGRATION_SIZE * params.PopulationSize))
+        print("[DEBUG:Island_{}] Sending {} genomes".format(self.id_, len(best_genomes)))
         self.dest_q.put(best_genomes)
 
     def receive_migration(self):
+        print("[DEBUG:Island_{}] Waiting for genomes".format(self.id_))
         genomes = self.recep_q.get()
+        print("[DEBUG:Island_{}] Received {} genomes".format(self.id_, len(genomes)))
         self.population.ReplaceGenomes(genomes)
+        print("[DEBUG:Island_{}] Genome replacement successful".format(self.id_))
 
     def run(self):
         # FIXME: Parametros hardcoded
@@ -62,7 +66,7 @@ class Island(mp.Process):
 
         all_time_best = None
         for generation in range(GENERATIONS):
-            if generation % MIGRATION_FREQUENCY == 0:
+            if generation > 0 and generation % MIGRATION_FREQUENCY == 0:
                 self.send_migration()
                 self.receive_migration()
 
@@ -83,6 +87,7 @@ class Island(mp.Process):
             self.population.Epoch()
 
         self.master_q.put(Message(self.id_, 'Finished', GENERATIONS))
+        print("[DEBUG:Island_{}] Terminated".format(self.id_))
 
 
 class Master:
@@ -120,6 +125,7 @@ class Master:
                     self.best = message
             elif isinstance(message, Message):
                 if message.msg == 'Finished':
+                    print("[DEBUG:Master] Received termination from island {}".format(message.sender))
                     finished += 1
 
         elapsed_time = datetime.datetime.now() - initial_time
