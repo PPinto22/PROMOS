@@ -71,15 +71,15 @@ def get_params():
     params.MutateWeightsProb = 0.90
     params.WeightMutationMaxPower = 1.0
     params.WeightReplacementMaxPower = 5.0
-    params.MutateWeightsSevereProb = 0.5
+    params.MutateWeightsSevereProb = 0.01
     params.WeightMutationRate = 0.75
     params.MaxWeight = 20
     params.MutateAddNeuronProb = 0.01
     params.MutateAddLinkProb = 0.02
     params.MutateRemLinkProb = 0.00
-    params.Elitism = 0.1
+    params.SurvivalRate = 0.2
+    params.EliteFraction = 0.1
     params.CrossoverRate = 0.5
-    params.MutateWeightsSevereProb = 0.01
 
     params.MutateNeuronTraitsProb = 0
     params.MutateLinkTraitsProb = 0
