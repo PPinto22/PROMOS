@@ -13,12 +13,15 @@ from util import get_genome_list, read_data, get_network_connections, get_curren
 
 # from viz import Draw
 
-DATA_FILE_PATH = '../data/data.csv'
-OUT_DIR = '../results'
+DATA_FILE_PATH = '../../data/data.csv'
+OUT_DIR = '../../results'
 GENERATIONS = 50
 
 if __name__ == '__main__':
     initial_time = datetime.datetime.now()
+    eval_time = datetime.timedelta()
+    ea_time = datetime.timedelta()
+
     data = read_data(DATA_FILE_PATH)
     true_targets = np.array([row['target'] for row in data])
     params = get_params()
@@ -32,8 +35,11 @@ if __name__ == '__main__':
     for generation in range(GENERATIONS):
         print("--- Generation {} ---".format(generation))
         genome_list = get_genome_list(pop)
+
+        pre_eval_time = datetime.datetime.now()
         evaluation_list = evaluate_genome_list_serial(genome_list,
                                                       lambda genome: evaluate_auc(genome, data, true_targets))
+        eval_time += datetime.datetime.now() - pre_eval_time
 
         best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
         print("[DEBUG] Best fitness of generation {}: {}".format(generation, best_evaluation.fitness))
@@ -41,9 +47,7 @@ if __name__ == '__main__':
             all_time_best = best_evaluation
 
         # Plot network
-        net = neat.NeuralNetwork()
-        best_evaluation.genome.BuildPhenotype(net)
-        # cv2.imshow("Best Network", Draw(net))
+        # cv2.imshow("Best Network", Draw(best_evaluation.network))
         # cv2.waitKey(1)
 
         # Plot ROC
@@ -63,7 +67,11 @@ if __name__ == '__main__':
         # plt.draw()
         # plt.pause(0.001)
 
+        pre_ea_time = datetime.datetime.now()
         pop.Epoch()
+        ea_time += datetime.datetime.now() - pre_ea_time
+
 
     write_results('{}/neat_{}.json'.format(OUT_DIR, get_current_datetime_string()), 'neat',
-                  GENERATIONS, datetime.datetime.now() - initial_time, all_time_best, params)
+                  GENERATIONS, datetime.datetime.now() - initial_time, all_time_best, params,
+                  eval_time=eval_time, ea_time=ea_time)

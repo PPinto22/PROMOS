@@ -37,22 +37,6 @@ def read_data(data_file_path):
         return list(reader)
 
 
-class Results:
-    class Network:
-        def __init__(self, eval):
-            self.fitness = eval.fitness
-            self.connections = get_network_connections(eval.network) if eval.network is not None else None
-            self.neurons = get_network_neurons(eval.network) if eval.network is not None else None
-            # self.metrics = eval.metrics
-
-    def __init__(self, run_type, generations, run_time, best, params):
-        self.run_type = run_type
-        self.generations = generations
-        self.run_time = run_time
-        self.best = Results.Network(best)
-        # self.params = params
-
-
 def serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
 
@@ -69,7 +53,24 @@ def serializer(obj):
     return obj.__dict__
 
 
-def write_results(out_file_path, run_type, generations, run_time, best_evaluation, params):
-    results = Results(run_type, generations, run_time, best_evaluation, params)
+def write_results(out_file_path, run_type, generations, run_time, best_evaluation, params, eval_time=None, ea_time=None):
+    class Results:
+        class Network:
+            def __init__(self, eval):
+                self.fitness = eval.fitness
+                self.connections = get_network_connections(eval.network) if eval.network is not None else None
+                self.neurons = get_network_neurons(eval.network) if eval.network is not None else None
+                # self.metrics = eval.metrics
+
+        def __init__(self, run_type, generations, run_time, best, params, eval_time=None, ea_time=None):
+            self.run_type = run_type
+            self.generations = generations
+            self.run_time = run_time
+            self.eval_time = eval_time
+            self.ea_time = ea_time
+            self.best = Results.Network(best)
+            # self.params = params
+
+    results = Results(run_type, generations, run_time, best_evaluation, params, eval_time, ea_time)
     with open(out_file_path, 'w', encoding='utf8') as f:
         f.write(json.dumps(results.__dict__, default=serializer, indent=4))

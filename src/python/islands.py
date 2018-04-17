@@ -1,6 +1,7 @@
 import datetime
 import multiprocessing as mp
 from multiprocessing import Queue
+from time import sleep
 
 import numpy as np
 from typing import Dict
@@ -17,8 +18,8 @@ MIGRATION_FREQUENCY = 1  # Generations between migrations
 GENERATIONS = 50
 params = get_params()
 
-DATA_FILE_PATH = '../data/data.csv'
-OUT_DIR = '../results'
+DATA_FILE_PATH = '../../data/data.csv'
+OUT_DIR = '../../results'
 
 
 class Message:
