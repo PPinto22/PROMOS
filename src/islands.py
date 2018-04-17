@@ -66,6 +66,7 @@ class Island(mp.Process):
 
         all_time_best = None
         for generation in range(GENERATIONS):
+            print("[DEBUG:Island_{}] Starting generation {}".format(self.id_, generation))
             if generation > 0 and generation % MIGRATION_FREQUENCY == 0:
                 self.send_migration()
                 self.receive_migration()
@@ -82,9 +83,13 @@ class Island(mp.Process):
                 all_time_best = best_evaluation
                 all_time_best.network = None
                 all_time_best.metrics = None
+                print("[DEBUG:Island_{}] Sending new best to master".format(self.id_))
                 self.master_q.put(all_time_best)
+                print("[DEBUG:Island_{}] New best sent to master".format(self.id_))
 
+            print("[DEBUG:Island_{}] Calling Epoch()".format(self.id_))
             self.population.Epoch()
+            print("[DEBUG:Island_{}] Epoch() finished".format(self.id_))
 
         self.master_q.put(Message(self.id_, 'Finished', GENERATIONS))
         print("[DEBUG:Island_{}] Terminated".format(self.id_))
@@ -101,14 +106,14 @@ class Master:
         self.best = None
         self.queue = mp.Queue()
 
-    def setup(self, n_islands):
+    def setup(self):
         # Initialize islands and setup data for evaluation
-        for i in range(n_islands):
+        for i in range(N_ISLANDS):
             island = Island(i, self.queue)
             island.set_data(self.data, self.true_targets)
             self.islands[i] = island
         # Setup ring topology
-        for i in range(n_islands):
+        for i in range(N_ISLANDS):
             destination = self.islands[(i + 1) % len(self.islands)]
             self.islands[i].set_destination(destination)
 
@@ -140,5 +145,5 @@ if __name__ == '__main__':
     true_targets = np.array([row['target'] for row in data])
 
     master = Master(data, true_targets)
-    master.setup(N_ISLANDS)
+    master.setup()
     master.run()
