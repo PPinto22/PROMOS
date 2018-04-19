@@ -2,7 +2,7 @@
 
 import MultiNEAT as neat
 
-from evaluators import evaluate_genome_list_serial, evaluate_accuracy
+from evaluators import evaluate_genome_list_serial, evaluate_accuracy, evaluate_auc
 from params import get_params
 from util import *
 
