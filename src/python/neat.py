@@ -1,15 +1,13 @@
 #!/usr/bin/python3
-import datetime
 
 import MultiNEAT as neat
 
+from evaluators import evaluate_genome_list_serial, evaluate_accuracy
+from params import get_params
+from util import *
+
 # import cv2
 # import matplotlib.pyplot as plt
-import numpy as np
-
-from evaluators import evaluate_genome_list_serial, evaluate_auc
-from params import get_params
-from util import get_genome_list, read_data, get_network_connections, get_current_datetime_string, write_results
 
 # from viz import Draw
 
@@ -38,7 +36,7 @@ if __name__ == '__main__':
 
         pre_eval_time = datetime.datetime.now()
         evaluation_list = evaluate_genome_list_serial(genome_list,
-                                                      lambda genome: evaluate_auc(genome, data, true_targets))
+                                                      lambda genome: evaluate_accuracy(genome, data, true_targets))
         eval_time += datetime.datetime.now() - pre_eval_time
 
         best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
@@ -70,7 +68,6 @@ if __name__ == '__main__':
         pre_ea_time = datetime.datetime.now()
         pop.Epoch()
         ea_time += datetime.datetime.now() - pre_ea_time
-
 
     write_results('{}/neat_{}.json'.format(OUT_DIR, get_current_datetime_string()), 'neat',
                   GENERATIONS, datetime.datetime.now() - initial_time, all_time_best, params,

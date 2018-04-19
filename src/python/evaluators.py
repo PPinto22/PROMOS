@@ -21,13 +21,8 @@ class Metrics:
         self.roc = self.ROC(roc_fpr, roc_tpr, roc_thresholds, roc_auc)
 
 
-def evaluate_auc(genome, data, true_targets):
-    # print("[DEBUG] Genome ID: {}".format(genome.GetID()))
-    net = MultiNEAT.NeuralNetwork()
-    genome.BuildPhenotype(net)
-
+def predict(net, data):
     predictions = np.zeros(len(data))
-    # print("[DEBUG] Starting evaluation")
     for i, row in enumerate(data):
         net.Flush()
         net.Input(
@@ -41,15 +36,21 @@ def evaluate_auc(genome, data, true_targets):
                 row['idapplication'],
                 row['idoperator'],
                 row['accmanager'],
-                row['country_name'],
-                # 1  # Bias
+                row['country_name']
             ]
         )
         net.Activate()
         output = net.Output()
         predictions[i] = output[0]
     net.Flush()
+    return predictions
 
+
+def evaluate_auc(genome, data, true_targets):
+    net = MultiNEAT.NeuralNetwork()
+    genome.BuildPhenotype(net)
+
+    predictions = predict(net, data)
     fpr, tpr, thresholds = roc_curve(true_targets, predictions)
     roc_auc = auc(fpr, tpr)
     genome.SetFitness(roc_auc)
@@ -59,9 +60,20 @@ def evaluate_auc(genome, data, true_targets):
     return GenomeEvaluation(genome, roc_auc, net, Metrics(fpr, tpr, thresholds, roc_auc))
 
 
+def evaluate_accuracy(genome, data, true_targets):
+    net = MultiNEAT.NeuralNetwork()
+    genome.BuildPhenotype(net)
+
+    predictions = predict(net, data)
+    fitness = 1 / sum((abs(pred - target) for pred, target in zip(predictions, true_targets)))
+    genome.SetFitness(fitness)
+    genome.SetEvaluated()
+
+    return GenomeEvaluation(genome, fitness, net, None)
+
+
 def evaluate_genome_list_serial(genome_list, evaluator):
     return [evaluator(genome) for genome in genome_list]
-
 
 # TODO: Não testado
 # def evaluate_genome_list_parallel(genome_list, evaluator,

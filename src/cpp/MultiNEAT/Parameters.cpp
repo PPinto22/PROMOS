@@ -434,7 +434,7 @@ namespace NEAT
 
     Parameters::Parameters()
     {
-        Py_Initialize();
+//        Py_Initialize(); FIXME Porque?
 
         Reset();
     }
