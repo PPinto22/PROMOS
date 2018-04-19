@@ -13,7 +13,7 @@ from util import *
 
 DATA_FILE_PATH = '../../data/data.csv'
 OUT_DIR = '../../results'
-GENERATIONS = 50
+GENERATIONS = 25
 
 if __name__ == '__main__':
     initial_time = datetime.datetime.now()

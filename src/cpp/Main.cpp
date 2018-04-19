@@ -19,7 +19,7 @@ using namespace NEAT;
 
 const char* DATA_FILE_PATH = "../data/data.csv";
 const char* OUT_DIR = "../results";
-const int GENERATIONS = 50;
+const int GENERATIONS = 25;
 
 
 std::vector< std::map< std::string, double > > readData(const string& filePath){
