@@ -64,33 +64,9 @@ def evaluate_inverse_error(genome, data, true_targets):
     net = MultiNEAT.NeuralNetwork()
     genome.BuildPhenotype(net)
 
-    # predictions = predict(net, data)
-    # fitness = 1 / sum((abs(pred - target) for pred, target in zip(predictions, true_targets)))
+    predictions = predict(net, data)
+    fitness = 1 / sum((abs(pred - target) for pred, target in zip(predictions, true_targets)))
 
-    predictions = np.zeros(len(data))
-    error = 0
-    for i, row in enumerate(data):
-        net.Flush()
-        net.Input(
-            [
-                row['regioncontinent'],
-                row['idcampaign'],
-                row['idpartner'],
-                row['idverticaltype'],
-                row['idbrowser'],
-                row['idaffmanager'],
-                row['idapplication'],
-                row['idoperator'],
-                row['accmanager'],
-                row['country_name']
-            ]
-        )
-        net.Activate()
-        output = net.Output()
-        error += abs(output[0] - true_targets[i])
-    net.Flush()
-
-    fitness = 1/error
     genome.SetFitness(fitness)
     genome.SetEvaluated()
 
