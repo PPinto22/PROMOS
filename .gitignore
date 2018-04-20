@@ -50,6 +50,7 @@ eggs/
 *.vpp.working
 *.vpp.working-journal
 *.lock
+*.lck
 tmp/*
 
 # Installer logs

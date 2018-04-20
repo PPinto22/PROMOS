@@ -2,7 +2,7 @@
 
 import MultiNEAT as neat
 
-from evaluators import evaluate_genome_list_serial, evaluate_accuracy, evaluate_auc
+from evaluators import evaluate_genome_list_serial, evaluate_inverse_error, evaluate_auc
 from params import get_params
 from util import *
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
         pre_eval_time = datetime.datetime.now()
         evaluation_list = evaluate_genome_list_serial(genome_list,
-                                                      lambda genome: evaluate_accuracy(genome, data, true_targets))
+                                                      lambda genome: evaluate_inverse_error(genome, data, true_targets))
         eval_time += datetime.datetime.now() - pre_eval_time
 
         best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
