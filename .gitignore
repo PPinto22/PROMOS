@@ -43,6 +43,15 @@ eggs/
 *.manifest
 *.spec
 
+# Visual Paradigm
+.vpprefdata/
+*.vpp.bak*
+*.vpp~*
+*.vpp.working
+*.vpp.working-journal
+*.lock
+tmp/*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
