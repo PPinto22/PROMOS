@@ -1,5 +1,7 @@
 import datetime
 import multiprocessing as mp
+import os
+from functools import partial
 from multiprocessing import Queue
 from time import sleep
 
@@ -8,15 +10,20 @@ from typing import Dict
 import math
 
 import MultiNEAT as neat
-from evaluators import evaluate_genome_list_serial, evaluate_auc, GenomeEvaluation
-from params import get_params
-from util import read_data, get_genome_list, write_results, get_current_datetime_string
+
+import evaluators
+from params import get_params, ParametersWrapper
+import util
 
 N_ISLANDS = 5
 MIGRATION_SIZE = 0.2  # Percentage of the population to migrate (rounded up)
 MIGRATION_FREQUENCY = 1  # Generations between migrations
 GENERATIONS = 50
-params = get_params()
+PARAMS = get_params()
+
+LIST_EVALUATOR = evaluators.evaluate_genome_list_parallel
+EVALUATION_PROCESSES = os.cpu_count() or 1
+GENOME_EVALUATOR = evaluators.evaluate_auc
 
 DATA_FILE_PATH = '../../data/data.csv'
 OUT_DIR = '../../results'
@@ -48,7 +55,7 @@ class Island(mp.Process):
         self.true_targets = true_targets
 
     def send_migration(self):
-        best_genomes = self.population.GetBestGenomesBySpecies(math.ceil(MIGRATION_SIZE * params.PopulationSize))
+        best_genomes = self.population.GetBestGenomesBySpecies(math.ceil(MIGRATION_SIZE * PARAMS.PopulationSize))
         print("[DEBUG:Island_{}] Sending {} genomes".format(self.id_, len(best_genomes)))
         self.dest_q.put(best_genomes)
 
@@ -62,8 +69,8 @@ class Island(mp.Process):
     def run(self):
         # FIXME: Parametros hardcoded
         g = neat.Genome(0, 11, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
-                        neat.ActivationFunction.UNSIGNED_SIGMOID, 0, params, 5)
-        self.population = neat.Population(g, params, True, 1.0, self.id_)
+                        neat.ActivationFunction.UNSIGNED_SIGMOID, 0, PARAMS, 5)
+        self.population = neat.Population(g, PARAMS, True, 1.0, self.id_)
 
         all_time_best = None
         for generation in range(GENERATIONS):
@@ -72,9 +79,8 @@ class Island(mp.Process):
                 self.send_migration()
                 self.receive_migration()
 
-            genome_list = get_genome_list(self.population)
-            evaluation_list = evaluate_genome_list_serial(genome_list,
-                                                          lambda genome: evaluate_auc(genome, data, true_targets))
+            genome_list = util.get_genome_list(self.population)
+            evaluation_list = LIST_EVALUATOR(genome_list, partial(GENOME_EVALUATOR, data=data, true_targets=true_targets))
 
             best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
             print("[DEBUG:Island_{}] Best fitness of generation {}: {}".format(self.id_,
@@ -82,8 +88,7 @@ class Island(mp.Process):
                                                                                best_evaluation.fitness))
             if all_time_best is None or best_evaluation.fitness > all_time_best.fitness:
                 all_time_best = best_evaluation
-                all_time_best.network = None
-                all_time_best.metrics = None
+                all_time_best.save_genome_copy()
                 print("[DEBUG:Island_{}] Sending new best to master".format(self.id_))
                 self.master_q.put(all_time_best)
                 print("[DEBUG:Island_{}] New best sent to master".format(self.id_))
@@ -126,7 +131,7 @@ class Master:
             island.start()
         while finished < N_ISLANDS:
             message = self.queue.get()
-            if isinstance(message, GenomeEvaluation):
+            if isinstance(message, evaluators.GenomeEvaluation):
                 if self.best is None or message.fitness > self.best.fitness:
                     self.best = message
             elif isinstance(message, Message):
@@ -135,14 +140,20 @@ class Master:
                     finished += 1
 
         elapsed_time = datetime.datetime.now() - initial_time
-        self.best = evaluate_auc(self.best.genome, self.data, self.true_targets)
-        write_results('{}/neat_islands_{}.json'.format(OUT_DIR, get_current_datetime_string()),
-                      'neat_islands_{}'.format(N_ISLANDS), GENERATIONS,
-                      datetime.datetime.now() - initial_time, self.best, params)
+        self.best = GENOME_EVALUATOR(self.best.genome, self.data, self.true_targets)
+        util.write_results(
+            out_file_path='{}/neat_islands_{}.json'.format(OUT_DIR, util.get_current_datetime_string()),
+            best_evaluation=self.best,
+
+            params=ParametersWrapper(PARAMS),
+            islands=N_ISLANDS,
+            generations=GENERATIONS,
+            run_time=datetime.datetime.now() - initial_time
+        )
 
 
 if __name__ == '__main__':
-    data = read_data(DATA_FILE_PATH)
+    data = util.read_data(DATA_FILE_PATH)
     true_targets = np.array([row['target'] for row in data])
 
     master = Master(data, true_targets)
