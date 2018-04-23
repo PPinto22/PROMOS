@@ -15,7 +15,7 @@ import numpy as np
 
 # from viz import Draw
 
-DATA_FILE_PATH = '../../data/data_micro.csv'
+DATA_FILE_PATH = '../../data/data.csv'
 OUT_DIR = '../../results'
 
 GENERATIONS = 250
