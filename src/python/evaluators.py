@@ -82,5 +82,12 @@ def evaluate_genome_list_serial(genome_list, evaluator):
 
 
 def evaluate_genome_list_parallel(genome_list, evaluator, processes=None):
+    evaluation_list = []
     with multiprocessing.Pool(processes=processes) as pool:
-        return pool.map(evaluator, genome_list)
+        evaluation_list = pool.map(evaluator, genome_list)
+
+    for genome, eval in zip(genome_list, evaluation_list):
+        genome.SetFitness(eval.fitness)
+        genome.SetEvaluated()
+
+    return evaluation_list

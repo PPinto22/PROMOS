@@ -2,6 +2,7 @@
 
 import MultiNEAT as neat
 import os
+import time
 
 from params import get_params, ParametersWrapper
 import evaluators
@@ -10,19 +11,16 @@ import util
 import datetime
 from functools import partial
 import numpy as np
-# import cv2
-# import matplotlib.pyplot as plt
 
-# from viz import Draw
 
-DATA_FILE_PATH = '../../data/data.csv'
+DATA_FILE_PATH = '../../data/data_micro.csv'
 OUT_DIR = '../../results'
 
 GENERATIONS = 250
 PARAMS = get_params()
 
 LIST_EVALUATOR = evaluators.evaluate_genome_list_parallel
-EVALUATION_PROCESSES = 54 #os.cpu_count() or 1
+EVALUATION_PROCESSES = 54  #os.cpu_count() or 1
 GENOME_EVALUATOR = evaluators.evaluate_auc
 
 
@@ -45,7 +43,7 @@ if __name__ == '__main__':
     g = neat.Genome(0, 10, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
                     neat.ActivationFunction.UNSIGNED_SIGMOID, 0, PARAMS, 5)
     pop = neat.Population(g, PARAMS, True, 1.0, 0)  # 0 is the RNG seed
-    # pop.RNG.Seed(int(time.clock() * 100))
+    pop.RNG.Seed(int(time.clock() * 100))
 
     all_time_best = None
     for generation in range(GENERATIONS):
@@ -60,31 +58,11 @@ if __name__ == '__main__':
 
         best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
         print("[DEBUG] Best fitness of generation {}: {}".format(generation, best_evaluation.fitness))
+
         if all_time_best is None or best_evaluation.fitness > all_time_best.fitness:
             all_time_best = best_evaluation
             all_time_best.save_genome_copy()
             print_info(all_time_best)
-
-        # Plot network
-        # cv2.imshow("Best Network", Draw(best_evaluation.network))
-        # cv2.waitKey(1)
-
-        # Plot ROC
-        # roc = best_evaluation.metrics.roc
-        # fig = plt.gcf()
-        # fig.canvas.set_window_title('ROC Curve')
-        # plt.clf()
-        # plt.xlim([0.0, 1.0])
-        # plt.ylim([0.0, 1.005])
-        # plt.xlabel('False Positive Rate')
-        # plt.ylabel('True Positive Rate')
-        # plt.plot(roc.fpr, roc.tpr, color='darkorange',
-        #          lw=2, label='ROC Curve (area = %.2f)' % roc.auc)
-        # plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-        # plt.title('Generation {}\'s Best Network'.format(generation))
-        # plt.legend(loc="lower right")
-        # plt.draw()
-        # plt.pause(0.001)
 
         pre_ea_time = datetime.datetime.now()
         pop.Epoch()
