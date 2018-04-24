@@ -31,7 +31,7 @@ def print_info(evaluation):
     print("[DEBUG] New Best!")
     print("[DEBUG] Fitness: " + str(evaluation.fitness))
     print("[DEBUG] Neurons: " + str(len(util.get_network_neurons(network))))
-    print("[DEBUG] Connections: " + str(len(util.get_network_neurons(network))))
+    print("[DEBUG] Connections: " + str(len(util.get_network_connections(network))))
 
 
 if __name__ == '__main__':
