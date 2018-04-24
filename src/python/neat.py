@@ -15,7 +15,7 @@ import numpy as np
 
 # from viz import Draw
 
-DATA_FILE_PATH = '../../data/data_micro.csv'
+DATA_FILE_PATH = '../../data/data.csv'
 OUT_DIR = '../../results'
 
 GENERATIONS = 250
@@ -24,6 +24,15 @@ PARAMS = get_params()
 LIST_EVALUATOR = evaluators.evaluate_genome_list_parallel
 EVALUATION_PROCESSES = 54 #os.cpu_count() or 1
 GENOME_EVALUATOR = evaluators.evaluate_auc
+
+
+def print_info(evaluation):
+    network = util.build_network(evaluation.genome)
+    print("[DEBUG] New Best!")
+    print("[DEBUG] Fitness: " + str(evaluation.fitness))
+    print("[DEBUG] Neurons: " + str(len(util.get_network_neurons(network))))
+    print("[DEBUG] Connections: " + str(len(util.get_network_neurons(network))))
+
 
 if __name__ == '__main__':
     initial_time = datetime.datetime.now()
@@ -54,6 +63,7 @@ if __name__ == '__main__':
         if all_time_best is None or best_evaluation.fitness > all_time_best.fitness:
             all_time_best = best_evaluation
             all_time_best.save_genome_copy()
+            print_info(all_time_best)
 
         # Plot network
         # cv2.imshow("Best Network", Draw(best_evaluation.network))
