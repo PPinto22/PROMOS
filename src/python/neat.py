@@ -15,14 +15,14 @@ import numpy as np
 
 # from viz import Draw
 
-DATA_FILE_PATH = '../../data/data.csv'
+DATA_FILE_PATH = '../../data/data_micro.csv'
 OUT_DIR = '../../results'
 
 GENERATIONS = 250
 PARAMS = get_params()
 
 LIST_EVALUATOR = evaluators.evaluate_genome_list_parallel
-EVALUATION_PROCESSES = os.cpu_count() or 1
+EVALUATION_PROCESSES = 54 #os.cpu_count() or 1
 GENOME_EVALUATOR = evaluators.evaluate_auc
 
 if __name__ == '__main__':

@@ -69,8 +69,8 @@ def write_results(out_file_path, best_evaluation, **other_info):
             def __init__(self, eval, network=None):
                 self.fitness = eval.fitness
                 if network is not None:
-                    self.connections = len(get_network_connections(network))
-                    self.neurons = len(get_network_neurons(network))
+                    self.connections = get_network_connections(network)
+                    self.neurons = get_network_neurons(network)
                 if eval.metrics is not None:
                     self.metrics = eval.metrics
 
