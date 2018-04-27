@@ -24,9 +24,6 @@ def get_network_neurons(network):
 
 
 def get_network_connections(network):
-    # for neuron in network.neurons:
-    #     print('af={}, a={}, b={}, bias={}'.format(neuron.activation_function_type, neuron.a, neuron.b, neuron.bias))
-
     Connection = namedtuple('Connection', 'source target weight')
     return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
 

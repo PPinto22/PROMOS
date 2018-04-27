@@ -12,8 +12,8 @@ import util
 class GenomeEvaluation:
     def __init__(self, genome, fitness, metrics):
         self.genome = genome
-        self.metrics = metrics
         self.fitness = fitness
+        self.metrics = metrics
 
     def save_genome_copy(self):
         self.genome = neat.Genome(self.genome)
@@ -42,7 +42,8 @@ def predict(net, data):
                 row['idapplication'],
                 row['idoperator'],
                 row['accmanager'],
-                row['country_name']
+                row['country_name'],
+                1  # Bias
             ]
         )
         net.Activate()
@@ -60,7 +61,6 @@ def evaluate_auc(genome, data, true_targets, **kwargs):
     roc_auc = auc(fpr, tpr)
     genome.SetFitness(roc_auc)
     genome.SetEvaluated()
-    # print("[DEBUG] Fitness: {}".format(roc_auc))
 
     return GenomeEvaluation(genome, roc_auc, None)
 
@@ -82,7 +82,6 @@ def evaluate_genome_list_serial(genome_list, evaluator):
 
 
 def evaluate_genome_list_parallel(genome_list, evaluator, processes=None):
-    evaluation_list = []
     with multiprocessing.Pool(processes=processes) as pool:
         evaluation_list = pool.map(evaluator, genome_list)
 

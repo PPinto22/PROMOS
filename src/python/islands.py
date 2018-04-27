@@ -16,7 +16,7 @@ from params import get_params, ParametersWrapper
 import util
 
 N_ISLANDS = 5
-MIGRATION_SIZE = 0.2  # Percentage of the population to migrate (rounded up)
+MIGRATION_FRACTION = 0.2  # Percentage of the population to migrate
 MIGRATION_FREQUENCY = 1  # Generations between migrations
 GENERATIONS = 50
 PARAMS = get_params()
@@ -55,7 +55,7 @@ class Island(mp.Process):
         self.true_targets = true_targets
 
     def send_migration(self):
-        best_genomes = self.population.GetBestGenomesBySpecies(math.ceil(MIGRATION_SIZE * PARAMS.PopulationSize))
+        best_genomes = self.population.GetBestGenomesBySpecies(math.ceil(MIGRATION_FRACTION * PARAMS.PopulationSize))
         print("[DEBUG:Island_{}] Sending {} genomes".format(self.id_, len(best_genomes)))
         self.dest_q.put(best_genomes)
 
@@ -67,7 +67,6 @@ class Island(mp.Process):
         print("[DEBUG:Island_{}] Genome replacement successful".format(self.id_))
 
     def run(self):
-        # FIXME: Parametros hardcoded
         g = neat.Genome(0, 11, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
                         neat.ActivationFunction.UNSIGNED_SIGMOID, 0, PARAMS, 5)
         self.population = neat.Population(g, PARAMS, True, 1.0, self.id_)
@@ -75,9 +74,6 @@ class Island(mp.Process):
         all_time_best = None
         for generation in range(GENERATIONS):
             print("[DEBUG:Island_{}] Starting generation {}".format(self.id_, generation))
-            if generation > 0 and generation % MIGRATION_FREQUENCY == 0:
-                self.send_migration()
-                self.receive_migration()
 
             genome_list = util.get_genome_list(self.population)
             evaluation_list = LIST_EVALUATOR(genome_list, partial(GENOME_EVALUATOR, data=data, true_targets=true_targets))
@@ -92,6 +88,10 @@ class Island(mp.Process):
                 print("[DEBUG:Island_{}] Sending new best to master".format(self.id_))
                 self.master_q.put(all_time_best)
                 print("[DEBUG:Island_{}] New best sent to master".format(self.id_))
+
+            if generation > 0 and generation % MIGRATION_FREQUENCY == 0:
+                self.send_migration()
+                self.receive_migration()
 
             print("[DEBUG:Island_{}] Calling Epoch()".format(self.id_))
             self.population.Epoch()

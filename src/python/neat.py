@@ -13,14 +13,14 @@ from functools import partial
 import numpy as np
 
 
-DATA_FILE_PATH = '../../data/data_micro.csv'
+DATA_FILE_PATH = '../../data/data.csv'
 OUT_DIR = '../../results'
 
 GENERATIONS = 250
 PARAMS = get_params()
 
 LIST_EVALUATOR = evaluators.evaluate_genome_list_parallel
-EVALUATION_PROCESSES = 54  #os.cpu_count() or 1
+EVALUATION_PROCESSES = os.cpu_count() or 1
 GENOME_EVALUATOR = evaluators.evaluate_auc
 
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     data = util.read_data(DATA_FILE_PATH)
     true_targets = np.array([row['target'] for row in data])
 
-    g = neat.Genome(0, 10, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
+    g = neat.Genome(0, 10+1, 0, 1, False, neat.ActivationFunction.UNSIGNED_SIGMOID,
                     neat.ActivationFunction.UNSIGNED_SIGMOID, 0, PARAMS, 5)
     pop = neat.Population(g, PARAMS, True, 1.0, 0)  # 0 is the RNG seed
     pop.RNG.Seed(int(time.clock() * 100))
@@ -68,8 +68,9 @@ if __name__ == '__main__':
         pop.Epoch()
         ea_time += datetime.datetime.now() - pre_ea_time
 
+    date_time = util.get_current_datetime_string()
     util.write_results(
-        out_file_path='{}/neat_{}.json'.format(OUT_DIR, util.get_current_datetime_string()),
+        out_file_path='{}/neat_{}_summary.json'.format(OUT_DIR, date_time),
         best_evaluation=all_time_best,
         # -- Other info --
         params=ParametersWrapper(PARAMS),
@@ -79,3 +80,5 @@ if __name__ == '__main__':
         ea_time=ea_time,
         evaluation_processes=EVALUATION_PROCESSES if LIST_EVALUATOR is evaluators.evaluate_genome_list_parallel else 1
     )
+    pop.Save('{}/neat_{}_population.txt'.format(OUT_DIR, date_time))
+    all_time_best.genome.Save('{}/neat_{}_best.txt'.format(OUT_DIR, date_time))
