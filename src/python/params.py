@@ -11,7 +11,7 @@ def get_params():
     params.SpeciesMaxStagnation = 100
     params.OldAgeTreshold = 35
     params.MinSpecies = 2
-    params.MaxSpecies = 5
+    params.MaxSpecies = 10
     params.RouletteWheelSelection = True
     params.RecurrentProb = 0.0
     params.OverallMutationRate = 0.1
@@ -21,12 +21,16 @@ def get_params():
     params.MutateWeightsSevereProb = 0.01
     params.WeightMutationRate = 0.75
     params.MaxWeight = 20
-    params.MutateAddNeuronProb = 0.40
-    params.MutateAddLinkProb = 0.40
-    params.MutateRemLinkProb = 0.20
-    params.SurvivalRate = 0.2
-    params.EliteFraction = 0.1
+    params.MutateAddNeuronProb = 0.05
+    params.MutateAddLinkProb = 0.1
+    params.MutateRemLinkProb = 0.05
+    params.EliteFraction = 0.15
     params.CrossoverRate = 0.5
+
+    params.ActivationFunction_UnsignedGauss_Prob = 0.25
+    params.ActivationFunction_UnsignedSigmoid_Prob = 0.25
+    params.ActivationFunction_UnsignedSine_Prob = 0.25
+    params.ActivationFunction_Relu_Prob = 0.25
 
     params.MutateNeuronTraitsProb = 0
     params.MutateLinkTraitsProb = 0
