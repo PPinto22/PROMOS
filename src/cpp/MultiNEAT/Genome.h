@@ -232,7 +232,7 @@ namespace NEAT
         
         void SetID(unsigned int a_id);
         
-        unsigned int GetDepth() const;
+        unsigned int GetDepth();
         
         void SetDepth(unsigned int a_d);
         

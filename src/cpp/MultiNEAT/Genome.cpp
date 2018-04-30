@@ -469,8 +469,11 @@ namespace NEAT
         m_Depth = a_d;
     }
 
-    unsigned int Genome::GetDepth() const
+    unsigned int Genome::GetDepth()
     {
+        if (m_Depth == 0)
+            CalculateDepth();
+
         return m_Depth;
     }
 
