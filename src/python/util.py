@@ -65,7 +65,7 @@ def serializer(obj):
     return obj.__dict__
 
 
-def write_results(out_file_path, best_evaluation, **other_info):
+def write_summary(out_file_path, best_evaluation, **other_info):
     class Results:
         class Network:
             def __init__(self, eval, network=None):
@@ -73,8 +73,6 @@ def write_results(out_file_path, best_evaluation, **other_info):
                 if network is not None:
                     self.connections = get_network_connections(network)
                     self.neurons = get_network_neurons(network)
-                if eval.metrics is not None:
-                    self.metrics = eval.metrics
 
         def __init__(self, best_eval, best_network=None, **other_info):
             self.best = Results.Network(best_eval, best_network)
@@ -85,3 +83,13 @@ def write_results(out_file_path, best_evaluation, **other_info):
     results = Results(best_evaluation, net, **other_info)
     with open(out_file_path, 'w', encoding='utf8') as f:
         f.write(json.dumps(results.__dict__, default=serializer, indent=4))
+
+
+def save_evaluations(out_file_path, gen_evaluations):
+    with open(out_file_path, 'w') as file:
+        header = ['generation', 'genome_id', 'fitness', 'neurons', 'connections']
+        writer = csv.writer(file, delimiter=',')
+        writer.writerow(header)
+        for gen, evaluations in gen_evaluations.items():
+            for e in evaluations:
+                writer.writerow([gen, e.genome_id, e.fitness, e.neurons, e.connections])

@@ -97,9 +97,11 @@ def main():
     data = util.read_data(options.data_file)
     true_targets = np.array([row['target'] for row in data])
 
+    gen_evaluations = dict()  # Dict<Generation, [GenomeEvaluation]>
+    all_time_best = None
+
     pop = init_population(params, method=options.method, substrate=substrate)
 
-    all_time_best = None
     for generation in range(options.generations):
         print("Generation {}...".format(generation))
         genome_list = util.get_genome_list(pop)
@@ -110,6 +112,7 @@ def main():
                                  processes=options.processes, method=options.method, substrate=substrate)
         )
         eval_time += datetime.datetime.now() - pre_eval_time
+        gen_evaluations[generation] = evaluation_list
 
         best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
         print("[DEBUG] Best fitness of generation {}: {}".format(generation, best_evaluation.fitness))
@@ -123,20 +126,14 @@ def main():
         pop.Epoch()
         ea_time += datetime.datetime.now() - pre_ea_time
 
-    date_time = util.get_current_datetime_string()
-    util.write_results(
-        out_file_path='{}/{}_{}_summary.json'.format(options.out_dir, options.method, date_time),
-        best_evaluation=all_time_best,
-        # -- Other info --
-        params=ParametersWrapper(params),
-        generations=options.generations,
-        run_time=datetime.datetime.now() - initial_time,
-        eval_time=eval_time,
-        ea_time=ea_time,
-        evaluation_processes=options.processes
-    )
-    pop.Save('{}/{}_{}_population.txt'.format(options.out_dir, options.method, date_time))
-    all_time_best.genome.Save('{}/{}_{}_best.txt'.format(options.out_dir, options.method, date_time))
+    file_prefix = '{}/{}_{}_'.format(options.out_dir, options.method, util.get_current_datetime_string())
+    util.write_summary(out_file_path=file_prefix + 'summary.json', best_evaluation=all_time_best,
+                       params=ParametersWrapper(params), generations=options.generations,
+                       run_time=datetime.datetime.now() - initial_time, eval_time=eval_time, ea_time=ea_time,
+                       evaluation_processes=options.processes)
+    util.save_evaluations(file_prefix + 'evaluations.csv', gen_evaluations)
+    pop.Save(file_prefix + 'population.txt')
+    all_time_best.genome.Save(file_prefix + 'best.txt')
 
 
 if __name__ == '__main__':

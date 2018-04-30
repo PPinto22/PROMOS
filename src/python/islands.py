@@ -139,15 +139,9 @@ class Master:
 
         elapsed_time = datetime.datetime.now() - initial_time
         self.best = GENOME_EVALUATOR(self.best.genome, self.data, self.true_targets)
-        util.write_results(
-            out_file_path='{}/neat_islands_{}.json'.format(OUT_DIR, util.get_current_datetime_string()),
-            best_evaluation=self.best,
-
-            params=ParametersWrapper(PARAMS),
-            islands=N_ISLANDS,
-            generations=GENERATIONS,
-            run_time=datetime.datetime.now() - initial_time
-        )
+        util.write_summary(out_file_path='{}/neat_islands_{}.json'.format(OUT_DIR, util.get_current_datetime_string()),
+                           best_evaluation=self.best, params=ParametersWrapper(PARAMS), islands=N_ISLANDS,
+                           generations=GENERATIONS, run_time=datetime.datetime.now() - initial_time)
 
 
 if __name__ == '__main__':
