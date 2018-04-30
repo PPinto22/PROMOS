@@ -38,9 +38,14 @@ def read_data(data_file_path):
         return list(reader)
 
 
-def build_network(genome):
+def build_network(genome, method='neat', substrate=None, **kwargs):
     net = neat.NeuralNetwork()
-    genome.BuildPhenotype(net)
+    if method == 'neat':
+        genome.BuildPhenotype(net)
+    elif method == 'hyperneat':
+        genome.BuildHyperNEATPhenotype(net, substrate)
+    else:
+        raise ValueError('Invalid method: {}'.format(method))
     return net
 
 

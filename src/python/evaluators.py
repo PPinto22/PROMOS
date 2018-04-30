@@ -10,7 +10,7 @@ import util
 
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, metrics):
+    def __init__(self, genome, fitness, metrics=None):
         self.genome = genome
         self.fitness = fitness
         self.metrics = metrics
@@ -46,7 +46,8 @@ def predict(net, data):
                 1  # Bias
             ]
         )
-        net.Activate()
+        # TODO Activate DEPTH times
+        net.ActivateUseInternalBias()
         output = net.Output()
         predictions[i] = output[0]
     net.Flush()
@@ -54,7 +55,7 @@ def predict(net, data):
 
 
 def evaluate_auc(genome, data, true_targets, **kwargs):
-    net = util.build_network(genome)
+    net = util.build_network(genome, **kwargs)
 
     predictions = predict(net, data)
     fpr, tpr, thresholds = roc_curve(true_targets, predictions)
@@ -62,11 +63,11 @@ def evaluate_auc(genome, data, true_targets, **kwargs):
     genome.SetFitness(roc_auc)
     genome.SetEvaluated()
 
-    return GenomeEvaluation(genome, roc_auc, None)
+    return GenomeEvaluation(genome, roc_auc)
 
 
 def evaluate_error(genome, data, true_targets, **kwargs):
-    net = util.build_network(genome)
+    net = util.build_network(genome, **kwargs)
 
     predictions = predict(net, data)
     fitness = 1 / sum((abs(pred - target) for pred, target in zip(predictions, true_targets)))
@@ -74,11 +75,11 @@ def evaluate_error(genome, data, true_targets, **kwargs):
     genome.SetFitness(fitness)
     genome.SetEvaluated()
 
-    return GenomeEvaluation(genome, fitness, None)
+    return GenomeEvaluation(genome, fitness)
 
 
-def evaluate_genome_list_serial(genome_list, evaluator):
-    return [evaluator(genome) for genome in genome_list]
+def evaluate_genome_list_serial(genome_list, evaluator, **kwargs):
+    return [evaluator(genome, **kwargs) for genome in genome_list]
 
 
 def evaluate_genome_list_parallel(genome_list, evaluator, processes=None):

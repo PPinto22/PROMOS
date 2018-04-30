@@ -1,23 +1,21 @@
+import MultiNEAT as neat
 import datetime
+import math
 import multiprocessing as mp
 import os
 from functools import partial
 from multiprocessing import Queue
-from time import sleep
+from typing import Dict
 
 import numpy as np
-from typing import Dict
-import math
-
-import MultiNEAT as neat
 
 import evaluators
-from params import get_params, ParametersWrapper
 import util
+from params import get_params, ParametersWrapper
 
 N_ISLANDS = 5
 MIGRATION_FRACTION = 0.2  # Percentage of the population to migrate
-MIGRATION_FREQUENCY = 1  # Generations between migrations
+MIGRATION_FREQUENCY = 5  # Generations between migrations
 GENERATIONS = 50
 PARAMS = get_params()
 
