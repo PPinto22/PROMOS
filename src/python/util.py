@@ -1,12 +1,10 @@
 import MultiNEAT as neat
-
 import csv
 import datetime
 import json
-import numpy as np
-
 from collections import namedtuple
-from params import ParametersWrapper
+
+import numpy as np
 
 
 # Get all genomes from the population

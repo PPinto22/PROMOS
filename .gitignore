@@ -24,6 +24,8 @@ __pycache__/
 *.utf8.md
 *.knit.md
 rsconnect/
+R/*.png
+R/*.pdf
 
 
 # Distribution / packaging
