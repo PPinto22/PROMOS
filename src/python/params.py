@@ -1,8 +1,9 @@
-import MultiNEAT as NEAT
+import MultiNEAT as neat
+
 
 def get_params():
-    params = NEAT.Parameters()
-    params.PopulationSize = 150
+    params = neat.Parameters()
+    params.PopulationSize = 10
     params.DynamicCompatibility = True
     params.AllowClones = False
     params.CompatTreshold = 5.0

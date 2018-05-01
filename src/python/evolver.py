@@ -8,31 +8,36 @@ import argparse
 from params import get_params, ParametersWrapper
 import evaluators
 import util
+import substrate as subst
 
 import datetime
 from functools import partial
 import numpy as np
 
 
-def parse_options():
+def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-d', '--data', dest='data_file', help='path to input data file', metavar='FILE',
-                        default='../../data/data.csv')
-    parser.add_argument('-o', '--outdir', dest='out_dir', help='directory where to save results', metavar='DIR',
-                        default='../../results')
+    parser.add_argument('-d', '--data', dest='data_file', default='../../data/data.csv',
+                        help='path to input data file', metavar='FILE')
+    parser.add_argument('-o', '--outdir', dest='out_dir', default='../../results',
+                        help='directory where to save results', metavar='DIR')
     methods = ['neat', 'hyperneat', 'eshyperneat']
-    parser.add_argument('-m', '--method', dest='method', help='which algorithm to run: ' + ', '.join(methods),
-                        metavar='M', choices=methods, default='neat')
+    parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
+                        help='which algorithm to run: ' + ', '.join(methods), metavar='M')
     evaluation_functions = ['auc']
-    parser.add_argument('-e', '--evaluator', dest='evaluator',
-                        help='evaluation function: ' + ', '.join(evaluation_functions),
-                        metavar='E', choices=evaluation_functions, default='auc')
-    parser.add_argument('-g', '--generations', dest='generations', help='number of generations', metavar='G',
-                        type=int, default=150)
-    parser.add_argument('-p', '--processes', dest='processes',
+    parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluation_functions, default='auc',
+                        help='evaluation function: ' + ', '.join(evaluation_functions), metavar='E')
+    parser.add_argument('-g', '--generations', dest='generations', type=int, default=250,
+                        help='number of generations', metavar='G')
+    parser.add_argument('-p', '--processes', dest='processes', type=int, default=1,
                         help='number of processes to use for parallel computation. '
-                             'If P=1, the execution will be sequential', metavar='P',
-                        type=int, default=1)
+                             'If P=1, the execution will be sequential', metavar='P')
+    parser.add_argument('-P', '--population', dest='pop_file', metavar='FILE', default=None,
+                        help='load the contents of FILE as the initial population and parameters')
+    parser.add_argument('-i', '--id', dest='run_id', metavar='ID', default=None,
+                        help='run identifier. This ID will be used to name all output files '
+                             '(e.g., neat_ID_summary.txt). '
+                             'If unspecified, the ID will be the datetime of when the run terminates.')
 
     options = parser.parse_args()
     list_evaluator = evaluators.evaluate_genome_list_serial if options.processes == 1 else \
@@ -53,30 +58,18 @@ def print_info(evaluation, method, substrate):
     print("[DEBUG] Connections: " + str(len(util.get_network_connections(network))))
 
 
-def init_substrate():
-    substrate = neat.Substrate(
-        # Input
-        [(-1, -1), (-1, -0.8), (-1, -0.6), (-1, -0.4), (-1, -0.2),
-         (-1, 0.0), (-1, 0.2), (-1, 0.4), (-1, 0.6), (-1, 0.8), (-1, 1)],  # (-1, 1) = Bias
-        # Hidden
-        [],
-        # Output
-        [(1, 0)]
-    )
-    return substrate
+def init_population(params, options, seed=int(time.clock() * 100), substrate=None):
+    if options.pop_file is not None:
+        return neat.Population(options.pop_file)
 
-
-def init_population(params, method='neat', seed=int(time.clock() * 100), substrate=None):
     pop = None
     output_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
     hidden_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
 
-    if method == 'neat':
+    if options.method == 'neat':
         g = neat.Genome(0, 10 + 1, 0, 1, False, output_act_f, hidden_act_f, 0, params, 0)
         pop = neat.Population(g, params, True, 1.0, 0)
-    elif method in ['hyperneat', 'eshyperneat']:
-        print(substrate.GetMinCPPNInputs())
-        print(substrate.GetMinCPPNOutputs())
+    elif options.method in ['hyperneat', 'eshyperneat']:
         g = neat.Genome(0, substrate.GetMinCPPNInputs(), 0, substrate.GetMinCPPNOutputs(),
                         False, output_act_f, hidden_act_f, 0, params, 0)
         pop = neat.Population(g, params, True, 1.0, 0)
@@ -86,9 +79,10 @@ def init_population(params, method='neat', seed=int(time.clock() * 100), substra
 
 
 def main():
-    options, list_evaluator, genome_evaluator = parse_options()
+    options, list_evaluator, genome_evaluator = parse_args()
     params = get_params()
-    substrate = init_substrate()
+    substrate = subst.init_2d_grid_substrate(11, 10, [10] * 10, 1) if \
+        options.method in ['hyperneat', 'eshyperneat'] else None
 
     initial_time = datetime.datetime.now()
     eval_time = datetime.timedelta()
@@ -100,7 +94,8 @@ def main():
     gen_evaluations = dict()  # Dict<Generation, [GenomeEvaluation]>
     all_time_best = None
 
-    pop = init_population(params, method=options.method, substrate=substrate)
+    pop = init_population(params, options, substrate=substrate)
+    params = pop.Parameters  # Needed in case pop was loaded from a file
 
     for generation in range(options.generations):
         print("Generation {}...".format(generation))

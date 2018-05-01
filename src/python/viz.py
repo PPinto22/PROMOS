@@ -1,4 +1,8 @@
 from MultiNEAT import NeuronType, Genome, NeuralNetwork
+import argparse
+
+import substrate
+import util
 
 
 def Scale(a, a_min, a_max, a_tr_min, a_tr_max):
@@ -223,7 +227,7 @@ else:
     MAX_DEPTH = 64
 
 
-    def DrawPhenotype(image, rect, nn, neuron_radius=15,
+    def DrawPhenotype(image, rect, nn, neuron_radius=10,
                       max_line_thickness=3, substrate=False):
         for i, n in enumerate(nn.neurons):
             nn.neurons[i].x = 0
@@ -386,3 +390,33 @@ def Draw(x, size=(300, 300)):
         DrawPhenotype(img, (0, 0, 250, 250), nn)
 
     return img
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('genome_file', help='path to genome file', metavar='GENOME')
+    methods = ['neat', 'hyperneat', 'eshyperneat']
+    parser.add_argument('-m', '--method', dest='method', metavar='M', choices=methods, default='neat',
+                        help='which algorithm should be used to generate the network: ' + ', '.join(methods))
+    parser.add_argument('-s', '--substrate', dest='substrate_file', metavar='S', default=None,
+                        help='path to a substrate; required if method is hyperneat or eshyperneat')
+    parser.add_argument('-o', '--output', dest='out_file', metavar='FILE', default=None,
+                        help='save image to FILE')
+
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    genome = Genome(args.genome_file)
+    subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
+
+    network = util.build_network(genome, args.method, substrate)
+    network_image = Draw(network)
+    if args.out_file is None:
+        cv2.namedWindow('Network visualization', cv2.WINDOW_GUI_NORMAL)
+        cv2.imshow("Network visualization", network_image)
+        cv2.waitKey(0)
+    else:
+        cv2.imwrite(args.out_file, network_image)
