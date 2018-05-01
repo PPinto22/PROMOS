@@ -121,7 +121,8 @@ def main():
         pop.Epoch()
         ea_time += datetime.datetime.now() - pre_ea_time
 
-    file_prefix = '{}/{}_{}_'.format(options.out_dir, options.method, util.get_current_datetime_string())
+    run_id = options.run_id if options.run_id is not None else util.get_current_datetime_string()
+    file_prefix = '{}/{}_{}_'.format(options.out_dir, options.method, run_id)
     util.write_summary(out_file_path=file_prefix + 'summary.json', best_evaluation=all_time_best,
                        params=ParametersWrapper(params), generations=options.generations,
                        run_time=datetime.datetime.now() - initial_time, eval_time=eval_time, ea_time=ea_time,
