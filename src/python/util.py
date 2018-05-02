@@ -63,7 +63,7 @@ def serializer(obj):
     return obj.__dict__
 
 
-def write_summary(out_file_path, best_evaluation, **other_info):
+def write_summary(out_file_path, best_evaluation, method, substrate=None, **other_info):
     class Results:
         class Network:
             def __init__(self, eval, network=None):
@@ -71,13 +71,15 @@ def write_summary(out_file_path, best_evaluation, **other_info):
                 if network is not None:
                     self.connections = get_network_connections(network)
                     self.neurons = get_network_neurons(network)
+                    self.neurons_qty = len(self.neurons)
+                    self.connections_qty = len(self.connections)
 
         def __init__(self, best_eval, best_network=None, **other_info):
             self.best = Results.Network(best_eval, best_network)
             for key, value in other_info.items():
                 self.__setattr__(key, value)
 
-    net = build_network(best_evaluation.genome)
+    net = build_network(best_evaluation.genome, method, substrate)
     results = Results(best_evaluation, net, **other_info)
     with open(out_file_path, 'w', encoding='utf8') as f:
         f.write(json.dumps(results.__dict__, default=serializer, indent=4))

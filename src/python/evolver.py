@@ -37,11 +37,15 @@ def parse_args():
     parser.add_argument('-i', '--id', dest='run_id', metavar='ID', default=None,
                         help='run identifier. This ID will be used to name all output files '
                              '(e.g., neat_ID_summary.txt). '
-                             'If unspecified, the ID will be the datetime of when the run terminates.')
+                             'If unspecified, the ID will be the datetime of when the run was started.')
 
     options = parser.parse_args()
+
+    options.run_id = options.run_id if options.run_id is not None else util.get_current_datetime_string()
+
     list_evaluator = evaluators.evaluate_genome_list_serial if options.processes == 1 else \
         evaluators.evaluate_genome_list_parallel
+
     if options.evaluator == 'auc':
         genome_evaluator = evaluators.evaluate_auc
     else:
@@ -121,15 +125,19 @@ def main():
         pop.Epoch()
         ea_time += datetime.datetime.now() - pre_ea_time
 
-    run_id = options.run_id if options.run_id is not None else util.get_current_datetime_string()
-    file_prefix = '{}/{}_{}_'.format(options.out_dir, options.method, run_id)
-    util.write_summary(out_file_path=file_prefix + 'summary.json', best_evaluation=all_time_best,
+    file_prefix = '{}/{}_{}_'.format(options.out_dir, options.method, options.run_id)
+    if not os.path.exists(options.out_dir):
+        os.makedirs(options.out_dir)
+
+    util.write_summary(file_prefix + 'summary.json', all_time_best, options.method, substrate,
                        params=ParametersWrapper(params), generations=options.generations,
                        run_time=datetime.datetime.now() - initial_time, eval_time=eval_time, ea_time=ea_time,
                        evaluation_processes=options.processes)
     util.save_evaluations(file_prefix + 'evaluations.csv', gen_evaluations)
     pop.Save(file_prefix + 'population.txt')
     all_time_best.genome.Save(file_prefix + 'best.txt')
+
+    # FIXME Random segmentation fault at the end
 
 
 if __name__ == '__main__':
