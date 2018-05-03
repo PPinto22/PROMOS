@@ -965,8 +965,12 @@ namespace NEAT
 
                     // conditions for canceling the CPPN query
                     if (
-                            ((!subst.m_allow_input_hidden_links) &&
-                             ((net.m_neurons[j].m_type == INPUT) && (net.m_neurons[i].m_type == HIDDEN)))
+                            ((!subst.m_allow_looped_hidden_links) &&
+                             ((net.m_neurons[j].m_type == HIDDEN) && (net.m_neurons[i].m_type == HIDDEN) &&
+                              (j >= i))) // Prevents backwards connections, and therefore loops
+
+                            || ((!subst.m_allow_input_hidden_links) &&
+                                ((net.m_neurons[j].m_type == INPUT) && (net.m_neurons[i].m_type == HIDDEN)))
 
                             || ((!subst.m_allow_input_output_links) &&
                                 ((net.m_neurons[j].m_type == INPUT) && (net.m_neurons[i].m_type == OUTPUT)))
@@ -985,15 +989,10 @@ namespace NEAT
                                 ((net.m_neurons[j].m_type == OUTPUT) && (net.m_neurons[i].m_type == OUTPUT) &&
                                  (i != j)))
 
-                            || ((!subst.m_allow_looped_hidden_links) &&
-                                ((net.m_neurons[j].m_type == HIDDEN) && (net.m_neurons[i].m_type == HIDDEN) &&
-                                 (i == j)))
-
                             || ((!subst.m_allow_looped_output_links) &&
                                 ((net.m_neurons[j].m_type == OUTPUT) && (net.m_neurons[i].m_type == OUTPUT) &&
                                  (i == j)))
-
-                            )
+                        )
                     {
                         continue;
                     }
@@ -3324,7 +3323,7 @@ namespace NEAT
 
 
     ////////////////////////////////////////////
-    // Evovable Substrate Hyper NEAT.
+    // Evolvable Substrate Hyper NEAT.
     // For more info on the algorithm check: http://eplex.cs.ucf.edu/ESHyperNEAT/
     ///////////////////////////////////////////
 

@@ -55,7 +55,7 @@ public:
     double m_activesum;  // the synaptic input
     double m_activation; // the synaptic input passed through the activation function
 
-    double m_a, m_b, m_timeconst, m_bias; // misc parameters
+    double m_a{1}, m_b, m_timeconst, m_bias; // misc parameters
     double m_membrane_potential; // used in leaky integrator mode
     ActivationFunction m_activation_function_type;
 
@@ -81,6 +81,8 @@ public:
         else
             return false;
     }
+
+    void ApplyActivationFunction();
 };
 
 class NeuralNetwork
@@ -112,6 +114,8 @@ public:
     void Activate();              // any activation functions are supported
     void ActivateUseInternalBias(); // like Activate() but uses m_bias as well
     void ActivateLeaky(double step); // activates in leaky integrator mode
+    void FeedForward();         // Activates the whole network with a single pass.
+                                // only works for Feed Forward networks, with no cycles
 
     void RTRL_update_gradients();
     void RTRL_update_error(double a_target);

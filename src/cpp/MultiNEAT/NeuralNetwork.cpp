@@ -124,6 +124,60 @@ double tanh_derivative(double x)
     return 1 - x * x;
 }
 
+
+///////////////////////////////////////
+// Neuron class implementation
+///////////////////////////////////////
+void Neuron::ApplyActivationFunction() {
+    switch(m_activation_function_type){
+        case SIGNED_SIGMOID:
+            m_activation = af_sigmoid_signed(m_activesum, m_a, m_b);
+            break;
+        case UNSIGNED_SIGMOID:
+            m_activation = af_sigmoid_unsigned(m_activesum, m_a, m_b);
+            break;
+        case TANH:
+            m_activation = af_tanh(m_activesum, m_a, m_b);
+            break;
+        case TANH_CUBIC:
+            m_activation = af_tanh_cubic(m_activesum, m_a, m_b);
+            break;
+        case SIGNED_STEP:
+            m_activation = af_step_signed(m_activesum, m_b);
+            break;
+        case UNSIGNED_STEP:
+            m_activation = af_step_unsigned(m_activesum, m_b);
+            break;
+        case SIGNED_GAUSS:
+            m_activation = af_gauss_signed(m_activesum, m_a, m_b);
+            break;
+        case UNSIGNED_GAUSS:
+            m_activation = af_gauss_unsigned(m_activesum, m_a, m_b);
+            break;
+        case ABS:
+            m_activation = af_abs(m_activesum, m_b);
+            break;
+        case SIGNED_SINE:
+            m_activation = af_sine_signed(m_activesum, m_a, m_b);
+            break;
+        case UNSIGNED_SINE:
+            m_activation = af_sine_unsigned(m_activesum, m_a, m_b);
+            break;
+        case LINEAR:
+            m_activation = af_linear(m_activesum, m_b);
+            break;
+        case RELU:
+            m_activation = af_relu(m_activesum);
+            break;
+        case SOFTPLUS:
+            m_activation = af_softplus(m_activesum);
+            break;
+        default:
+            m_activation = af_sigmoid_unsigned(m_activesum, m_a, m_b);
+            break;
+    }
+}
+
 ///////////////////////////////////////
 // Neural network class implementation
 ///////////////////////////////////////
@@ -316,60 +370,7 @@ void NeuralNetwork::Activate()
     // also skip inputs since they do not get an activation
     for (unsigned int i = m_num_inputs; i < m_neurons.size(); i++)
     {
-        double x = m_neurons[i].m_activesum;
-        m_neurons[i].m_activesum = 0;
-        // Apply the activation function
-        double y = 0.0;
-        switch (m_neurons[i].m_activation_function_type)
-        {
-        case SIGNED_SIGMOID:
-            y = af_sigmoid_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_SIGMOID:
-            y = af_sigmoid_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case TANH:
-            y = af_tanh(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case TANH_CUBIC:
-            y = af_tanh_cubic(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case SIGNED_STEP:
-            y = af_step_signed(x, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_STEP:
-            y = af_step_unsigned(x, m_neurons[i].m_b);
-            break;
-        case SIGNED_GAUSS:
-            y = af_gauss_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_GAUSS:
-            y = af_gauss_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case ABS:
-            y = af_abs(x, m_neurons[i].m_b);
-            break;
-        case SIGNED_SINE:
-            y = af_sine_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_SINE:
-            y = af_sine_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case LINEAR:
-            y = af_linear(x, m_neurons[i].m_b);
-            break;
-        case RELU:
-            y = af_relu(x);
-            break;
-        case SOFTPLUS:
-            y = af_softplus(x);
-            break;
-        default:
-            y = af_sigmoid_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-
-        }
-        m_neurons[i].m_activation = y;
+        m_neurons[i].ApplyActivationFunction();
     }
 
 }
@@ -396,59 +397,8 @@ void NeuralNetwork::ActivateUseInternalBias()
     // also skip inputs since they do not get an activation
     for (unsigned int i = m_num_inputs; i < m_neurons.size(); i++)
     {
-        double x = m_neurons[i].m_activesum + m_neurons[i].m_bias;
-        m_neurons[i].m_activesum = 0;
-        // Apply the activation function
-        double y = 0.0;
-        switch (m_neurons[i].m_activation_function_type)
-        {
-        case SIGNED_SIGMOID:
-            y = af_sigmoid_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_SIGMOID:
-            y = af_sigmoid_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case TANH:
-            y = af_tanh(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case TANH_CUBIC:
-            y = af_tanh_cubic(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case SIGNED_STEP:
-            y = af_step_signed(x, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_STEP:
-            y = af_step_unsigned(x, m_neurons[i].m_b);
-            break;
-        case SIGNED_GAUSS:
-            y = af_gauss_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_GAUSS:
-            y = af_gauss_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case ABS:
-            y = af_abs(x, m_neurons[i].m_b);
-            break;
-        case SIGNED_SINE:
-            y = af_sine_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_SINE:
-            y = af_sine_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case LINEAR:
-            y = af_linear(x, m_neurons[i].m_b);
-            break;
-        case RELU:
-            y = af_relu(x);
-            break;
-        case SOFTPLUS:
-            y = af_softplus(x);
-            break;
-        default:
-            y = af_sigmoid_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        }
-        m_neurons[i].m_activation = y;
+        m_neurons[i].m_activesum += m_neurons[i].m_bias;
+        m_neurons[i].ApplyActivationFunction();
     }
 
 }
@@ -483,61 +433,14 @@ void NeuralNetwork::ActivateLeaky(double a_dtime)
     // also skip inputs since they do not get an activation
     for (unsigned int i = m_num_inputs; i < m_neurons.size(); i++)
     {
-        double x = m_neurons[i].m_membrane_potential + m_neurons[i].m_bias;
-        m_neurons[i].m_activesum = 0;
-        // Apply the activation function
-        double y = 0.0;
-        switch (m_neurons[i].m_activation_function_type)
-        {
-        case SIGNED_SIGMOID:
-            y = af_sigmoid_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_SIGMOID:
-            y = af_sigmoid_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case TANH:
-            y = af_tanh(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case TANH_CUBIC:
-            y = af_tanh_cubic(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case SIGNED_STEP:
-            y = af_step_signed(x, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_STEP:
-            y = af_step_unsigned(x, m_neurons[i].m_b);
-            break;
-        case SIGNED_GAUSS:
-            y = af_gauss_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_GAUSS:
-            y = af_gauss_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case ABS:
-            y = af_abs(x, m_neurons[i].m_b);
-            break;
-        case SIGNED_SINE:
-            y = af_sine_signed(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case UNSIGNED_SINE:
-            y = af_sine_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        case LINEAR:
-            y = af_linear(x, m_neurons[i].m_b);
-            break;
-        case RELU:
-            y = af_relu(x);
-            break;
-        case SOFTPLUS:
-            y = af_softplus(x);
-            break;
-        default:
-            y = af_sigmoid_unsigned(x, m_neurons[i].m_a, m_neurons[i].m_b);
-            break;
-        }
-        m_neurons[i].m_activation = y;
+        m_neurons[i].m_activesum = m_neurons[i].m_membrane_potential + m_neurons[i].m_bias;
+        m_neurons[i].ApplyActivationFunction();
     }
 
+}
+
+void NeuralNetwork::FeedForward() {
+    cout << "TODO!" << endl;
 }
 
 void NeuralNetwork::Flush()
@@ -915,6 +818,5 @@ bool NeuralNetwork::Load(const char *a_filename)
     std::ifstream t_DataFile(a_filename);
     return Load(t_DataFile);
 }
-
 
 }; // namespace NEAT

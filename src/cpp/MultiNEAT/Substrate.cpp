@@ -17,7 +17,7 @@ Substrate::Substrate()
     m_query_weights_only = false;
     m_allow_input_hidden_links = true;
     m_allow_input_output_links = true;
-    m_allow_hidden_hidden_links = false;
+    m_allow_hidden_hidden_links = true;
     m_allow_hidden_output_links = true;
     m_allow_output_hidden_links = false;
     m_allow_output_output_links = false;
@@ -41,8 +41,8 @@ Substrate::Substrate(std::vector<std::vector<double> >& a_inputs,
     m_hidden_nodes_activation = NEAT::UNSIGNED_SIGMOID;
     m_output_nodes_activation = NEAT::UNSIGNED_SIGMOID;
     m_allow_input_hidden_links = true;
-    m_allow_input_output_links = false;
-    m_allow_hidden_hidden_links = false;
+    m_allow_input_output_links = true;
+    m_allow_hidden_hidden_links = true;
     m_allow_hidden_output_links = true;
     m_allow_output_hidden_links = false;
     m_allow_output_output_links = false;
