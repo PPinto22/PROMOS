@@ -52,11 +52,11 @@ public:
 class Neuron
 {
 public:
-    double m_activesum;  // the synaptic input
-    double m_activation; // the synaptic input passed through the activation function
+    double m_activesum{0};  // the synaptic input
+    double m_activation{0}; // the synaptic input passed through the activation function
 
-    double m_a{1}, m_b, m_timeconst, m_bias; // misc parameters
-    double m_membrane_potential; // used in leaky integrator mode
+    double m_a{1}, m_b{0}, m_timeconst{0}, m_bias{0}; // misc parameters
+    double m_membrane_potential{0}; // used in leaky integrator mode
     ActivationFunction m_activation_function_type;
 
     // displaying and stuff

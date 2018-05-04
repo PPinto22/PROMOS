@@ -398,6 +398,7 @@ void NeuralNetwork::ActivateUseInternalBias()
     for (unsigned int i = m_num_inputs; i < m_neurons.size(); i++)
     {
         m_neurons[i].m_activesum += m_neurons[i].m_bias;
+//        m_neurons[i].m_activation = m_neurons[i].m_activesum;
         m_neurons[i].ApplyActivationFunction();
     }
 
@@ -440,7 +441,10 @@ void NeuralNetwork::ActivateLeaky(double a_dtime)
 }
 
 void NeuralNetwork::FeedForward() {
-    cout << "TODO!" << endl;
+    std::vector<Connection*> t_toconnect;
+    for(auto& c : m_connections){
+        t_toconnect.push_back(&c);
+    }
 }
 
 void NeuralNetwork::Flush()
@@ -522,9 +526,9 @@ void NeuralNetwork::Input_numpy(py::numeric::array& a_Inputs)
 std::vector<double> NeuralNetwork::Output()
 {
     std::vector<double> t_output;
-    for (int i = 0; i < m_num_outputs; i++)
+    for (int i = m_num_outputs - 1; i >= 0; i--)
     {
-        t_output.push_back(m_neurons[i + m_num_inputs].m_activation);
+        t_output.push_back(m_neurons[m_neurons.size()-1 - i].m_activation);
     }
     return t_output;
 }
