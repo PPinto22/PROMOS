@@ -1,9 +1,11 @@
 #include <unordered_set>
 #include <unordered_map>
-#include "MultiNEAT/Genes.h"
-#include "MultiNEAT/NeuralNetwork.h"
+#include <algorithm>
+#include "../MultiNEAT/Genes.h"
+#include "../MultiNEAT/NeuralNetwork.h"
 
 using namespace NEAT;
+using namespace std;
 
 int main() {
     // Network structure: 2 inputs, 2 hidden nodes, 1 output
@@ -26,6 +28,7 @@ int main() {
     net.m_neurons.push_back(o1); // 4
 
     Connection ci1_h1, ci1_h2, ci2_h1, ci2_h2, ch1_o1, ch2_o1;
+
     ci1_h1.m_source_neuron_idx = 0;
     ci1_h1.m_target_neuron_idx = 2;
     ci1_h1.m_weight = 2;
@@ -77,43 +80,15 @@ int main() {
 
     net.Flush();
     net.Input(inputs);
-    cout << endl << "FeedForward: " << endl;
     net.FeedForward();
+    cout << endl << "FeedForward: " << endl;
     cout << "i1: " << net.m_neurons[0].m_activation << endl;
     cout << "i2: " << net.m_neurons[1].m_activation << endl;
     cout << "h1: " << net.m_neurons[2].m_activation << endl;
     cout << "h2: " << net.m_neurons[3].m_activation << endl;
     cout << "o1: " << net.m_neurons[4].m_activation << endl;
+    cout << "output: " << net.Output()[0] << endl;
 
-    std::unordered_map<int, Connection *> t_toconnect;
-    for (auto it = net.m_connections.begin(); it != net.m_connections.end(); it++) {
-        long i = std::distance(net.m_connections.begin(), it);
-        t_toconnect.insert(std::make_pair<int, Connection *>(i, &(*it)));
-    }
-    std::unordered_set<int> t_nodes_full_input;
-    while (!t_toconnect.empty()) {
-        long t_initial_size = t_toconnect.size();
-        for (auto it = t_toconnect.begin(); it != t_toconnect.end(); /* no increment */) {
-            int c_i = (*it).first;
-            Connection& c = *((*it).second);
-            Neuron& source = net.m_neurons[c.m_source_neuron_idx];
-            Neuron& target = net.m_neurons[c.m_target_neuron_idx];
-            // TODO: WIP
-//            if (t_nodes_full_input.contains(c->m_source_neuron_idx))
-//            {
-//                c->m_signal = net.m_neurons[c->m_source_neuron_idx].m_activation * c->m_weight;
-//                net.m_neurons[c->m_target_neuron_idx].m_activesum +=
-//
-////                m_neurons[m_connections[i].m_target_neuron_idx].m_activesum +=
-////                        m_connections[i].m_signal;
-//                it = t_toconnect.erase(it);
-//            }
-//            else
-//            {
-//                ++it;
-//            }
-        }
-    }
 
     // Expected Output:
     //    Depth 0:
@@ -125,7 +100,15 @@ int main() {
     //    Depth 1:
     //    i1: 1
     //    i2: 1
+    //    h1: 0.999955
+    //    h2: 0.982014
+    //    o1: 0.866932
+    //
+    //    FeedForward:
+    //    i1: 1
+    //    i2: 1
     //    h1: 0.993307
     //    h2: 0.880797
     //    o1: 0.866932
+    //    output: 0.866932
 }

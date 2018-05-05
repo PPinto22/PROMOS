@@ -26,7 +26,7 @@ class GenomeEvaluation:
         self.genome = neat.Genome(self.genome)
 
 
-def predict(net, data, depth):
+def predict(net, data):
     predictions = np.zeros(len(data))
     for i, row in enumerate(data):
         net.Flush()
@@ -45,8 +45,7 @@ def predict(net, data, depth):
                 1  # Bias
             ]
         )
-        for _ in range(depth):
-            net.ActivateUseInternalBias()
+        net.FeedForward()
         output = net.Output()
         predictions[i] = output[0]
     net.Flush()
@@ -56,8 +55,7 @@ def predict(net, data, depth):
 def evaluate_auc(genome, data, true_targets, **kwargs):
     net = util.build_network(genome, **kwargs)
 
-    # FIXME GetDepth doesn't work for HyperNEAT and ES-HyperNEAT
-    predictions = predict(net, data, genome.GetDepth())
+    predictions = predict(net, data)
     fpr, tpr, thresholds = roc_curve(true_targets, predictions)
     roc_auc = auc(fpr, tpr)
     genome.SetFitness(roc_auc)
@@ -71,8 +69,7 @@ def evaluate_auc(genome, data, true_targets, **kwargs):
 def evaluate_error(genome, data, true_targets, **kwargs):
     net = util.build_network(genome, **kwargs)
 
-    # TODO GetDepth doesn't work for HyperNEAT and ES-HyperNEAT
-    predictions = predict(net, data, genome.GetDepth())
+    predictions = predict(net, data)
     fitness = 1 / sum((abs(pred - target) for pred, target in zip(predictions, true_targets)))
 
     genome.SetFitness(fitness)
