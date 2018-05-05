@@ -46,7 +46,7 @@ namespace NEAT
         DontUseBiasNeuron = false;
     
         // When false, this prevents any recurrent pathways in the genomes from forming
-        AllowLoops = true;
+        AllowLoops = false;
     
         // Normalize genome size when calculating compatibility
         NormalizeGenomeSize = true;

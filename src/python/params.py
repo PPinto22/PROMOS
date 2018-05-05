@@ -5,7 +5,7 @@ def get_params():
     params = neat.Parameters()
     params.PopulationSize = 150
     params.DynamicCompatibility = True
-    params.AllowClones = False
+    params.AllowClones = True
     params.CompatTreshold = 5.0
     params.CompatTresholdModifier = 0.3
     params.YoungAgeTreshold = 15

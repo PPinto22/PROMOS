@@ -81,7 +81,7 @@ def init_population(params, options, seed=int(time.clock() * 100), substrate=Non
     pop.RNG.Seed(seed)
     return pop
 
-
+# FIXME Loops in HyperNEAT
 def main():
     options, list_evaluator, genome_evaluator = parse_args()
     params = get_params()
