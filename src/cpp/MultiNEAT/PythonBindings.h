@@ -133,6 +133,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             &NeuralNetwork::ActivateUseInternalBias)
             .def("ActivateLeaky",
             &NeuralNetwork::ActivateLeaky)
+            .def("SortConnections", &NeuralNetwork::SortConnections)
             .def("FeedForward", &NeuralNetwork::FeedForward)
 
             .def("Adapt",
