@@ -390,6 +390,8 @@ namespace NEAT {
     }
 
     void NeuralNetwork::SortConnections() {
+        m_ordered_connections.clear();
+
         // Map<Index, Connection*> of connections not yet transversed
         // Initially, it's every connection
         std::unordered_map<int, Connection *> t_connections;
@@ -463,19 +465,18 @@ namespace NEAT {
         if (m_ordered_connections.empty()) {
             SortConnections();
         }
-        for(std::pair<int, std::vector<Connection *>>& target_connections: m_ordered_connections){
-            Neuron& target = m_neurons[target_connections.first];
-            auto& connections = target_connections.second;
-            for(auto it = connections.begin(); it != connections.end(); it++){
-                Connection& c = *(*it);
-                Neuron& source = m_neurons[c.m_source_neuron_idx];
+        for(long i = 0; i < m_ordered_connections.size(); i++){
+            Neuron& target = m_neurons[m_ordered_connections[i].first];
+            std::vector<Connection *>& connections = m_ordered_connections[i].second;
+            for(Connection* c : connections){
                 // Propagate signal from source to target
-                c.m_signal = source.m_activation * c.m_weight;
-                target.m_activesum += c.m_signal;
-                // Apply bias and activation function
-                target.m_activesum += target.m_bias;
-                target.ApplyActivationFunction();
+                Neuron& source = m_neurons[c->m_source_neuron_idx];
+                c->m_signal = source.m_activation * c->m_weight;
+                target.m_activesum += c->m_signal;
             }
+            // Apply bias and activation function
+            target.m_activesum += target.m_bias;
+            target.ApplyActivationFunction();
         }
     }
 
