@@ -393,18 +393,19 @@ namespace NEAT {
         // Map<Index, Connection*> of connections not yet transversed
         // Initially, it's every connection
         std::unordered_map<int, Connection *> t_connections;
+        // Set of neurons with dependencies (i.e., with at least 1 incoming connection)
+        std::unordered_set<int> t_neurons_w_dependencies;
+
+        // Iterate through m_connections and copy pointers of each connection to t_connections
+        // Also, add neurons that appear as targets in any connection to t_neurons_w_dependencies
         for (auto it = m_connections.begin(); it != m_connections.end(); it++) {
             long i = std::distance(m_connections.begin(), it);
-            t_connections.insert(std::make_pair<int, Connection *>(i, &(*it)));
-        }
-        // Set of node indexes for which all incoming connections have already been transversed
-        // Initialized with every input node index
-        std::unordered_set<int> t_nodes_full_input;
-        for (int i = 0; i < m_num_inputs; i++) {
-            t_nodes_full_input.insert(i);
+            Connection& c = *it;
+            t_connections.insert(std::make_pair<int, Connection *>(i, &c));
+            t_neurons_w_dependencies.insert(c.m_target_neuron_idx);
         }
 
-        // For every node index KEY, save the list of connections where the target is KEY
+        // For every neuron index KEY, save the list of connections where the target is KEY
         // (except inputs, which are never a target)
         std::unordered_map<int, std::vector<Connection *>> t_target_connections;
         for (long i = m_num_inputs; i < m_neurons.size(); i++) {
@@ -422,30 +423,27 @@ namespace NEAT {
                 Neuron &source = m_neurons[c.m_source_neuron_idx];
                 Neuron &target = m_neurons[c.m_target_neuron_idx];
 
-
-                // If source has already "received" all inputs
-                if (t_nodes_full_input.find(c.m_source_neuron_idx) != t_nodes_full_input.end()) {
+                // If source has no dependencies
+                if (t_neurons_w_dependencies.find(c.m_source_neuron_idx) == t_neurons_w_dependencies.end()) {
                     // Add connection to the list of connections whose target is this connection's target
                     t_target_connections[c.m_target_neuron_idx].push_back(&c);
 
                     // Remove connection from t_connections
                     it = t_connections.erase(it);
 
-                    // Check if target has "received" all inputs
+                    // Check if target has any more dependencies
                     // That is, check that it does not appear as a target in any connection in t_connections
-                    bool t_received_all_inputs = find_if(
+                    bool t_has_dependencies = find_if(
                             t_connections.begin(), t_connections.end(),
                             [&c](const std::pair<int, Connection *> &lambda_c) {
                                 return (lambda_c.second)->m_target_neuron_idx == c.m_target_neuron_idx;
-                            }) == t_connections.end();
-                    // If target has received all inputs, append it and
+                            }) != t_connections.end();
+                    // If target has no more dependencies, append it and
                     // the list of connections that target it to m_ordered_connections.
-                    // Also, add it to t_nodes_full_input
-                    if (t_received_all_inputs) {
-                        m_ordered_connections.push_back(
-                                std::make_pair(c.m_target_neuron_idx, t_target_connections[c.m_target_neuron_idx])
-                        );
-                        t_nodes_full_input.insert(c.m_target_neuron_idx);
+                    // Also, add it to t_neurons_w_dependencies
+                    if (!t_has_dependencies) {
+                        m_ordered_connections.emplace_back(c.m_target_neuron_idx, t_target_connections[c.m_target_neuron_idx]);
+                        t_neurons_w_dependencies.erase(c.m_target_neuron_idx);
                     }
                 } else { // Source has not yet received all inputs; skip
                     ++it;

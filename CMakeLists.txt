@@ -62,3 +62,6 @@ add_library(csv ${SOURCES_DIR}/csv/csv.cpp ${SOURCES_DIR}/csv/csv.h)
 # Executables
 add_executable(main ${SOURCES_DIR}/Main.cpp)
 target_link_libraries(main MultiNEAT csv)
+
+add_executable(net_test ${SOURCES_DIR}/tests/NetworkTest.cpp)
+target_link_libraries(net_test MultiNEAT)

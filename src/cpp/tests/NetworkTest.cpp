@@ -69,7 +69,7 @@ int main() {
     int depth = 2;
     for (int i = 0; i < depth; i++) {
         net.ActivateUseInternalBias();
-        cout << "Depth " << i << ":" << endl;
+        cout << "Activate - Depth " << i << ":" << endl;
         cout << "i1: " << net.m_neurons[0].m_activation << endl;
         cout << "i2: " << net.m_neurons[1].m_activation << endl;
         cout << "h1: " << net.m_neurons[2].m_activation << endl;
@@ -91,13 +91,13 @@ int main() {
 
 
     // Expected Output:
-    //    Depth 0:
+    //    Activate - Depth 0:
     //    i1: 1
     //    i2: 1
     //    h1: 0.993307
     //    h2: 0.880797
     //    o1: 0.5
-    //    Depth 1:
+    //    Activate - Depth 1:
     //    i1: 1
     //    i2: 1
     //    h1: 0.999955
