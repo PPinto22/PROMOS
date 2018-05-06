@@ -107,8 +107,8 @@ def main():
 
         pre_eval_time = datetime.datetime.now()
         evaluation_list = list_evaluator(
-            genome_list, partial(genome_evaluator, data=data, true_targets=true_targets,
-                                 processes=options.processes, method=options.method, substrate=substrate)
+            genome_list, partial(genome_evaluator, data=data, true_targets=true_targets, processes=options.processes,
+                                 method=options.method, substrate=substrate, initial_time=initial_time)
         )
         eval_time += datetime.datetime.now() - pre_eval_time
         gen_evaluations[generation] = evaluation_list

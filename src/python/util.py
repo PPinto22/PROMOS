@@ -87,9 +87,10 @@ def write_summary(out_file_path, best_evaluation, method, substrate=None, **othe
 
 def save_evaluations(out_file_path, gen_evaluations):
     with open(out_file_path, 'w') as file:
-        header = ['generation', 'genome_id', 'fitness', 'neurons', 'connections']
+        header = ['generation', 'genome_id', 'fitness', 'neurons', 'connections', 'run_minutes']
         writer = csv.writer(file, delimiter=',')
         writer.writerow(header)
         for gen, evaluations in gen_evaluations.items():
             for e in evaluations:
-                writer.writerow([gen, e.genome_id, e.fitness, e.neurons, e.connections])
+                writer.writerow([gen, e.genome_id, e.fitness, e.neurons, e.connections,
+                                 e.global_time.total_seconds()/60.0])

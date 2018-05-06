@@ -1,4 +1,5 @@
 import MultiNEAT as neat
+import datetime
 import multiprocessing
 
 import numpy as np
@@ -9,16 +10,18 @@ import util
 
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, neurons=None, connections=None, **kwargs):
+    def __init__(self, genome, fitness, neurons=None, connections=None, global_time=None, **kwargs):
         """
         :type connections: int
         :type neurons: int
+        ;type global_time: datetime.timedelta
         """
         self.genome = genome
         self.genome_id = genome.GetID()
         self.fitness = fitness
         self.neurons = neurons
         self.connections = connections
+        self.global_time = global_time
         for key, value in kwargs.items():
             self.__setattr__(key, value)
 
@@ -52,7 +55,7 @@ def predict(net, data):
     return predictions
 
 
-def evaluate_auc(genome, data, true_targets, **kwargs):
+def evaluate_auc(genome, data, true_targets, initial_time=None, **kwargs):
     net = util.build_network(genome, **kwargs)
 
     predictions = predict(net, data)
@@ -61,9 +64,12 @@ def evaluate_auc(genome, data, true_targets, **kwargs):
     genome.SetFitness(roc_auc)
     genome.SetEvaluated()
 
+    time = datetime.datetime.now() - initial_time if initial_time is not None else None
+
     return GenomeEvaluation(genome, roc_auc,
                             neurons=len(util.get_network_neurons(net)),
-                            connections=len(util.get_network_connections(net)))
+                            connections=len(util.get_network_connections(net)),
+                            global_time=time)
 
 
 def evaluate_error(genome, data, true_targets, **kwargs):
@@ -81,7 +87,7 @@ def evaluate_error(genome, data, true_targets, **kwargs):
 
 
 def evaluate_genome_list_serial(genome_list, evaluator, **kwargs):
-    return [evaluator(genome, **kwargs) for genome in genome_list]
+    return [evaluator(genome) for genome in genome_list]
 
 
 def evaluate_genome_list_parallel(genome_list, evaluator, processes=None):
