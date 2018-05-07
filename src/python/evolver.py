@@ -9,6 +9,7 @@ from params import get_params, ParametersWrapper
 import evaluators
 import util
 import substrate as subst
+from data import Data
 
 import datetime
 from functools import partial
@@ -32,6 +33,8 @@ def parse_args():
     parser.add_argument('-p', '--processes', dest='processes', type=int, default=1,
                         help='number of processes to use for parallel computation. '
                              'If P=1, the execution will be sequential', metavar='P')
+    parser.add_argument('-s', '--sample', dest='sample_size', type=int, default=None,
+                        help='use a balanced sample of size N in evaluations', metavar='N')
     parser.add_argument('-P', '--population', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
     parser.add_argument('-i', '--id', dest='run_id', metavar='ID', default=None,
@@ -43,15 +46,12 @@ def parse_args():
 
     options.run_id = options.run_id if options.run_id is not None else util.get_current_datetime_string()
 
-    list_evaluator = evaluators.evaluate_genome_list_serial if options.processes == 1 else \
-        evaluators.evaluate_genome_list_parallel
-
     if options.evaluator == 'auc':
         genome_evaluator = evaluators.evaluate_auc
     else:
         raise ValueError('Invalid genome evaluator: {}'.format(options.evaluator))
 
-    return options, list_evaluator, genome_evaluator
+    return options, genome_evaluator
 
 
 def print_info(evaluation, method, substrate):
@@ -83,7 +83,7 @@ def init_population(params, options, seed=int(time.clock() * 100), substrate=Non
 
 
 def main():
-    options, list_evaluator, genome_evaluator = parse_args()
+    options, genome_evaluator = parse_args()
     params = get_params()
     substrate = subst.init_2d_grid_substrate(11, 10, [10] * 10, 1) if \
         options.method in ['hyperneat', 'eshyperneat'] else None
@@ -92,9 +92,7 @@ def main():
     eval_time = datetime.timedelta()
     ea_time = datetime.timedelta()
 
-    data = util.read_data(options.data_file)
-    true_targets = np.array([row['target'] for row in data])
-
+    data = Data(options.data_file)
     gen_evaluations = dict()  # Dict<Generation, [GenomeEvaluation]>
     all_time_best = None
 
@@ -106,9 +104,10 @@ def main():
         genome_list = util.get_genome_list(pop)
 
         pre_eval_time = datetime.datetime.now()
-        evaluation_list = list_evaluator(
-            genome_list, partial(genome_evaluator, data=data, true_targets=true_targets, processes=options.processes,
-                                 method=options.method, substrate=substrate, initial_time=initial_time)
+        evaluation_list = evaluators.evaluate_genome_list(
+            genome_list,
+            partial(genome_evaluator, method=options.method, substrate=substrate, initial_time=initial_time),
+            data, options.sample_size, options.processes
         )
         eval_time += datetime.datetime.now() - pre_eval_time
         gen_evaluations[generation] = evaluation_list
@@ -117,6 +116,7 @@ def main():
         print("[DEBUG] Best fitness of generation {}: {}".format(generation, best_evaluation.fitness))
 
         if all_time_best is None or best_evaluation.fitness > all_time_best.fitness:
+            # TODO Faz sentido guardar o melhor desta forma quando há sampling???
             all_time_best = best_evaluation
             all_time_best.save_genome_copy()
             print_info(all_time_best, options.method, substrate)
@@ -128,11 +128,11 @@ def main():
     file_prefix = '{}/{}_{}_'.format(options.out_dir, options.method, options.run_id)
     if not os.path.exists(options.out_dir):
         os.makedirs(options.out_dir)
-
     util.write_summary(file_prefix + 'summary.json', all_time_best, options.method, substrate,
                        params=ParametersWrapper(params), generations=options.generations,
                        run_time=datetime.datetime.now() - initial_time, eval_time=eval_time, ea_time=ea_time,
-                       evaluation_processes=options.processes)
+                       evaluation_processes=options.processes,
+                       sample_size=options.sample_size if options.sample_size is not None else len(data))
     util.save_evaluations(file_prefix + 'evaluations.csv', gen_evaluations)
     pop.Save(file_prefix + 'population.txt')
     all_time_best.genome.Save(file_prefix + 'best.txt')

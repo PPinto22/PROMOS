@@ -1,6 +1,8 @@
 import MultiNEAT as neat
 import datetime
 import multiprocessing
+import time
+from functools import partial
 
 import numpy as np
 
@@ -55,11 +57,11 @@ def predict(net, data):
     return predictions
 
 
-def evaluate_auc(genome, data, true_targets, initial_time=None, **kwargs):
+def evaluate_auc(genome, data, initial_time=None, **kwargs):
     net = util.build_network(genome, **kwargs)
 
     predictions = predict(net, data)
-    fpr, tpr, thresholds = roc_curve(true_targets, predictions)
+    fpr, tpr, thresholds = roc_curve(data.targets, predictions)
     roc_auc = auc(fpr, tpr)
     genome.SetFitness(roc_auc)
     genome.SetEvaluated()
@@ -72,11 +74,11 @@ def evaluate_auc(genome, data, true_targets, initial_time=None, **kwargs):
                             global_time=time)
 
 
-def evaluate_error(genome, data, true_targets, **kwargs):
+def evaluate_error(genome, data, **kwargs):
     net = util.build_network(genome, **kwargs)
 
     predictions = predict(net, data)
-    fitness = 1 / sum((abs(pred - target) for pred, target in zip(predictions, true_targets)))
+    fitness = 1 / sum((abs(pred - target) for pred, target in zip(data.targets, predictions)))
 
     genome.SetFitness(fitness)
     genome.SetEvaluated()
@@ -86,16 +88,20 @@ def evaluate_error(genome, data, true_targets, **kwargs):
                             connections=len(util.get_network_connections(net)))
 
 
-def evaluate_genome_list_serial(genome_list, evaluator, **kwargs):
-    return [evaluator(genome) for genome in genome_list]
+def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, processes=1):
+    if sample_size is not None:
+        data = data.get_sample(sample_size, seed=int(time.clock() * 100))
+    evaluator = partial(evaluator, data=data)
 
+    if processes == 1:
+        evaluation_list = [evaluator(genome) for genome in genome_list]
+    else:
+        with multiprocessing.Pool(processes=processes) as pool:
+            print(processes)
+            evaluation_list = pool.map(evaluator, genome_list)
 
-def evaluate_genome_list_parallel(genome_list, evaluator, processes=None):
-    with multiprocessing.Pool(processes=processes) as pool:
-        evaluation_list = pool.map(evaluator, genome_list)
-
-    for genome, eval in zip(genome_list, evaluation_list):
-        genome.SetFitness(eval.fitness)
-        genome.SetEvaluated()
+        for genome, eval in zip(genome_list, evaluation_list):
+            genome.SetFitness(eval.fitness)
+            genome.SetEvaluated()
 
     return evaluation_list
