@@ -37,7 +37,7 @@ def parse_args():
                         help='use a balanced sample of size N in evaluations', metavar='N')
     parser.add_argument('-P', '--population', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
-    parser.add_argument('-i', '--id', dest='run_id', metavar='ID', default=None,
+    parser.add_argument('--id', dest='run_id', metavar='ID', default=None,
                         help='run identifier. This ID will be used to name all output files '
                              '(e.g., neat_ID_summary.txt). '
                              'If unspecified, the ID will be the datetime of when the run was started.')
