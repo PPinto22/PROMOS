@@ -24,6 +24,7 @@ __pycache__/
 *.utf8.md
 *.knit.md
 rsconnect/
+R/img/
 R/*.png
 R/*.pdf
 
