@@ -46,8 +46,7 @@ def predict(net, data):
                 row['idapplication'],
                 row['idoperator'],
                 row['accmanager'],
-                row['country_name'],
-                1  # Bias
+                row['country_name']
             ]
         )
         net.FeedForward()

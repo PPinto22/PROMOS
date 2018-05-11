@@ -31,11 +31,11 @@ def init_2d_grid_substrate(inputs: int, hidden_layers: int, nodes_per_layer: [in
     return neat.Substrate(input_nodes, hidden_nodes, output_nodes)
 
 
-def save_substrate(substrate):
+def save_substrate(substrate, file_path):
     # TODO
     pass
 
 
-def load_substrate(substrate_file):
+def load_substrate(file_path):
     # TODO
     pass

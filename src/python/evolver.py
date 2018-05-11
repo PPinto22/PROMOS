@@ -71,7 +71,7 @@ def init_population(params, options, seed=int(time.clock() * 100), substrate=Non
     hidden_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
 
     if options.method == 'neat':
-        g = neat.Genome(0, 10 + 1, 0, 1, False, output_act_f, hidden_act_f, 0, params, 0)
+        g = neat.Genome(0, 10, 0, 1, False, output_act_f, hidden_act_f, 0, params, 0)
         pop = neat.Population(g, params, True, 1.0, 0)
     elif options.method in ['hyperneat', 'eshyperneat']:
         g = neat.Genome(0, substrate.GetMinCPPNInputs(), 0, substrate.GetMinCPPNOutputs(),
