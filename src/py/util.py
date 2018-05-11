@@ -8,12 +8,7 @@ import numpy as np
 
 
 # Get all genomes from the population
-def get_genome_list(pop):
-    genome_list = []
-    for s in pop.Species:
-        for i in s.Individuals:
-            genome_list.append(i)
-    return genome_list
+
 
 
 def get_network_neurons(network):
@@ -28,12 +23,6 @@ def get_network_connections(network):
 
 def get_current_datetime_string():
     return '{date:%Y-%m-%d_%H:%M:%S}'.format(date=datetime.datetime.now())
-
-
-def read_data(data_file_path):
-    with open(data_file_path) as data_file:
-        reader = csv.DictReader(data_file, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
-        return list(reader)
 
 
 def build_network(genome, method='neat', substrate=None, **kwargs):
