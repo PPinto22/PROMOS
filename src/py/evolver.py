@@ -37,8 +37,8 @@ def parse_args():
     parser.add_argument('-t', '--time', dest='time_limit', type=int, default=None,
                         help='time limit in minutes', metavar='MIN')
     parser.add_argument('-p', '--processes', dest='processes', type=int, default=1,
-                        help='number of processes to use for parallel computation. '
-                             'If P=1, the execution will be sequential', metavar='P')
+                        help='number of processes to use for parallel evaluation. '
+                             'If P=1, the evaluations will be sequential', metavar='P')
     parser.add_argument('-s', '--sample', dest='sample_size', type=int, default=None,
                         help='use a balanced sample of size N in evaluations', metavar='N')
     parser.add_argument('-P', '--population', dest='pop_file', metavar='FILE', default=None,
