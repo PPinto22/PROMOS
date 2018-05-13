@@ -38,17 +38,20 @@ class Data:
         random.seed(seed)
 
         size = min(size, len(self.data))  # Assert that the sample size is at most equal to all the data
-        half_size = size // 2
 
-        # Try to get a 50/50 split of positives/negatives
-        positives_size = min(half_size, len(self.positives))
-        negatives_size = min(half_size, len(self.negatives))
-        if positives_size < half_size:
-            # Not enough positives for a balanced sample; compensate with extra negatives
-            negatives_size += half_size - positives_size
-        elif negatives_size < half_size:
-            # Not enough negatives for a balanced sample; compensate with extra positives
-            positives_size += half_size - negatives_size
+        if balanced:  # Try to get a 50/50 split of positives/negatives
+            half_size = size // 2
+            positives_size = min(half_size, len(self.positives))
+            negatives_size = min(half_size, len(self.negatives))
+            if positives_size < half_size:
+                # Not enough positives for a balanced sample; compensate with extra negatives
+                negatives_size += half_size - positives_size
+            elif negatives_size < half_size:
+                # Not enough negatives for a balanced sample; compensate with extra positives
+                positives_size += half_size - negatives_size
+        else:  # Mantain ratio of positives/negatives
+            positives_size = (len(self.positives) * size) // len(self.data)
+            negatives_size = (len(self.negatives) * size) // len(self.data)
 
         positives_sample = random.sample(self.positives, positives_size)
         negatives_sample = random.sample(self.negatives, negatives_size)
