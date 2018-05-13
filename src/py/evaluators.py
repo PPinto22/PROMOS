@@ -64,7 +64,7 @@ def evaluate_auc(genome, data, **kwargs):
     fpr, tpr, thresholds = roc_curve(data.targets, predictions)
     roc_auc = auc(fpr, tpr)
 
-    return _create_genome_evaluation_(genome, roc_auc, net, **kwargs)
+    return _create_genome_evaluation(genome, roc_auc, net, **kwargs)
 
 
 def evaluate_error(genome, data, **kwargs):
@@ -73,10 +73,10 @@ def evaluate_error(genome, data, **kwargs):
     predictions = predict(net, data)
     fitness = 1 / sum((abs(pred - target) for pred, target in zip(data.targets, predictions)))
 
-    return _create_genome_evaluation_(genome, fitness, net, **kwargs)
+    return _create_genome_evaluation(genome, fitness, net, **kwargs)
 
 
-def _create_genome_evaluation_(genome, fitness, net, generation=None, initial_time=None, **kwargs):
+def _create_genome_evaluation(genome, fitness, net, generation=None, initial_time=None, **kwargs):
     genome.SetFitness(fitness)
     genome.SetEvaluated()
 

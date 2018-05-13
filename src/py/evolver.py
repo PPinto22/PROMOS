@@ -21,7 +21,9 @@ from data import Data
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data', dest='data_file', default='../../data/data.csv',
-                        help='path to input data file', metavar='FILE')
+                        help='path to train data file', metavar='FILE'),
+    parser.add_argument('-T', '--test', dest='test_file', default=None,
+                        help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='../../results',
                         help='directory where to save results', metavar='DIR')
     methods = ['neat', 'hyperneat', 'eshyperneat']
@@ -73,7 +75,8 @@ class Evolver:
         self.substrate = subst.init_2d_grid_substrate(11, 10, [10] * 10, 1) if \
             options.method in ['hyperneat', 'eshyperneat'] else None
 
-        self.data = Data(self.options.data_file)  # Data
+        self.data = Data(self.options.data_file)  # Training data
+        self.data_test = Data(self.options.test_file) if self.options.test_file is not None else None  # Test data
 
         self.initial_time = None  # Time when the run starts
         self.eval_time = datetime.timedelta()  # Time spent in evaluations
@@ -84,6 +87,7 @@ class Evolver:
         self.generation = 0  # Current generation
         # All time best evaluations, ordered from best to worst fitness
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
+        self.best_test = None  # GenomeEvaluation of the best individual, evaluated with the test data-set
 
     def init_population(self, seed=int(time.clock() * 100)):
         if self.options.pop_file is not None:
@@ -124,38 +128,42 @@ class Evolver:
         if not self.options.quiet:
             print(msg)
 
-    def _make_out_dir_(self):
+    def make_out_dir(self):
         if not os.path.exists(self.options.out_dir):
             os.makedirs(self.options.out_dir)
 
-    def _get_out_file_path_(self, suffix):
+    def get_out_file_path(self, suffix):
         return '{}/{}_{}_{}'.format(self.options.out_dir, self.options.method, self.options.run_id, suffix)
 
     def write_results(self):
-        self._make_out_dir_()
-        self.write_summary(self._get_out_file_path_('summary.json'))
-        self.pop.Save(self._get_out_file_path_('population.txt'))
-        self.get_best().genome.Save(self._get_out_file_path_('best.txt'))
+        self.make_out_dir()
+        self.write_summary(self.get_out_file_path('summary.json'))
+        self.pop.Save(self.get_out_file_path('population.txt'))
+        self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def write_summary(self, file_path):
         class Summary:
             class Network:
-                def __init__(self, eval, network=None):
+                def __init__(self, eval, test, network=None):
                     self.fitness = eval.fitness
+                    self.fitness_test = test
                     if network is not None:
                         self.connections = util.get_network_connections(network)
                         self.neurons = util.get_network_neurons(network)
                         self.neurons_qty = len(self.neurons)
                         self.connections_qty = len(self.connections)
 
-            def __init__(self, best_eval, best_network=None, **other_info):
-                self.best = Summary.Network(best_eval, best_network)
+            def __init__(self, best_eval, fitness_test, best_network=None, **other_info):
+                self.best = Summary.Network(best_eval, fitness_test, best_network)
                 for key, value in other_info.items():
                     self.__setattr__(key, value)
 
         best_evaluation = self.get_best()
         net = util.build_network(best_evaluation.genome, self.options.method, self.substrate)
-        results = Summary(best_evaluation, net, params=ParametersWrapper(self.params),
+        results = Summary(best_eval=best_evaluation, best_network=net,
+                          fitness_test=self.best_test.fitness if self.best_test is not None else None,
+                          # Other info
+                          params=ParametersWrapper(self.params),
                           generations=self.options.generations,
                           run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
                           ea_time=self.ea_time, evaluation_processes=self.options.processes,
@@ -165,8 +173,8 @@ class Evolver:
             f.write(json.dumps(results.__dict__, default=util.serializer, indent=4))
 
     def save_evaluations(self, evaluations):
-        self._make_out_dir_()
-        file_path = self._get_out_file_path_('evaluations.csv')
+        self.make_out_dir()
+        file_path = self.get_out_file_path('evaluations.csv')
         if self.generation == 0:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
@@ -216,15 +224,26 @@ class Evolver:
         for e in evaluation_list:
             self.best_list.add(e)
 
-    def evaluate_pop(self):
-        genome_list = self.get_genome_list()
-        pre_eval_time = datetime.datetime.now()
-        evaluation_list = evaluators.evaluate_genome_list(
+    def evaluate_list(self, genome_list):
+        return evaluators.evaluate_genome_list(
             genome_list,
             partial(self.genome_evaluator, method=options.method,
                     substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
             self.data, options.sample_size, options.processes
         )
+
+    def evaluate(self, genome):
+        return self._evaluate(genome, self.data)
+
+    def evaluate_test(self, genome):
+        return self._evaluate(genome, self.data_test)
+
+    def _evaluate(self, genome, data):
+        return self.genome_evaluator(genome, data, generation=self.generation, initial_time=self.initial_time)
+
+    def evaluate_pop(self):
+        pre_eval_time = datetime.datetime.now()
+        evaluation_list = self.evaluate_list(self.get_genome_list())
         self.eval_time += datetime.datetime.now() - pre_eval_time
 
         self.save_evaluations(evaluation_list)
@@ -236,22 +255,35 @@ class Evolver:
         self.ea_time += datetime.datetime.now() - pre_ea_time
         self.generation += 1
 
+    def print_best(self):
+        best = self.get_best()
+        best_test_str = ' Fitness (test): {:.6f},'.format(self.best_test.fitness) if self.best_test is not None else ''
+
+        self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections:{}".
+                   format(best.fitness, best_test_str, best.neurons, best.connections))
+
+    def evaluate_best_test(self):
+        best = self.get_best()
+        if self.options.test_file is not None:
+            self.best_test = self.evaluate_test(best.genome)
+
     def run(self):
         self.initial_time = datetime.datetime.now()
 
+        # Run the EA
         while not self.is_finished():
             self.print("\nGeneration {} ({})".format(self.generation, self.elapsed_time()))
             self.evaluate_pop()
             self.epoch()
 
+        # Reevaluate the best individuals with full data if sample_size is specified
         if self.options.sample_size is not None and not self.options.no_reevaluation:
             self.print("\nReevaluating the best individuals with the whole data-set...")
             self.reevaluate_best_list()
-            best = self.get_best()
-            self.print("Best result> Fitness: {:.6f}, Neurons: {}, Connections:{}".
-                       format(best.fitness, best.neurons, best.connections))
 
-        self.write_results()
+        self.evaluate_best_test()  # Test the best individual obtained with the test data-set
+        self.print_best()  # Print to stdout the best result
+        self.write_results()  # Write run details to files
 
 
 if __name__ == '__main__':
