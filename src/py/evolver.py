@@ -259,7 +259,7 @@ class Evolver:
         best = self.get_best()
         best_test_str = ' Fitness (test): {:.6f},'.format(self.best_test.fitness) if self.best_test is not None else ''
 
-        self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections:{}".
+        self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
                    format(best.fitness, best_test_str, best.neurons, best.connections))
 
     def evaluate_best_test(self):
