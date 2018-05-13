@@ -1,19 +1,21 @@
 #!/usr/bin/python3
 
 import MultiNEAT as neat
+import csv
+import json
+import math
 import os
 import time
 import argparse
+import datetime
+from sortedcontainers import SortedListWithKey
+from functools import partial
 
 from params import get_params, ParametersWrapper
 import evaluators
 import util
 import substrate as subst
 from data import Data
-
-import datetime
-from functools import partial
-import numpy as np
 
 
 def parse_args():
@@ -44,6 +46,10 @@ def parse_args():
                         help='run identifier. This ID will be used to name all output files '
                              '(e.g., neat_ID_summary.txt). '
                              'If unspecified, the ID will be the datetime of when the run was started.')
+    parser.add_argument('--no-reevaluation', dest='no_reevaluation', action='store_true',
+                        help='applicable if a sample size is specified. '
+                             'If set, there will be no final reevaluation of '
+                             'the best individuals with the whole data-set.')
 
     options = parser.parse_args()
 
@@ -62,28 +68,22 @@ class Evolver:
         else:
             raise ValueError('Invalid genome evaluator: {}'.format(options.evaluator))
 
-        # MultiNEAT parameters
-        self.params = get_params()
+        self.params = get_params()  # MultiNEAT parameters
         # Substrate for HyperNEAT and ES-HyperNEAT
         self.substrate = subst.init_2d_grid_substrate(11, 10, [10] * 10, 1) if \
             options.method in ['hyperneat', 'eshyperneat'] else None
 
-        # Data
-        self.data = Data(self.options.data_file)
+        self.data = Data(self.options.data_file)  # Data
 
-        # Timers
         self.initial_time = None  # Time when the run starts
         self.eval_time = datetime.timedelta()  # Time spent in evaluations
         self.ea_time = datetime.timedelta()  # Time spent in the EA
 
-        # Progress variables
-        self.gen_evaluations = dict()  # Dict<Generation, [GenomeEvaluation]>
-        self.all_time_best = None  # evaluators.GenomeEvaluation
-
-        # EA variables
         self.pop = self.init_population()  # C++ Population
         self.params = self.pop.Parameters  # Needed in case pop is loaded from file
         self.generation = 0  # Current generation
+        # All time best evaluations, ordered from best to worst fitness
+        self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
 
     def init_population(self, seed=int(time.clock() * 100)):
         if self.options.pop_file is not None:
@@ -120,63 +120,138 @@ class Evolver:
                      self.elapsed_time().total_seconds() / 60 >= self.options.time_limit
         return generation_limit or time_limit
 
-    def update_best(self, new_best_eval):
-        new_best_eval.save_genome_copy()
-        self.all_time_best = new_best_eval
-        if not self.options.quiet:
-            network = util.build_network(new_best_eval.genome, self.options.method, self.substrate)
-            print("New Best!")
-            print("Fitness: " + str(new_best_eval.fitness))
-            print("Neurons: " + str(len(util.get_network_neurons(network))))
-            print("Connections: " + str(len(util.get_network_connections(network))))
-
     def print(self, msg):
         if not self.options.quiet:
             print(msg)
 
-    def write_results(self):
-        file_prefix = '{}/{}_{}_'.format(self.options.out_dir, self.options.method, self.options.run_id)
+    def _make_out_dir_(self):
         if not os.path.exists(self.options.out_dir):
             os.makedirs(self.options.out_dir)
-        util.write_summary(file_prefix + 'summary.json', self.all_time_best, self.options.method, self.substrate,
-                           params=ParametersWrapper(self.params), generations=self.options.generations,
-                           run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
-                           ea_time=self.ea_time, evaluation_processes=self.options.processes,
-                           sample_size=self.options.sample_size if self.options.sample_size is not None \
-                               else len(self.data))
-        util.save_evaluations(file_prefix + 'evaluations.csv', self.gen_evaluations)
-        self.pop.Save(file_prefix + 'population.txt')
-        self.all_time_best.genome.Save(file_prefix + 'best.txt')
+
+    def _get_out_file_path_(self, suffix):
+        return '{}/{}_{}_{}'.format(self.options.out_dir, self.options.method, self.options.run_id, suffix)
+
+    def write_results(self):
+        self._make_out_dir_()
+        self.write_summary(self._get_out_file_path_('summary.json'))
+        self.pop.Save(self._get_out_file_path_('population.txt'))
+        self.get_best().genome.Save(self._get_out_file_path_('best.txt'))
+
+    def write_summary(self, file_path):
+        class Summary:
+            class Network:
+                def __init__(self, eval, network=None):
+                    self.fitness = eval.fitness
+                    if network is not None:
+                        self.connections = util.get_network_connections(network)
+                        self.neurons = util.get_network_neurons(network)
+                        self.neurons_qty = len(self.neurons)
+                        self.connections_qty = len(self.connections)
+
+            def __init__(self, best_eval, best_network=None, **other_info):
+                self.best = Summary.Network(best_eval, best_network)
+                for key, value in other_info.items():
+                    self.__setattr__(key, value)
+
+        best_evaluation = self.get_best()
+        net = util.build_network(best_evaluation.genome, self.options.method, self.substrate)
+        results = Summary(best_evaluation, net, params=ParametersWrapper(self.params),
+                          generations=self.options.generations,
+                          run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
+                          ea_time=self.ea_time, evaluation_processes=self.options.processes,
+                          sample_size=self.options.sample_size if self.options.sample_size is not None \
+                              else len(self.data))
+        with open(file_path, 'w', encoding='utf8') as f:
+            f.write(json.dumps(results.__dict__, default=util.serializer, indent=4))
+
+    def save_evaluations(self, evaluations):
+        self._make_out_dir_()
+        file_path = self._get_out_file_path_('evaluations.csv')
+        if self.generation == 0:
+            with open(file_path, 'w') as file:
+                writer = csv.writer(file, delimiter=',')
+                header = ['generation', 'genome_id', 'fitness', 'neurons', 'connections', 'run_minutes']
+                writer.writerow(header)
+        with open(file_path, 'a') as file:
+            writer = csv.writer(file, delimiter=',')
+            for e in evaluations:
+                writer.writerow([e.generation, e.genome_id, e.fitness, e.neurons, e.connections,
+                                 e.global_time.total_seconds() / 60.0])
+
+    def get_best(self):
+        return self.best_list[0]
+
+    def update_best_list(self, evaluations):
+        updated = 0
+        max_updates = math.ceil(0.1 * self.params.PopulationSize)  # Take at most 10% of evaluations
+        # Evaluations should be sorted by descending fitness
+        for e in evaluations:
+            if len(self.best_list) <= self.params.PopulationSize or e.fitness >= self.best_list[-1].fitness:
+                i = self.best_list.bisect_left(e)
+                if i < self.params.PopulationSize:
+                    e.save_genome_copy()
+                    self.best_list.insert(i, e)
+
+                    self.print("New best (#{})> Fitness: {:.6f}, Neurons: {}, Connections:{}".
+                               format(i, e.fitness, e.neurons, e.connections))
+
+                    if len(self.best_list) > self.params.PopulationSize:
+                        del self.best_list[-1]
+
+                    updated += 1
+                    if updated >= max_updates:
+                        break
+                else:
+                    break
+
+    def reevaluate_best_list(self):
+        genome_list = [e.genome for e in self.best_list]
+        evaluation_list = evaluators.evaluate_genome_list(
+            genome_list,
+            partial(self.genome_evaluator, method=options.method,
+                    substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
+            data=self.data, sample_size=None, processes=options.processes
+        )
+        self.best_list.clear()
+        for e in evaluation_list:
+            self.best_list.add(e)
+
+    def evaluate_pop(self):
+        genome_list = self.get_genome_list()
+        pre_eval_time = datetime.datetime.now()
+        evaluation_list = evaluators.evaluate_genome_list(
+            genome_list,
+            partial(self.genome_evaluator, method=options.method,
+                    substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
+            self.data, options.sample_size, options.processes
+        )
+        self.eval_time += datetime.datetime.now() - pre_eval_time
+
+        self.save_evaluations(evaluation_list)
+        self.update_best_list(evaluation_list)
+
+    def epoch(self):
+        pre_ea_time = datetime.datetime.now()
+        self.pop.Epoch()
+        self.ea_time += datetime.datetime.now() - pre_ea_time
+        self.generation += 1
 
     def run(self):
         self.initial_time = datetime.datetime.now()
+
         while not self.is_finished():
             self.print("\nGeneration {} ({})".format(self.generation, self.elapsed_time()))
-            genome_list = self.get_genome_list()
+            self.evaluate_pop()
+            self.epoch()
 
-            pre_eval_time = datetime.datetime.now()
-            evaluation_list = evaluators.evaluate_genome_list(
-                genome_list,
-                partial(self.genome_evaluator, method=options.method,
-                        substrate=self.substrate, initial_time=self.initial_time),
-                self.data, options.sample_size, options.processes
-            )
-            self.eval_time += datetime.datetime.now() - pre_eval_time
-            self.gen_evaluations[self.generation] = evaluation_list
+        if self.options.sample_size is not None and not self.options.no_reevaluation:
+            self.print("\nReevaluating the best individuals with the whole data-set...")
+            self.reevaluate_best_list()
+            best = self.get_best()
+            self.print("Best result> Fitness: {:.6f}, Neurons: {}, Connections:{}".
+                       format(best.fitness, best.neurons, best.connections))
 
-            best_evaluation = max(evaluation_list, key=lambda e: e.fitness)
-            self.print("Best fitness of generation {}: {}".format(self.generation, best_evaluation.fitness))
-            if self.all_time_best is None or best_evaluation.fitness > self.all_time_best.fitness:
-                # FIXME This doesn't make sense when there's sampling
-                self.update_best(best_evaluation)
-
-            pre_ea_time = datetime.datetime.now()
-            self.pop.Epoch()
-            self.ea_time += datetime.datetime.now() - pre_ea_time
-
-            self.generation += 1
         self.write_results()
-        # FIXME Random segmentation fault at the end
 
 
 if __name__ == '__main__':
