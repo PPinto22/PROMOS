@@ -32,6 +32,10 @@ def build_network(genome, method='neat', substrate=None, **kwargs):
     return net
 
 
+def avg(l):
+    return sum(l) / len(l)
+
+
 def serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
 

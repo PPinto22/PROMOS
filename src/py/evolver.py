@@ -14,6 +14,7 @@ from functools import partial
 import params
 import evaluators
 import util
+from util import avg
 import substrate as subst
 from data import Data
 
@@ -47,8 +48,9 @@ def parse_args():
                         help='use a balanced sample of size N in evaluations', metavar='N')
     parser.add_argument('-l', '--load', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
+    parser.add_argument('-r', '--runs', dest='runs', metavar='R', help='run R times', type=int, default=1)
     parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='Do not print any messages to stdout')
-    parser.add_argument('--id', dest='run_id', metavar='ID', default=None,
+    parser.add_argument('--id', dest='id', metavar='ID', default=None,
                         help='run identifier. This ID will be used to name all output files '
                              '(e.g., neat_ID_summary.txt). '
                              'If unspecified, the ID will be the datetime of when the run was started.')
@@ -59,9 +61,26 @@ def parse_args():
 
     options = parser.parse_args()
 
-    options.run_id = options.run_id if options.run_id is not None else util.get_current_datetime_string()
+    options.id = options.id if options.id is not None else util.get_current_datetime_string()
 
     return options
+
+
+class Summary:
+    class Best:
+        def __init__(self, eval, test, network=None):
+            self.fitness = eval.fitness
+            self.fitness_test = test
+            if network is not None:
+                self.connections = util.get_network_connections(network)
+                self.neurons = util.get_network_neurons(network)
+                self.neurons_qty = len(self.neurons)
+                self.connections_qty = len(self.connections)
+
+    def __init__(self, best_eval, fitness_test, best_network=None, **other_info):
+        self.best = Summary.Best(best_eval, fitness_test, best_network)
+        for key, value in other_info.items():
+            self.__setattr__(key, value)
 
 
 class Evolver:
@@ -101,6 +120,15 @@ class Evolver:
         # All time best evaluations, ordered from best to worst fitness
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
         self.best_test = None  # GenomeEvaluation of the best individual, evaluated with the test data-set
+
+    def clear(self):
+        self.initial_time = None
+        self.eval_time = datetime.timedelta()
+        self.ea_time = datetime.timedelta()
+        self.pop = self.init_population()
+        self.generation = 0
+        self.best_list.clear()
+        self.best_test = None
 
     def init_population(self, seed=int(time.clock() * 100)):
         if self.options.pop_file is not None:
@@ -142,7 +170,7 @@ class Evolver:
             os.makedirs(self.options.out_dir)
 
     def get_out_file_path(self, suffix):
-        return '{}/{}_{}_{}'.format(self.options.out_dir, self.options.method, self.options.run_id, suffix)
+        return '{}/{}_{}_{}'.format(self.options.out_dir, self.options.method, self.options.id, suffix)
 
     def write_results(self):
         self.make_out_dir()
@@ -150,35 +178,21 @@ class Evolver:
         self.pop.Save(self.get_out_file_path('population.txt'))
         self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
-    def write_summary(self, file_path):
-        class Summary:
-            class Network:
-                def __init__(self, eval, test, network=None):
-                    self.fitness = eval.fitness
-                    self.fitness_test = test
-                    if network is not None:
-                        self.connections = util.get_network_connections(network)
-                        self.neurons = util.get_network_neurons(network)
-                        self.neurons_qty = len(self.neurons)
-                        self.connections_qty = len(self.connections)
-
-            def __init__(self, best_eval, fitness_test, best_network=None, **other_info):
-                self.best = Summary.Network(best_eval, fitness_test, best_network)
-                for key, value in other_info.items():
-                    self.__setattr__(key, value)
-
+    def get_summary(self):
         best_evaluation = self.get_best()
         net = util.build_network(best_evaluation.genome, self.options.method, self.substrate)
-        results = Summary(best_eval=best_evaluation, best_network=net,
-                          fitness_test=self.best_test.fitness if self.best_test is not None else None,
-                          # Other info
-                          params=params.ParametersWrapper(self.params), generations=self.generation,
-                          run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
-                          ea_time=self.ea_time, evaluation_processes=self.options.processes,
-                          sample_size=self.options.sample_size if self.options.sample_size is not None \
-                              else len(self.data))
+        return Summary(best_eval=best_evaluation, best_network=net,
+                       fitness_test=self.best_test.fitness if self.best_test is not None else None,
+                       # Other info
+                       params=params.ParametersWrapper(self.params), generations=self.generation,
+                       run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
+                       ea_time=self.ea_time, evaluation_processes=self.options.processes,
+                       sample_size=self.options.sample_size if self.options.sample_size is not None \
+                           else len(self.data))
+
+    def write_summary(self, file_path):
         with open(file_path, 'w', encoding='utf8') as f:
-            f.write(json.dumps(results.__dict__, default=util.serializer, indent=4))
+            f.write(json.dumps(self.get_summary().__dict__, default=util.serializer, indent=4))
 
     def save_evaluations(self, evaluations):
         self.make_out_dir()
@@ -273,7 +287,7 @@ class Evolver:
         if self.options.test_file is not None:
             self.best_test = self.evaluate_test(best.genome)
 
-    def run(self):
+    def _run(self):
         self.initial_time = datetime.datetime.now()
 
         # Run the EA
@@ -290,6 +304,41 @@ class Evolver:
         self.evaluate_best_test()  # Test the best individual obtained with the test data-set
         self.print_best()  # Print to stdout the best result
         self.write_results()  # Write run details to files
+
+    def _multiple_runs(self):
+        class Summary:
+            def __init__(self, runs_list):
+                best_run_i, best_run = max(enumerate(runs_list), key=lambda x: x[1].best.fitness)
+                self.best_run = best_run_i
+                self.best_fitness = best_run.best.fitness
+                self.average_fitness = avg([run.best.fitness for run in runs_list])
+
+                if best_run.best.fitness_test is not None:
+                    self.best_fitness_test = best_run.best.fitness_test
+                    self.average_fitness_test = avg([run.best.fitness_test for run in runs_list])
+
+                run_time_list = [run.run_time for run in runs_list]
+                self.average_run_time = sum(run_time_list, datetime.timedelta()) / len(run_time_list)
+                self.total_run_time = sum(run_time_list, datetime.timedelta())
+
+        base_id = self.options.id
+        runs_summary_list = []
+        for i in range(self.options.runs):
+            run_id = base_id + "({})".format(i)
+            self.options.id = run_id
+            self._run()
+            runs_summary_list.append(self.get_summary())
+            self.clear()
+
+        self.options.id = base_id
+        with open(self.get_out_file_path('summary.json'), 'w', encoding='utf8') as f:
+            f.write(json.dumps(Summary(runs_summary_list).__dict__, default=util.serializer, indent=4))
+
+    def run(self):
+        if self.options.runs > 1:
+            self._multiple_runs()
+        else:
+            self._run()
 
 
 if __name__ == '__main__':
