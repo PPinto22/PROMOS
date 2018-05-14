@@ -30,9 +30,9 @@ def parse_args():
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
     parser.add_argument('-P', '--params', dest='params', type=int, metavar='P', default=0,
-                        help='which parameters to use, 0 <= P <= {}'.format(len(params.params)-1))
+                        help='which parameters to use, 0 <= P <= {}'.format(len(params.params) - 1))
     parser.add_argument('-S', '--substrate', dest='substrate', type=int, metavar='S', default=0,
-                        help='which substrate to use, 0 <= S <= {}'.format(len(subst.substrates)-1))
+                        help='which substrate to use, 0 <= S <= {}'.format(len(subst.substrates) - 1))
     evaluation_functions = ['auc']
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluation_functions, default='auc',
                         help='evaluation function: ' + ', '.join(evaluation_functions), metavar='E')
@@ -79,14 +79,14 @@ class Evolver:
             self.params = params.get_params(self.options.params)
         except IndexError:
             raise ValueError('Invalid parameter choice: {} (should be 0 <= P <= {})'.
-                             format(self.options.params, len(params.params)-1)) from None
+                             format(self.options.params, len(params.params) - 1)) from None
         # Substrate for HyperNEAT and ES-HyperNEAT
         try:
             self.substrate = subst.get_substrate(self.options.substrate) if \
                 options.method in ['hyperneat', 'eshyperneat'] else None
         except IndexError:
             raise ValueError('Invalid substrate choice: {} (should be 0 <= S <= {})'.
-                             format(self.options.substrate, len(subst.substrates)-1)) from None
+                             format(self.options.substrate, len(subst.substrates) - 1)) from None
 
         self.data = Data(self.options.data_file)  # Training data
         self.data_test = Data(self.options.test_file) if self.options.test_file is not None else None  # Test data
@@ -122,11 +122,7 @@ class Evolver:
         return pop
 
     def get_genome_list(self):
-        genome_list = []
-        for s in self.pop.Species:
-            for i in s.Individuals:
-                genome_list.append(i)
-        return genome_list
+        return [individual for species in self.pop.Species for individual in species.Individuals]
 
     def elapsed_time(self):
         return datetime.datetime.now() - self.initial_time
@@ -176,8 +172,7 @@ class Evolver:
         results = Summary(best_eval=best_evaluation, best_network=net,
                           fitness_test=self.best_test.fitness if self.best_test is not None else None,
                           # Other info
-                          params=params.ParametersWrapper(self.params),
-                          generations=self.options.generations,
+                          params=params.ParametersWrapper(self.params), generations=self.generation,
                           run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
                           ea_time=self.ea_time, evaluation_processes=self.options.processes,
                           sample_size=self.options.sample_size if self.options.sample_size is not None \
@@ -203,11 +198,15 @@ class Evolver:
         return self.best_list[0]
 
     def update_best_list(self, evaluations):
-        updated = 0
         max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most 5% of evaluations
-        # Evaluations should be sorted by descending fitness
-        for e in evaluations:
-            if len(self.best_list) <= self.params.PopulationSize or e.fitness >= self.best_list[-1].fitness:
+
+        # Evaluations must be sorted by descending fitness
+        for i in range(max_updates):
+            e = evaluations[i]
+            # Break condition (best_list is full and e is worse than the worst evaluation in best_list)
+            if len(self.best_list) == self.params.PopulationSize and e.fitness < self.best_list[-1].fitness:
+                break
+            else:  # Add to best_list
                 i = self.best_list.bisect_left(e)
                 if i < self.params.PopulationSize:
                     e.save_genome_copy()
@@ -218,12 +217,6 @@ class Evolver:
 
                     if len(self.best_list) > self.params.PopulationSize:
                         del self.best_list[-1]
-
-                    updated += 1
-                    if updated >= max_updates:
-                        break
-                else:
-                    break
 
     def reevaluate_best_list(self):
         genome_list = [e.genome for e in self.best_list]

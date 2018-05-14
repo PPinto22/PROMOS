@@ -10,6 +10,8 @@ from sklearn.metrics import roc_curve, auc
 
 import util
 
+global_data = None
+
 
 class GenomeEvaluation:
     def __init__(self, genome, fitness, neurons=None, connections=None, generation=None, global_time=None, **kwargs):
@@ -57,8 +59,11 @@ def predict(net, data):
     return predictions
 
 
-def evaluate_auc(genome, data, **kwargs):
+def evaluate_auc(genome, data=None, **kwargs):
     net = util.build_network(genome, **kwargs)
+
+    if data is None:
+        data = global_data
 
     predictions = predict(net, data)
     fpr, tpr, thresholds = roc_curve(data.targets, predictions)
@@ -91,7 +96,10 @@ def _create_genome_evaluation(genome, fitness, net, generation=None, initial_tim
 def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, processes=1, sort=True):
     if sample_size is not None:
         data = data.get_sample(sample_size, seed=int(time.clock() * 100))
-    evaluator = partial(evaluator, data=data)
+
+    # Set data as a global variable to avoid copying it to every process
+    global global_data
+    global_data = data
 
     if processes == 1:
         evaluation_list = [evaluator(genome) for genome in genome_list]
