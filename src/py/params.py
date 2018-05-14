@@ -1,7 +1,7 @@
 import MultiNEAT as neat
 
 
-def get_params():
+def get_params0():
     params = neat.Parameters()
     params.PopulationSize = 150
     params.DynamicCompatibility = True
@@ -37,6 +37,13 @@ def get_params():
     params.MutateLinkTraitsProb = 0
 
     return params
+
+
+params = [get_params0]
+
+
+def get_params(i):
+    return params[i]()
 
 
 class ParametersWrapper:

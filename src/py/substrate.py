@@ -31,6 +31,18 @@ def init_2d_grid_substrate(inputs: int, hidden_layers: int, nodes_per_layer: [in
     return neat.Substrate(input_nodes, hidden_nodes, output_nodes)
 
 
+# 10x10 Hidden nodes in a 2D grid
+def get_substrate0():
+    return init_2d_grid_substrate(11, 10, [10] * 10, 1)
+
+
+substrates = [get_substrate0]
+
+
+def get_substrate(i):
+    return substrates[i]()
+
+
 def save_substrate(substrate, file_path):
     # TODO
     pass

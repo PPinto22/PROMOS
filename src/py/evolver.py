@@ -11,7 +11,7 @@ import datetime
 from sortedcontainers import SortedListWithKey
 from functools import partial
 
-from params import get_params, ParametersWrapper
+import params
 import evaluators
 import util
 import substrate as subst
@@ -29,6 +29,10 @@ def parse_args():
     methods = ['neat', 'hyperneat', 'eshyperneat']
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
+    parser.add_argument('-P', '--params', dest='params', type=int, metavar='P', default=0,
+                        help='which parameters to use, 0 <= P <= {}'.format(len(params.params)-1))
+    parser.add_argument('-S', '--substrate', dest='substrate', type=int, metavar='S', default=0,
+                        help='which substrate to use, 0 <= S <= {}'.format(len(subst.substrates)-1))
     evaluation_functions = ['auc']
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluation_functions, default='auc',
                         help='evaluation function: ' + ', '.join(evaluation_functions), metavar='E')
@@ -41,7 +45,7 @@ def parse_args():
                              'If P=1, the evaluations will be sequential', metavar='P')
     parser.add_argument('-s', '--sample', dest='sample_size', type=int, default=None,
                         help='use a balanced sample of size N in evaluations', metavar='N')
-    parser.add_argument('-P', '--population', dest='pop_file', metavar='FILE', default=None,
+    parser.add_argument('-l', '--load', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
     parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='Do not print any messages to stdout')
     parser.add_argument('--id', dest='run_id', metavar='ID', default=None,
@@ -70,10 +74,19 @@ class Evolver:
         else:
             raise ValueError('Invalid genome evaluator: {}'.format(options.evaluator))
 
-        self.params = get_params()  # MultiNEAT parameters
+        # MultiNEAT parameters
+        try:
+            self.params = params.get_params(self.options.params)
+        except IndexError:
+            raise ValueError('Invalid parameter choice: {} (should be 0 <= P <= {})'.
+                             format(self.options.params, len(params.params)-1)) from None
         # Substrate for HyperNEAT and ES-HyperNEAT
-        self.substrate = subst.init_2d_grid_substrate(11, 10, [10] * 10, 1) if \
-            options.method in ['hyperneat', 'eshyperneat'] else None
+        try:
+            self.substrate = subst.get_substrate(self.options.substrate) if \
+                options.method in ['hyperneat', 'eshyperneat'] else None
+        except IndexError:
+            raise ValueError('Invalid substrate choice: {} (should be 0 <= S <= {})'.
+                             format(self.options.substrate, len(subst.substrates)-1)) from None
 
         self.data = Data(self.options.data_file)  # Training data
         self.data_test = Data(self.options.test_file) if self.options.test_file is not None else None  # Test data
@@ -163,7 +176,7 @@ class Evolver:
         results = Summary(best_eval=best_evaluation, best_network=net,
                           fitness_test=self.best_test.fitness if self.best_test is not None else None,
                           # Other info
-                          params=ParametersWrapper(self.params),
+                          params=params.ParametersWrapper(self.params),
                           generations=self.options.generations,
                           run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
                           ea_time=self.ea_time, evaluation_processes=self.options.processes,
@@ -191,7 +204,7 @@ class Evolver:
 
     def update_best_list(self, evaluations):
         updated = 0
-        max_updates = math.ceil(0.1 * self.params.PopulationSize)  # Take at most 10% of evaluations
+        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most 5% of evaluations
         # Evaluations should be sorted by descending fitness
         for e in evaluations:
             if len(self.best_list) <= self.params.PopulationSize or e.fitness >= self.best_list[-1].fitness:
