@@ -4,7 +4,7 @@ project(MultiNEAT)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-find_package(PythonLibs REQUIRED)
+find_package(PythonLibs 3.5 REQUIRED)
 include(FindPythonLibs)
 
 set(Boost_USE_STATIC_LIBS       OFF)
