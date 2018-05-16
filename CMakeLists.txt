@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 project(MultiNEAT)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -pthread")
 
 find_package(PythonLibs 3.5 REQUIRED)
 include(FindPythonLibs)
@@ -11,7 +11,6 @@ set(Boost_USE_STATIC_LIBS       OFF)
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
-#find_package(Boost COMPONENTS date_time system filesystem python3 serialization)
 find_package(Boost COMPONENTS python3 serialization)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
