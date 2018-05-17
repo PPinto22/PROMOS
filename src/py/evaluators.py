@@ -34,24 +34,11 @@ class GenomeEvaluation:
         self.genome = neat.Genome(self.genome)
 
 
-def predict(net, data):
-    predictions = np.zeros(len(data))
-    for i, row in enumerate(data):
+def predict(net, inputs):
+    predictions = np.zeros(len(inputs))
+    for i, row in enumerate(inputs):
         net.Flush()
-        net.Input(
-            [
-                row['regioncontinent'],
-                row['idcampaign'],
-                row['idpartner'],
-                row['idverticaltype'],
-                row['idbrowser'],
-                row['idaffmanager'],
-                row['idapplication'],
-                row['idoperator'],
-                row['accmanager'],
-                row['country_name']
-            ]
-        )
+        net.Input(row)
         net.FeedForward()
         output = net.Output()
         predictions[i] = output[0]
@@ -65,7 +52,7 @@ def evaluate_auc(genome, data=None, **kwargs):
     if data is None:
         data = global_data
 
-    predictions = predict(net, data)
+    predictions = predict(net, data.inputs)
     fpr, tpr, thresholds = roc_curve(data.targets, predictions)
     roc_auc = auc(fpr, tpr)
 
@@ -75,7 +62,7 @@ def evaluate_auc(genome, data=None, **kwargs):
 def evaluate_error(genome, data, **kwargs):
     net = util.build_network(genome, **kwargs)
 
-    predictions = predict(net, data)
+    predictions = predict(net, data.inputs)
     fitness = 1 / sum((abs(pred - target) for pred, target in zip(data.targets, predictions)))
 
     return _create_genome_evaluation(genome, fitness, net, **kwargs)
