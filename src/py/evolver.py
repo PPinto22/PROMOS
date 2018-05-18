@@ -23,7 +23,7 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data', dest='data_file', default='../../data/data.csv',
                         help='path to train data file', metavar='FILE'),
-    parser.add_argument('-T', '--test', dest='test_file', default=None,
+    parser.add_argument('-t', '--test', dest='test_file', default=None,
                         help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='../../results',
                         help='directory where to save results', metavar='DIR')
@@ -39,7 +39,7 @@ def parse_args():
                         help='evaluation function: ' + ', '.join(evaluation_functions), metavar='E')
     parser.add_argument('-g', '--generations', dest='generations', type=int, default=None,
                         help='number of generations', metavar='G')
-    parser.add_argument('-t', '--time', dest='time_limit', type=int, default=None,
+    parser.add_argument('-T', '--time', dest='time_limit', type=int, default=None,
                         help='time limit in minutes', metavar='MIN')
     parser.add_argument('-p', '--processes', dest='processes', type=int, default=1,
                         help='number of processes to use for parallel evaluation. '
