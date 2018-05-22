@@ -45,13 +45,20 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
                          connections.mean = mean(connections), connections.max = max(connections),
                          time = mean(run_minutes)), by = generation]
   })
-  # Average runs
-  # TODO Crop outlier generations of runs that reached higher generations than the others
-  type_avg_dt = rbindlist(run_type_dts)[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
-                                            neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max),
-                                            connections.mean = mean(connections.mean),
-                                            connections.max = mean(connections.max),
-                                            time = mean(time)), by = generation]
+  # Join all runs into a single data.table
+  run_type_dts = rbindlist(run_type_dts)
+  
+  # Count how many times each generation occurs
+  generation_count = table(run_type_dts$generation)
+  # Crop outlier generations that appear in less than 80% of runs
+  run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[run_type_dts>=0.8*RUNS]]
+  
+  # Get the average of run_type_dts
+  type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
+                                 neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max),
+                                 connections.mean = mean(connections.mean),
+                                 connections.max = mean(connections.max),
+                                 time = mean(time)), by = generation]
   # Add "run_type" column
   run_type = rep(RUN_TYPE_LABEL[[type]], nrow(type_avg_dt))
   type_avg_dt = cbind(type_avg_dt, run_type)
@@ -65,7 +72,7 @@ dir.create(file.path(IMG_OUT_DIR), showWarnings = FALSE)
 # Plot mean fitness over time
 png(filename = paste(IMG_OUT_DIR, 'mean_fitness.png', sep=''))
 gg_meanfit <- lapply(labels_ord, function(type){ 
-  ggplot(data=evals_dt[evals_dt$run_type==type,], aes(time, y=fitness.mean)) + geom_line() +
+  ggplot(data=subset(evals_dt, run_type==type), aes(time, y=fitness.mean)) + geom_line() +
     labs(x="Run time (min)", y=paste("Mean fitness ", "(", FITNESS_FUNC, ")", sep='')) +
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05))
 })
