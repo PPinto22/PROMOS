@@ -71,32 +71,38 @@ dir.create(file.path(IMG_OUT_DIR), showWarnings = FALSE)
 
 # Plot mean fitness over time
 png(filename = paste(IMG_OUT_DIR, 'mean_fitness.png', sep=''))
-gg_meanfit <- lapply(labels_ord, function(type){ 
-  ggplot(data=subset(evals_dt, run_type==type), aes(time, y=fitness.mean)) + geom_line() +
-    labs(x="Run time (min)", y=paste("Mean fitness ", "(", FITNESS_FUNC, ")", sep='')) +
-    scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05))
-})
-do.call(ggarrange, c(gg_meanfit, list(labels=labels_ord)))
+gg_meanfit <- ggplot(data=evals_dt, aes(time)) + 
+  geom_smooth(aes(y=fitness.mean, col=run_type), method='loess') +
+  labs(x="Run time (min)", y=paste("Mean fitness ", "(", FITNESS_FUNC, ")", sep=''), col=SERIES_LABEL) +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  theme_minimal()
+gg_meanfit
 dev.off()
 
 # Plot max fitness over time
 png(filename = paste(IMG_OUT_DIR, 'max_fitness.png', sep=''))
-gg_maxfit <- ggplot(data=evals_dt, aes(time)) + geom_smooth(aes(y=fitness.max, col=run_type), method='loess') +
-  labs(x="Run time (min)", y=paste("Max fitness ", "(", FITNESS_FUNC, ")", sep=''), colour="Sample size") +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05))
+gg_maxfit <- ggplot(data=evals_dt, aes(time)) + 
+  geom_smooth(aes(y=fitness.max, col=run_type), method='loess') +
+  labs(x="Run time (min)", y=paste("Max fitness ", "(", FITNESS_FUNC, ")", sep=''), col="Sample size") +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  theme_minimal()
 gg_maxfit
 dev.off()
 
 # Plot generations over time
 png(filename = paste(IMG_OUT_DIR, 'generations.png', sep=''))
-gg_generations <- ggplot(data=evals_dt, aes(time)) + geom_smooth(aes(y=generation, col=run_type), method='loess') +
-  labs(x="Run time (min)", y="Generations", colour=SERIES_LABEL)
+gg_generations <- ggplot(data=evals_dt, aes(time)) + 
+  geom_smooth(aes(y=generation, col=run_type), method='loess') +
+  labs(x="Run time (min)", y="Generations", col=SERIES_LABEL) + 
+  theme_minimal()
 gg_generations
 dev.off()
 
 # Plot complexity (connections) over time
 png(filename = paste(IMG_OUT_DIR, 'mean_connections.png', sep=''))
-gg_connections <- ggplot(data=evals_dt, aes(time)) + geom_line(aes(y=connections.mean, col=run_type)) +
-  labs(x="Run time (min)", y="Mean network connections", colour=SERIES_LABEL)
+gg_connections <- ggplot(data=evals_dt, aes(time)) + 
+  geom_line(aes(y=connections.mean, col=run_type)) +
+  labs(x="Run time (min)", y="Mean network connections", col=SERIES_LABEL) + 
+  theme_minimal()
 gg_connections
 dev.off()
