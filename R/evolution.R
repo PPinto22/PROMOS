@@ -13,7 +13,7 @@ library(ggpubr)
 library(data.table)
 
 # ---- CONFIGURATION ----
-RUNS <- 5
+RUNS <- 30
 RESULTS_DIR <- '../results/NEAT/samples_30runs/'
 RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
 RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('ALL (165K)', '10 000', '1 000', '100'))
@@ -51,7 +51,7 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   # Count how many times each generation occurs
   generation_count = table(run_type_dts$generation)
   # Crop outlier generations that appear in less than 80% of runs
-  run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[run_type_dts>=0.8*RUNS]]
+  run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
   
   # Get the average of run_type_dts
   type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
