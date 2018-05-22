@@ -30,8 +30,8 @@ def parse_args():
     methods = ['neat', 'hyperneat', 'eshyperneat']
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
-    parser.add_argument('-P', '--params', dest='params', type=int, metavar='P', default=0,
-                        help='which parameters to use, 0 <= P <= {}'.format(len(params.params) - 1))
+    parser.add_argument('-P', '--params', dest='params', metavar='FILE', default=None,
+                        help='path to a parameters file. If not specified, default values will be used.')
     parser.add_argument('-S', '--substrate', dest='substrate', type=int, metavar='S', default=0,
                         help='which substrate to use, 0 <= S <= {}'.format(len(subst.substrates) - 1))
     evaluation_functions = ['auc']
@@ -94,11 +94,7 @@ class Evolver:
             raise ValueError('Invalid genome evaluator: {}'.format(options.evaluator))
 
         # MultiNEAT parameters
-        try:
-            self.params = params.get_params(self.options.params)
-        except IndexError:
-            raise ValueError('Invalid parameter choice: {} (should be 0 <= P <= {})'.
-                             format(self.options.params, len(params.params) - 1)) from None
+        self.params = params.get_params(self.options.params)
         # Substrate for HyperNEAT and ES-HyperNEAT
         try:
             self.substrate = subst.get_substrate(self.options.substrate) if \

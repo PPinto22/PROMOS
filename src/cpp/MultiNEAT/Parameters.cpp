@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <stdexcept>
 #include "Parameters.h"
 
 
@@ -283,31 +284,6 @@ namespace NEAT
         MinNeuronBias = 0.0;
         MaxNeuronBias = 0.0;
 
-        // Some default traits for testing
-        /*TraitParameters tp1;
-        tp1.m_ImportanceCoeff = 0.0;
-        tp1.m_MutationProb = 0.8;
-        tp1.type = "int";
-        IntTraitParameters itp1;
-        itp1.min = -5;
-        itp1.max = 5;
-        itp1.mut_power = 1;
-        itp1.mut_replace_prob = 0.1;
-        tp1.m_Details = itp1;
-        NeuronTraits["px"] = tp1;
-
-        TraitParameters tp2;
-        tp2.m_ImportanceCoeff = 0.0;
-        tp2.m_MutationProb = 0.8;
-        tp2.type = "int";
-        IntTraitParameters itp2;
-        itp2.min = -5;
-        itp2.max = 5;
-        itp2.mut_power = 1;
-        itp2.mut_replace_prob = 0.1;
-        tp2.m_Details = itp2;
-        NeuronTraits["py"] = tp2;*/
-
         // Probability for a baby that an activation function type will be changed for a single neuron
         // considered a structural mutation because of the large impact on fitness
         MutateNeuronActivationTypeProb = 0.0;
@@ -442,18 +418,27 @@ namespace NEAT
         std::string s, tf;
         do
         {
+        	if(a_DataFile.eof()){
+        		throw std::invalid_argument( "Reached end of file before reading the start tag. "
+        			"A valid parameters file must start with NEAT_ParametersStart and end with NEAT_ParametersEnd." );
+        	}
             a_DataFile >> s;
         }
         while (s != "NEAT_ParametersStart");
 
         while (s != "NEAT_ParametersEnd")
         {
+			if(a_DataFile.eof()){
+        		throw std::invalid_argument( "Reached end of file before reading the end tag. "
+        			"A valid parameters file must start with NEAT_ParametersStart and end with NEAT_ParametersEnd." );
+        	}
+
             a_DataFile >> s;
 
             if (s == "PopulationSize")
                 a_DataFile >> PopulationSize;
 
-            if (s == "DynamicCompatibility")
+            else if (s == "DynamicCompatibility")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -462,13 +447,13 @@ namespace NEAT
                     DynamicCompatibility = false;
             }
 
-            if (s == "MinSpecies")
+            else if (s == "MinSpecies")
                 a_DataFile >> MinSpecies;
 
-            if (s == "MaxSpecies")
+            else if (s == "MaxSpecies")
                 a_DataFile >> MaxSpecies;
 
-            if (s == "InnovationsForever")
+            else if (s == "InnovationsForever")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -477,7 +462,7 @@ namespace NEAT
                     InnovationsForever = false;
             }
 
-            if (s == "AllowClones")
+            else if (s == "AllowClones")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -486,7 +471,7 @@ namespace NEAT
                     AllowClones = false;
             }
     
-            if (s == "NormalizeGenomeSize")
+            else if (s == "NormalizeGenomeSize")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -496,25 +481,25 @@ namespace NEAT
             }
     
     
-            if (s == "YoungAgeTreshold")
+            else if (s == "YoungAgeTreshold")
                 a_DataFile >> YoungAgeTreshold;
 
-            if (s == "YoungAgeFitnessBoost")
+            else if (s == "YoungAgeFitnessBoost")
                 a_DataFile >> YoungAgeFitnessBoost;
 
-            if (s == "SpeciesDropoffAge")
+            else if (s == "SpeciesDropoffAge")
                 a_DataFile >> SpeciesMaxStagnation;
 
-            if (s == "StagnationDelta")
+            else if (s == "StagnationDelta")
                 a_DataFile >> StagnationDelta;
 
-            if (s == "OldAgeTreshold")
+            else if (s == "OldAgeTreshold")
                 a_DataFile >> OldAgeTreshold;
 
-            if (s == "OldAgePenalty")
+            else if (s == "OldAgePenalty")
                 a_DataFile >> OldAgePenalty;
 
-            if (s == "DetectCompetetiveCoevolutionStagnation")
+            else if (s == "DetectCompetetiveCoevolutionStagnation")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -523,28 +508,28 @@ namespace NEAT
                     DetectCompetetiveCoevolutionStagnation = false;
             }
 
-            if (s == "KillWorstSpeciesEach")
+            else if (s == "KillWorstSpeciesEach")
                 a_DataFile >> KillWorstSpeciesEach;
 
-            if (s == "KillWorstAge")
+            else if (s == "KillWorstAge")
                 a_DataFile >> KillWorstAge;
 
-            if (s == "SurvivalRate")
+            else if (s == "SurvivalRate")
                 a_DataFile >> SurvivalRate;
 
-            if (s == "CrossoverRate")
+            else if (s == "CrossoverRate")
                 a_DataFile >> CrossoverRate;
 
-            if (s == "OverallMutationRate")
+            else if (s == "OverallMutationRate")
                 a_DataFile >> OverallMutationRate;
 
-            if (s == "InterspeciesCrossoverRate")
+            else if (s == "InterspeciesCrossoverRate")
                 a_DataFile >> InterspeciesCrossoverRate;
 
-            if (s == "MultipointCrossoverRate")
+            else if (s == "MultipointCrossoverRate")
                 a_DataFile >> MultipointCrossoverRate;
 
-            if (s == "RouletteWheelSelection")
+            else if (s == "RouletteWheelSelection")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -553,7 +538,7 @@ namespace NEAT
                     RouletteWheelSelection = false;
             }
 
-            if (s == "PhasedSearching")
+            else if (s == "PhasedSearching")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -562,7 +547,7 @@ namespace NEAT
                     PhasedSearching = false;
             }
 
-            if (s == "DeltaCoding")
+            else if (s == "DeltaCoding")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -571,22 +556,22 @@ namespace NEAT
                     DeltaCoding = false;
             }
 
-            if (s == "SimplifyingPhaseMPCTreshold")
+            else if (s == "SimplifyingPhaseMPCTreshold")
                 a_DataFile >> SimplifyingPhaseMPCTreshold;
 
-            if (s == "SimplifyingPhaseStagnationTreshold")
+            else if (s == "SimplifyingPhaseStagnationTreshold")
                 a_DataFile >> SimplifyingPhaseStagnationTreshold;
 
-            if (s == "ComplexityFloorGenerations")
+            else if (s == "ComplexityFloorGenerations")
                 a_DataFile >> ComplexityFloorGenerations;
 
-            if (s == "NoveltySearch_K")
+            else if (s == "NoveltySearch_K")
                 a_DataFile >> NoveltySearch_K;
 
-            if (s == "NoveltySearch_P_min")
+            else if (s == "NoveltySearch_P_min")
                 a_DataFile >> NoveltySearch_P_min;
 
-            if (s == "NoveltySearch_Dynamic_Pmin")
+            else if (s == "NoveltySearch_Dynamic_Pmin")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -595,28 +580,28 @@ namespace NEAT
                     NoveltySearch_Dynamic_Pmin = false;
             }
 
-            if (s == "NoveltySearch_No_Archiving_Stagnation_Treshold")
+            else if (s == "NoveltySearch_No_Archiving_Stagnation_Treshold")
                 a_DataFile >> NoveltySearch_No_Archiving_Stagnation_Treshold;
 
-            if (s == "NoveltySearch_Pmin_lowering_multiplier")
+            else if (s == "NoveltySearch_Pmin_lowering_multiplier")
                 a_DataFile >> NoveltySearch_Pmin_lowering_multiplier;
 
-            if (s == "NoveltySearch_Pmin_min")
+            else if (s == "NoveltySearch_Pmin_min")
                 a_DataFile >> NoveltySearch_Pmin_min;
 
-            if (s == "NoveltySearch_Quick_Archiving_Min_Evaluations")
+            else if (s == "NoveltySearch_Quick_Archiving_Min_Evaluations")
                 a_DataFile >> NoveltySearch_Quick_Archiving_Min_Evaluations;
 
-            if (s == "NoveltySearch_Pmin_raising_multiplier")
+            else if (s == "NoveltySearch_Pmin_raising_multiplier")
                 a_DataFile >> NoveltySearch_Pmin_raising_multiplier;
 
-            if (s == "NoveltySearch_Recompute_Sparseness_Each")
+            else if (s == "NoveltySearch_Recompute_Sparseness_Each")
                 a_DataFile >> NoveltySearch_Recompute_Sparseness_Each;
 
-            if (s == "MutateAddNeuronProb")
+            else if (s == "MutateAddNeuronProb")
                 a_DataFile >> MutateAddNeuronProb;
 
-            if (s == "SplitRecurrent")
+            else if (s == "SplitRecurrent")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -625,7 +610,7 @@ namespace NEAT
                     SplitRecurrent = false;
             }
 
-            if (s == "SplitLoopedRecurrent")
+            else if (s == "SplitLoopedRecurrent")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -634,129 +619,129 @@ namespace NEAT
                     SplitLoopedRecurrent = false;
             }
 
-            if (s == "MutateAddLinkProb")
+            else if (s == "MutateAddLinkProb")
                 a_DataFile >> MutateAddLinkProb;
 
-            if (s == "MutateAddLinkFromBiasProb")
+            else if (s == "MutateAddLinkFromBiasProb")
                 a_DataFile >> MutateAddLinkFromBiasProb;
 
-            if (s == "MutateRemLinkProb")
+            else if (s == "MutateRemLinkProb")
                 a_DataFile >> MutateRemLinkProb;
 
-            if (s == "MutateRemSimpleNeuronProb")
+            else if (s == "MutateRemSimpleNeuronProb")
                 a_DataFile >> MutateRemSimpleNeuronProb;
 
-            if (s == "LinkTries")
+            else if (s == "LinkTries")
                 a_DataFile >> LinkTries;
 
-            if (s == "RecurrentProb")
+            else if (s == "RecurrentProb")
                 a_DataFile >> RecurrentProb;
 
-            if (s == "RecurrentLoopProb")
+            else if (s == "RecurrentLoopProb")
                 a_DataFile >> RecurrentLoopProb;
 
-            if (s == "MutateWeightsProb")
+            else if (s == "MutateWeightsProb")
                 a_DataFile >> MutateWeightsProb;
 
-            if (s == "MutateWeightsSevereProb")
+            else if (s == "MutateWeightsSevereProb")
                 a_DataFile >> MutateWeightsSevereProb;
 
-            if (s == "WeightMutationRate")
+            else if (s == "WeightMutationRate")
                 a_DataFile >> WeightMutationRate;
 
-            if (s == "WeightMutationMaxPower")
+            else if (s == "WeightMutationMaxPower")
                 a_DataFile >> WeightMutationMaxPower;
     
-            if (s == "WeightReplacementRate")
+            else if (s == "WeightReplacementRate")
                 a_DataFile >> WeightReplacementRate;
     
-            if (s == "WeightReplacementMaxPower")
+            else if (s == "WeightReplacementMaxPower")
                 a_DataFile >> WeightReplacementMaxPower;
 
-            if (s == "MaxWeight")
+            else if (s == "MaxWeight")
                 a_DataFile >> MaxWeight;
 
-            if (s == "MutateActivationAProb")
+            else if (s == "MutateActivationAProb")
                 a_DataFile >> MutateActivationAProb;
 
-            if (s == "MutateActivationBProb")
+            else if (s == "MutateActivationBProb")
                 a_DataFile >> MutateActivationBProb;
 
-            if (s == "ActivationAMutationMaxPower")
+            else if (s == "ActivationAMutationMaxPower")
                 a_DataFile >> ActivationAMutationMaxPower;
 
-            if (s == "ActivationBMutationMaxPower")
+            else if (s == "ActivationBMutationMaxPower")
                 a_DataFile >> ActivationBMutationMaxPower;
 
-            if (s == "MinActivationA")
+            else if (s == "MinActivationA")
                 a_DataFile >> MinActivationA;
 
-            if (s == "MaxActivationA")
+            else if (s == "MaxActivationA")
                 a_DataFile >> MaxActivationA;
 
-            if (s == "MinActivationB")
+            else if (s == "MinActivationB")
                 a_DataFile >> MinActivationB;
 
-            if (s == "MaxActivationB")
+            else if (s == "MaxActivationB")
                 a_DataFile >> MaxActivationB;
 
-            if (s == "TimeConstantMutationMaxPower")
+            else if (s == "TimeConstantMutationMaxPower")
                 a_DataFile >> TimeConstantMutationMaxPower;
 
-            if (s == "BiasMutationMaxPower")
+            else if (s == "BiasMutationMaxPower")
                 a_DataFile >> BiasMutationMaxPower;
 
-            if (s == "MutateNeuronTimeConstantsProb")
+            else if (s == "MutateNeuronTimeConstantsProb")
                 a_DataFile >> MutateNeuronTimeConstantsProb;
 
-            if (s == "MutateNeuronBiasesProb")
+            else if (s == "MutateNeuronBiasesProb")
                 a_DataFile >> MutateNeuronBiasesProb;
 
-            if (s == "MinNeuronTimeConstant")
+            else if (s == "MinNeuronTimeConstant")
                 a_DataFile >> MinNeuronTimeConstant;
 
-            if (s == "MaxNeuronTimeConstant")
+            else if (s == "MaxNeuronTimeConstant")
                 a_DataFile >> MaxNeuronTimeConstant;
 
-            if (s == "MinNeuronBias")
+            else if (s == "MinNeuronBias")
                 a_DataFile >> MinNeuronBias;
 
-            if (s == "MaxNeuronBias")
+            else if (s == "MaxNeuronBias")
                 a_DataFile >> MaxNeuronBias;
 
-            if (s == "MutateNeuronActivationTypeProb")
+            else if (s == "MutateNeuronActivationTypeProb")
                 a_DataFile >> MutateNeuronActivationTypeProb;
 
-            if (s == "ActivationFunction_SignedSigmoid_Prob")
+            else if (s == "ActivationFunction_SignedSigmoid_Prob")
                 a_DataFile >> ActivationFunction_SignedSigmoid_Prob;
-            if (s == "ActivationFunction_UnsignedSigmoid_Prob")
+            else if (s == "ActivationFunction_UnsignedSigmoid_Prob")
                 a_DataFile >> ActivationFunction_UnsignedSigmoid_Prob;
-            if (s == "ActivationFunction_Tanh_Prob")
+            else if (s == "ActivationFunction_Tanh_Prob")
                 a_DataFile >> ActivationFunction_Tanh_Prob;
-            if (s == "ActivationFunction_TanhCubic_Prob")
+            else if (s == "ActivationFunction_TanhCubic_Prob")
                 a_DataFile >> ActivationFunction_TanhCubic_Prob;
-            if (s == "ActivationFunction_SignedStep_Prob")
+            else if (s == "ActivationFunction_SignedStep_Prob")
                 a_DataFile >> ActivationFunction_SignedStep_Prob;
-            if (s == "ActivationFunction_UnsignedStep_Prob")
+            else if (s == "ActivationFunction_UnsignedStep_Prob")
                 a_DataFile >> ActivationFunction_UnsignedStep_Prob;
-            if (s == "ActivationFunction_SignedGauss_Prob")
+            else if (s == "ActivationFunction_SignedGauss_Prob")
                 a_DataFile >> ActivationFunction_SignedGauss_Prob;
-            if (s == "ActivationFunction_UnsignedGauss_Prob")
+            else if (s == "ActivationFunction_UnsignedGauss_Prob")
                 a_DataFile >> ActivationFunction_UnsignedGauss_Prob;
-            if (s == "ActivationFunction_Abs_Prob")
+            else if (s == "ActivationFunction_Abs_Prob")
                 a_DataFile >> ActivationFunction_Abs_Prob;
-            if (s == "ActivationFunction_SignedSine_Prob")
+            else if (s == "ActivationFunction_SignedSine_Prob")
                 a_DataFile >> ActivationFunction_SignedSine_Prob;
-            if (s == "ActivationFunction_UnsignedSine_Prob")
+            else if (s == "ActivationFunction_UnsignedSine_Prob")
                 a_DataFile >> ActivationFunction_UnsignedSine_Prob;
-            if (s == "ActivationFunction_Linear_Prob")
+            else if (s == "ActivationFunction_Linear_Prob")
                 a_DataFile >> ActivationFunction_Linear_Prob;
-            if (s == "ActivationFunction_Relu_Prob")
+            else if (s == "ActivationFunction_Relu_Prob")
                 a_DataFile >> ActivationFunction_Relu_Prob;
-            if (s == "ActivationFunction_Softplus_Prob")
+            else if (s == "ActivationFunction_Softplus_Prob")
                 a_DataFile >> ActivationFunction_Softplus_Prob;
 
-            if (s == "DontUseBiasNeuron")
+            else if (s == "DontUseBiasNeuron")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -765,7 +750,7 @@ namespace NEAT
                     DontUseBiasNeuron = false;
             }
 
-            if (s == "AllowLoops")
+            else if (s == "AllowLoops")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -774,7 +759,7 @@ namespace NEAT
                     AllowLoops = false;
             }
 
-            if (s == "ArchiveEnforcement")
+            else if (s == "ArchiveEnforcement")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -783,82 +768,82 @@ namespace NEAT
                     ArchiveEnforcement = false;
             }
 
-            if (s == "DisjointCoeff")
+            else if (s == "DisjointCoeff")
                 a_DataFile >> DisjointCoeff;
 
-            if (s == "ExcessCoeff")
+            else if (s == "ExcessCoeff")
                 a_DataFile >> ExcessCoeff;
 
-            if (s == "WeightDiffCoeff")
+            else if (s == "WeightDiffCoeff")
                 a_DataFile >> WeightDiffCoeff;
 
-            if (s == "ActivationADiffCoeff")
+            else if (s == "ActivationADiffCoeff")
                 a_DataFile >> ActivationADiffCoeff;
 
-            if (s == "ActivationBDiffCoeff")
+            else if (s == "ActivationBDiffCoeff")
                 a_DataFile >> ActivationBDiffCoeff;
 
-            if (s == "TimeConstantDiffCoeff")
+            else if (s == "TimeConstantDiffCoeff")
                 a_DataFile >> TimeConstantDiffCoeff;
 
-            if (s == "BiasDiffCoeff")
+            else if (s == "BiasDiffCoeff")
                 a_DataFile >> BiasDiffCoeff;
 
-            if (s == "ActivationFunctionDiffCoeff")
+            else if (s == "ActivationFunctionDiffCoeff")
                 a_DataFile >> ActivationFunctionDiffCoeff;
 
-            if (s == "CompatTreshold")
+            else if (s == "CompatTreshold")
                 a_DataFile >> CompatTreshold;
 
-            if (s == "MinCompatTreshold")
+            else if (s == "MinCompatTreshold")
                 a_DataFile >> MinCompatTreshold;
 
-            if (s == "CompatTresholdModifier")
+            else if (s == "CompatTresholdModifier")
                 a_DataFile >> CompatTresholdModifier;
 
-            if (s == "CompatTreshChangeInterval_Generations")
+            else if (s == "CompatTreshChangeInterval_Generations")
                 a_DataFile >> CompatTreshChangeInterval_Generations;
 
-            if (s == "CompatTreshChangeInterval_Evaluations")
+            else if (s == "CompatTreshChangeInterval_Evaluations")
                 a_DataFile >> CompatTreshChangeInterval_Evaluations;
 
-            if (s == "DivisionThreshold")
+            else if (s == "DivisionThreshold")
                 a_DataFile >> DivisionThreshold;
 
-            if (s == "VarianceThreshold")
+            else if (s == "VarianceThreshold")
                 a_DataFile >> VarianceThreshold;
 
-            if (s == "BandThreshold")
+            else if (s == "BandThreshold")
                 a_DataFile >> BandThreshold;
 
-            if (s == "InitialDepth")
+            else if (s == "InitialDepth")
                 a_DataFile >> InitialDepth;
 
-            if (s == "MaxDepth")
+            else if (s == "MaxDepth")
                 a_DataFile >> MaxDepth;
 
-            if (s == "IterationLevel")
+            else if (s == "IterationLevel")
                 a_DataFile >> IterationLevel;
 
-            if (s == "TournamentSize")
+            else if (s == "TournamentSize")
                 a_DataFile >> TournamentSize;
 
-            if (s == "CPPN_Bias")
+            else if (s == "CPPN_Bias")
                 a_DataFile >> CPPN_Bias;
 
-            if (s == "Width")
+            else if (s == "Width")
                 a_DataFile >> Width;
 
-            if (s == "Height")
+            else if (s == "Height")
                 a_DataFile >> Height;
 
-            if (s == "Qtree_X")
+            else if (s == "Qtree_X")
                 a_DataFile >> Qtree_X;
 
-            if (s == "Qtree_Y")
+            else if (s == "Qtree_Y")
                 a_DataFile >> Qtree_Y;
 
-            if (s == "Leo")
+            else if (s == "Leo")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -866,7 +851,7 @@ namespace NEAT
                 else
                     Leo = false;
             }
-            if (s == "GeometrySeed")
+            else if (s == "GeometrySeed")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -875,10 +860,10 @@ namespace NEAT
                     GeometrySeed = false;
             }
 
-            if (s == "LeoThreshold")
+            else if (s == "LeoThreshold")
                 a_DataFile >> LeoThreshold;
 
-            if (s == "LeoSeed")
+            else if (s == "LeoSeed")
             {
                 a_DataFile >> tf;
                 if (tf == "true" || tf == "1" || tf == "1.0")
@@ -886,10 +871,26 @@ namespace NEAT
                 else
                     LeoSeed = false;
             }
-            if (s == "Elitism")
+            else if (s == "Elitism")
             {
                 a_DataFile >> EliteFraction;
             }
+
+            else if (s == "MutateNeuronTraitsProb"){
+            	a_DataFile >> MutateNeuronTraitsProb;
+            }
+            else if (s == "MutateLinkTraitsProb"){
+            	a_DataFile >> MutateLinkTraitsProb;
+            }
+            else if (s == "MutateGenomeTraitsProb"){
+            	a_DataFile >> MutateGenomeTraitsProb;
+            }
+
+            // End of else if chain
+            if(!a_DataFile){
+            	throw std::invalid_argument( "Error while parsing parameters file." );
+            }
+
         }
 
         return 0;

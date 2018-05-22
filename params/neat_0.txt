@@ -1,0 +1,35 @@
+NEAT_ParametersStart
+PopulationSize 10
+DynamicCompatibility true
+AllowClones true
+CompatTreshold 5.0
+CompatTresholdModifier 0.3
+YoungAgeTreshold 15
+SpeciesDropoffAge 100
+OldAgeTreshold 35
+MinSpecies 2
+MaxSpecies 10
+RouletteWheelSelection true
+RecurrentProb 0.0
+OverallMutationRate 0.1
+MutateWeightsProb 0.90
+WeightMutationMaxPower 1.0
+WeightReplacementMaxPower 5.0
+MutateWeightsSevereProb 0.01
+WeightMutationRate 0.75
+MaxWeight 20
+MutateAddNeuronProb 0.05
+MutateAddLinkProb 0.1
+MutateRemLinkProb 0.05
+EliteFraction 0.15
+CrossoverRate 0.5
+
+ActivationFunction_UnsignedGauss_Prob 0.25
+ActivationFunction_UnsignedSigmoid_Prob 0.25
+ActivationFunction_UnsignedSine_Prob 0.25
+ActivationFunction_Relu_Prob 0.25
+
+MutateNeuronTraitsProb 0
+MutateLinkTraitsProb 0
+MutateGenomeTraitsProb 0
+NEAT_ParametersEnd
