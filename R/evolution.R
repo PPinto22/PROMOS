@@ -7,34 +7,40 @@
 # install.packages("ggpubr")
 # install.packages("ggplot2")
 # install.packages("data.table")
+# install.packages("rjson")
+# install.packages("chron")
 library(hash)
 library(ggplot2)
 library(ggpubr)
 library(data.table)
+library(rjson)
+library(chron)
 
 # ---- CONFIGURATION ----
 RUNS <- 30
 RESULTS_DIR <- '../results/NEAT/samples_30runs/'
 RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
-RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('ALL (165K)', '10 000', '1 000', '100'))
+RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000', '100'))
 SERIES_LABEL <- 'Sample size'
 FITNESS_FUNC <- 'AUC'
-IMG_OUT_DIR <- 'img/samples_30/'
+OUT_DIR <- 'out/samples_30/'
 
 
 # ---- SETUP ----
 labels_ord = sapply(RUN_TYPES, function(x){RUN_TYPE_LABEL[[x]]})
 # Map, for each run type (i.e., each prefix in PREFIX), a list of all respective data files
 evals_file_names <- hash()
+summs_file_names <- hash()
 for(type in RUN_TYPES){
   prefix = paste(RESULTS_DIR, type, sep='')
   if(RUNS > 1)
     prefix = paste(prefix, '(', 1:RUNS, ')', sep='')
   
   evals_file_names[type] <- paste(prefix, '_evaluations.csv', sep='')
+  summs_file_names[type] <- paste(prefix, '_summary.json', sep='')
 }
 
-# Read all data files and store the averages of all runs
+# Read all evaluations.csv files and store the averages of all runs
 evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   # Read all runs of the current type
   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
@@ -47,12 +53,12 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   })
   # Join all runs into a single data.table
   run_type_dts = rbindlist(run_type_dts)
-  
+
   # Count how many times each generation occurs
   generation_count = table(run_type_dts$generation)
   # Crop outlier generations that appear in less than 80% of runs
   run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
-  
+
   # Get the average of run_type_dts
   type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
                                  neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max),
@@ -65,12 +71,33 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   return(type_avg_dt)
 }))
 
-# ---- VISUALIZATION ----
-# Create IMG_OUT_DIR
-dir.create(file.path(IMG_OUT_DIR), showWarnings = FALSE)
+# Read summaries
+summaries_dt <- rbindlist(lapply(RUN_TYPES, function(type){
+  run_type_summaries = lapply(summs_file_names[[type]], function(file_name){
+    summary_json = fromJSON(file=file_name)
+    summary_dt = data.table(run_type=RUN_TYPE_LABEL[[type]], time_ea=chron(time=summary_json$ea_time), time_eval=chron(time=summary_json$eval_time),
+                             time_total=chron(time=summary_json$run_time), generations=summary_json$generations, train_fit=summary_json$best$fitness,
+                             test_fit=summary_json$best$fitness_test, neurons=summary_json$best$neurons_qty, connections=summary_json$best$connections_qty)
+  })
+  run_type_summaries = rbindlist(run_type_summaries)
+}))
 
+summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_eval), time_total=mean(time_total), generations=round(mean(generations)),
+                                     train_fit=mean(train_fit), test_fit=mean(test_fit), neurons=round(mean(neurons)), connections=round(mean(connections))),
+                                     by = run_type]
+
+# ---- OUTPUTS ----
+# Create OUT_DIR
+dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=TRUE)
+
+# -- Summary table --
+options(digits=5)
+write.table(summaries_avg_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',',
+          col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+
+# -- Graphs --
 # Plot mean fitness over time
-png(filename = paste(IMG_OUT_DIR, 'mean_fitness.png', sep=''))
+png(filename = paste(OUT_DIR, 'mean_fitness.png', sep=''))
 gg_meanfit <- ggplot(data=evals_dt, aes(time)) + 
   geom_smooth(aes(y=fitness.mean, col=run_type), method='loess') +
   labs(x="Run time (min)", y=paste("Mean fitness ", "(", FITNESS_FUNC, ")", sep=''), col=SERIES_LABEL) +
@@ -80,7 +107,7 @@ gg_meanfit
 dev.off()
 
 # Plot max fitness over time
-png(filename = paste(IMG_OUT_DIR, 'max_fitness.png', sep=''))
+png(filename = paste(OUT_DIR, 'max_fitness.png', sep=''))
 gg_maxfit <- ggplot(data=evals_dt, aes(time)) + 
   geom_smooth(aes(y=fitness.max, col=run_type), method='loess') +
   labs(x="Run time (min)", y=paste("Max fitness ", "(", FITNESS_FUNC, ")", sep=''), col="Sample size") +
@@ -90,7 +117,7 @@ gg_maxfit
 dev.off()
 
 # Plot generations over time
-png(filename = paste(IMG_OUT_DIR, 'generations.png', sep=''))
+png(filename = paste(OUT_DIR, 'generations.png', sep=''))
 gg_generations <- ggplot(data=evals_dt, aes(time)) + 
   geom_smooth(aes(y=generation, col=run_type), method='loess') +
   labs(x="Run time (min)", y="Generations", col=SERIES_LABEL) + 
@@ -99,7 +126,7 @@ gg_generations
 dev.off()
 
 # Plot complexity (connections) over time
-png(filename = paste(IMG_OUT_DIR, 'mean_connections.png', sep=''))
+png(filename = paste(OUT_DIR, 'mean_connections.png', sep=''))
 gg_connections <- ggplot(data=evals_dt, aes(time)) + 
   geom_line(aes(y=connections.mean, col=run_type)) +
   labs(x="Run time (min)", y="Mean network connections", col=SERIES_LABEL) + 

@@ -25,6 +25,7 @@ __pycache__/
 *.knit.md
 rsconnect/
 R/img/
+R/out/
 R/*.png
 R/*.pdf
 
