@@ -12,7 +12,7 @@ from sortedcontainers import SortedListWithKey
 from functools import partial
 
 import params
-import evaluators
+import evaluator
 import util
 from util import avg
 import substrate as subst
@@ -89,7 +89,7 @@ class Evolver:
 
         # Evaluation function
         if options.evaluator == 'auc':
-            self.genome_evaluator = evaluators.evaluate_auc
+            self.genome_evaluator = evaluator.evaluate_auc
         else:
             raise ValueError('Invalid genome evaluator: {}'.format(options.evaluator))
 
@@ -115,7 +115,7 @@ class Evolver:
         self.generation = 0  # Current generation
         # All time best evaluations, ordered from best to worst fitness
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
-        self.best_test = None  # GenomeEvaluation of the best individual, evaluated with the test data-set
+        self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
 
     def clear(self):
         self.initial_time = None
@@ -230,7 +230,7 @@ class Evolver:
 
     def reevaluate_best_list(self):
         genome_list = [e.genome for e in self.best_list]
-        evaluation_list = evaluators.evaluate_genome_list(
+        evaluation_list = evaluator.evaluate_genome_list(
             genome_list,
             partial(self.genome_evaluator, method=options.method,
                     substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
@@ -241,7 +241,7 @@ class Evolver:
             self.best_list.add(e)
 
     def evaluate_list(self, genome_list):
-        return evaluators.evaluate_genome_list(
+        return evaluator.evaluate_genome_list(
             genome_list,
             partial(self.genome_evaluator, method=options.method,
                     substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
@@ -336,8 +336,11 @@ class Evolver:
         else:
             self._run()
 
+        return self.get_best(), self.best_test
+
 
 if __name__ == '__main__':
     options = parse_args()
     evolver = Evolver(options)
-    evolver.run()
+    best, test = evolver.run()
+    print(best.fitness)

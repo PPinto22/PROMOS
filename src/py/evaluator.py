@@ -1,4 +1,5 @@
 import MultiNEAT as neat
+import argparse
 import datetime
 import multiprocessing
 import time
@@ -8,7 +9,9 @@ import numpy as np
 
 from sklearn.metrics import roc_curve, auc
 
+import substrate
 import util
+from data import Data
 
 global_data = None
 
@@ -102,3 +105,28 @@ def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, process
         evaluation_list.sort(key=lambda e: e.fitness, reverse=True)
 
     return evaluation_list
+
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('genome_file', help='path to genome file', metavar='GENOME')
+    parser.add_argument('data_file', help='path to data file for evaluation', metavar='DATA'),
+    methods = ['neat', 'hyperneat', 'eshyperneat']
+    parser.add_argument('-m', '--method', dest='method', metavar='M', choices=methods, default='neat',
+                        help='which algorithm was used to generate the network: ' + ', '.join(methods))
+    parser.add_argument('-s', '--substrate', dest='substrate_file', metavar='S', default=None,
+                        help='path to a substrate; required if method is hyperneat or eshyperneat')
+
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = parse_args()
+    genome = neat.Genome(args.genome_file)
+    data = Data(args.data_file)
+    subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
+
+    evaluation = evaluate_auc(genome, data)
+    print(evaluation.fitness)
+

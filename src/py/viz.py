@@ -397,7 +397,7 @@ def parse_args():
     parser.add_argument('genome_file', help='path to genome file', metavar='GENOME')
     methods = ['neat', 'hyperneat', 'eshyperneat']
     parser.add_argument('-m', '--method', dest='method', metavar='M', choices=methods, default='neat',
-                        help='which algorithm should be used to generate the network: ' + ', '.join(methods))
+                        help='which algorithm was used to generate the network: ' + ', '.join(methods))
     parser.add_argument('-s', '--substrate', dest='substrate_file', metavar='S', default=None,
                         help='path to a substrate; required if method is hyperneat or eshyperneat')
     parser.add_argument('-o', '--output', dest='out_file', metavar='FILE', default=None,
