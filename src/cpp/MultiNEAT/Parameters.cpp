@@ -44,7 +44,7 @@ namespace NEAT
         ArchiveEnforcement = false;
     
         // When true, don't have a special bias neuron and treat all inputs equal
-        DontUseBiasNeuron = false;
+        DontUseBiasNeuron = true;
     
         // When false, this prevents any recurrent pathways in the genomes from forming
         AllowLoops = false;
