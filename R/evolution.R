@@ -24,9 +24,10 @@ RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000',
 SERIES_LABEL <- 'Sample size'
 FITNESS_FUNC <- 'AUC'
 OUT_DIR <- 'out/samples_30/'
-
+DIGITS <- 5
 
 # ---- SETUP ----
+options(digits=DIGITS)
 labels_ord = sapply(RUN_TYPES, function(x){RUN_TYPE_LABEL[[x]]})
 # Map, for each run type (i.e., each prefix in PREFIX), a list of all respective data files
 evals_file_names <- hash()
@@ -70,6 +71,7 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   type_avg_dt = cbind(type_avg_dt, run_type)
   return(type_avg_dt)
 }))
+evals_dt$run_type <- factor(evals_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
 
 # Read summaries
 summaries_dt <- rbindlist(lapply(RUN_TYPES, function(type){
@@ -81,9 +83,13 @@ summaries_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   })
   run_type_summaries = rbindlist(run_type_summaries)
 }))
+summaries_dt$run_type <- factor(summaries_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
 
 summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_eval), time_total=mean(time_total), generations=round(mean(generations)),
-                                     train_fit=mean(train_fit), test_fit=mean(test_fit), neurons=round(mean(neurons)), connections=round(mean(connections))),
+                                     train_fit=mean(train_fit), train_fit_ci=list(t.test(train_fit)$conf.int),
+                                     test_fit=mean(test_fit), test_fit_ci=list(t.test(test_fit)$conf.int),
+                                     neurons=round(mean(neurons)), neurons_ci=list(t.test(neurons)$conf.int),
+                                     connections=round(mean(connections)), connections_ci=list(t.test(connections)$conf.int)),
                                      by = run_type]
 
 # ---- OUTPUTS ----
@@ -91,11 +97,35 @@ summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=TRUE)
 
 # -- Summary table --
-options(digits=5)
-write.table(summaries_avg_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',',
+summaries_avg_str_dt <- summaries_avg_dt[, !c('train_fit', 'test_fit', 'neurons', 'connections')]
+ci2str <- function(ci){paste('[', format(ci[1], digits=DIGITS), ', ', format(ci[2], digits=DIGITS), ']', sep='')}
+original_colnames <- copy(colnames(summaries_avg_str_dt))
+ci_col_names <- c('train_fit_ci', 'test_fit_ci', 'neurons_ci', 'connections_ci')
+summaries_avg_str_dt[, (paste(ci_col_names,'TEMP')):=lapply(.SD, function(x) sapply(x, ci2str)), .SDcols=ci_col_names][,(ci_col_names):=NULL]
+setnames(summaries_avg_str_dt, paste(ci_col_names,'TEMP'), ci_col_names)
+setcolorder(summaries_avg_str_dt, original_colnames)
+write.table(summaries_avg_str_dt, file=paste('../results/TEMP/', 'summary.csv', sep=''), row.names = FALSE, sep=',',
           col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
 
 # -- Graphs --
+# Boxplot best test fitness by sample size
+png(filename = paste(OUT_DIR, 'boxplot_best_fitness.png', sep=''))
+gg_best_testfit <- ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
+  geom_boxplot() +
+  labs(x=SERIES_LABEL, y=paste("Best result ", "(", FITNESS_FUNC, ")", sep='')) +
+  theme_minimal()
+gg_best_testfit
+dev.off()
+
+# Boxplot #connections of the best individual by sample size
+png(filename = paste(OUT_DIR, 'boxplot_best_connections.png', sep=''))
+gg_best_connections <- ggplot(data=summaries_dt, aes(x=run_type, y=connections)) +
+  geom_boxplot() +
+  labs(x=SERIES_LABEL, y=paste("Connections of the best individual", sep='')) +
+  theme_minimal()
+gg_best_connections
+dev.off()
+
 # Plot mean fitness over time
 png(filename = paste(OUT_DIR, 'mean_fitness.png', sep=''))
 gg_meanfit <- ggplot(data=evals_dt, aes(time)) + 
