@@ -21,11 +21,10 @@ from data import Data
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-d', '--data', dest='data_file', default='../../data/data.csv',
-                        help='path to train data file', metavar='FILE'),
+    parser.add_argument('data_file', help='path to train data file', metavar='DATA'),
     parser.add_argument('-t', '--test', dest='test_file', default=None,
                         help='path to test data file', metavar='FILE')
-    parser.add_argument('-o', '--outdir', dest='out_dir', default='../../results',
+    parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
                         help='directory where to save results', metavar='DIR')
     methods = ['neat', 'hyperneat', 'eshyperneat']
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
