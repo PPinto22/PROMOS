@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.3)
 project(MultiNEAT)
 
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -pthread")
+#set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -pthread")
+
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
 find_package(PythonLibs 3.5 REQUIRED)
 include(FindPythonLibs)
