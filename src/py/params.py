@@ -134,6 +134,8 @@ class ParametersWrapper:
         self.ActivationFunction_SignedSine_Prob = neat_params.ActivationFunction_SignedSine_Prob
         self.ActivationFunction_UnsignedSine_Prob = neat_params.ActivationFunction_UnsignedSine_Prob
         self.ActivationFunction_Linear_Prob = neat_params.ActivationFunction_Linear_Prob
+        self.ActivationFunction_Relu_Prob = neat_params.ActivationFunction_Relu_Prob
+        self.ActivationFunction_Softplus_Prob = neat_params.ActivationFunction_Softplus_Prob
         self.DontUseBiasNeuron = neat_params.DontUseBiasNeuron
         self.AllowLoops = neat_params.AllowLoops
         self.MutateNeuronTraitsProb = neat_params.MutateNeuronTraitsProb
