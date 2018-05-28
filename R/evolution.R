@@ -48,8 +48,8 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
     # Group by generation
     run_dt = run_dt[ , .(fitness.mean = mean(fitness), fitness.max = max(fitness),
-                         neurons.mean = mean(neurons), neurons.max = max(neurons),
-                         connections.mean = mean(connections), connections.max = max(connections),
+                         neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
+                         connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
                          time = mean(run_minutes)), by = generation]
   })
   # Join all runs into a single data.table
@@ -62,9 +62,8 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
 
   # Get the average of run_type_dts
   type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
-                                 neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max),
-                                 connections.mean = mean(connections.mean),
-                                 connections.max = mean(connections.max),
+                                 neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
+                                 connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
                                  time = mean(time)), by = generation]
   # Add "run_type" column
   run_type = rep(RUN_TYPE_LABEL[[type]], nrow(type_avg_dt))
@@ -94,7 +93,7 @@ summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_
 
 # ---- OUTPUTS ----
 # Create OUT_DIR
-dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=TRUE)
+dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
 # -- Summary table --
 summaries_avg_str_dt <- summaries_avg_dt[, !c('train_fit', 'test_fit', 'neurons', 'connections')]
@@ -108,7 +107,7 @@ write.table(summaries_avg_str_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), ro
           col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
 
 # -- P-values table --
-test_fit_pvalues <- as.data.frame(lapply(labels_ord, function(run_type1){
+test_fit_pvalues <- as.data.table(lapply(labels_ord, function(run_type1){
   sapply(labels_ord, function(run_type2){
     format(t.test(summaries_dt[run_type==run_type1, train_fit], summaries_dt[run_type==run_type2, train_fit])$p.value, digits=1)
   })
@@ -116,42 +115,42 @@ test_fit_pvalues <- as.data.frame(lapply(labels_ord, function(run_type1){
 test_fit_pvalues[upper.tri(test_fit_pvalues, diag=TRUE)] <- NA
 colnames(test_fit_pvalues) <- labels_ord
 rownames(test_fit_pvalues) <- labels_ord
-write.table(test_fit_pvalues, file=paste(OUT_DIR, 'test_fit_pvalues.csv', sep=''), sep=',', row.names=TRUE, col.names=TRUE)
+write.table(test_fit_pvalues, file=paste(OUT_DIR, 'pvalues_fitness.csv', sep=''), sep=',', row.names=TRUE, col.names=NA, na = '-')
 
 # -- Graphs --
 # Boxplot best test fitness by sample size
-png(filename = paste(OUT_DIR, 'boxplot_best_fitness.png', sep=''))
+png(filename = paste(OUT_DIR, 'fitness_best_bp.png', sep=''))
 gg_best_testfit <- ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
   geom_boxplot() +
-  labs(x=SERIES_LABEL, y=paste("Best result ", "(", FITNESS_FUNC, ")", sep='')) +
+  labs(x=SERIES_LABEL, y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')) +
   theme_minimal()
 gg_best_testfit
 dev.off()
 
 # Boxplot #connections of the best individual by sample size
-png(filename = paste(OUT_DIR, 'boxplot_best_connections.png', sep=''))
+png(filename = paste(OUT_DIR, 'connections_best_bp.png', sep=''))
 gg_best_connections <- ggplot(data=summaries_dt, aes(x=run_type, y=connections)) +
   geom_boxplot() +
-  labs(x=SERIES_LABEL, y=paste("Connections of the best individual", sep='')) +
+  labs(x=SERIES_LABEL, y=paste("Connections", sep='')) +
   theme_minimal()
 gg_best_connections
 dev.off()
 
 # Plot mean fitness over time
-png(filename = paste(OUT_DIR, 'mean_fitness.png', sep=''))
+png(filename = paste(OUT_DIR, 'fitness_mean.png', sep=''))
 gg_meanfit <- ggplot(data=evals_dt, aes(time)) + 
   geom_smooth(aes(y=fitness.mean, col=run_type), method='loess') +
-  labs(x="Run time (min)", y=paste("Mean fitness ", "(", FITNESS_FUNC, ")", sep=''), col=SERIES_LABEL) +
+  labs(x="Run time (min)", y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep=''), col=SERIES_LABEL) +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
 gg_meanfit
 dev.off()
 
 # Plot max fitness over time
-png(filename = paste(OUT_DIR, 'max_fitness.png', sep=''))
+png(filename = paste(OUT_DIR, 'fitness_max.png', sep=''))
 gg_maxfit <- ggplot(data=evals_dt, aes(time)) + 
   geom_smooth(aes(y=fitness.max, col=run_type), method='loess') +
-  labs(x="Run time (min)", y=paste("Max fitness ", "(", FITNESS_FUNC, ")", sep=''), col="Sample size") +
+  labs(x="Run time (min)", y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep=''), col="Sample size") +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
 gg_maxfit
@@ -166,11 +165,20 @@ gg_generations <- ggplot(data=evals_dt, aes(time)) +
 gg_generations
 dev.off()
 
-# Plot complexity (connections) over time
-png(filename = paste(OUT_DIR, 'mean_connections.png', sep=''))
+# Plot mean complexity (connections) over time
+png(filename = paste(OUT_DIR, 'connections_mean.png', sep=''))
 gg_connections <- ggplot(data=evals_dt, aes(time)) + 
   geom_line(aes(y=connections.mean, col=run_type)) +
-  labs(x="Run time (min)", y="Mean network connections", col=SERIES_LABEL) + 
+  labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
+  theme_minimal()
+gg_connections
+dev.off()
+
+# Plot complexity (connections) of the best individual over time
+png(filename = paste(OUT_DIR, 'connections_best.png', sep=''))
+gg_connections <- ggplot(data=evals_dt, aes(time)) + 
+  geom_line(aes(y=connections.best, col=run_type)) +
+  labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_connections
 dev.off()
