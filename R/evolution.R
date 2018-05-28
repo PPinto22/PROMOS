@@ -104,8 +104,19 @@ ci_col_names <- c('train_fit_ci', 'test_fit_ci', 'neurons_ci', 'connections_ci')
 summaries_avg_str_dt[, (paste(ci_col_names,'TEMP')):=lapply(.SD, function(x) sapply(x, ci2str)), .SDcols=ci_col_names][,(ci_col_names):=NULL]
 setnames(summaries_avg_str_dt, paste(ci_col_names,'TEMP'), ci_col_names)
 setcolorder(summaries_avg_str_dt, original_colnames)
-write.table(summaries_avg_str_dt, file=paste('../results/TEMP/', 'summary.csv', sep=''), row.names = FALSE, sep=',',
+write.table(summaries_avg_str_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',',
           col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+
+# -- P-values table --
+test_fit_pvalues <- as.data.frame(lapply(labels_ord, function(run_type1){
+  sapply(labels_ord, function(run_type2){
+    format(t.test(summaries_dt[run_type==run_type1, train_fit], summaries_dt[run_type==run_type2, train_fit])$p.value, digits=1)
+  })
+}))
+test_fit_pvalues[upper.tri(test_fit_pvalues, diag=TRUE)] <- NA
+colnames(test_fit_pvalues) <- labels_ord
+rownames(test_fit_pvalues) <- labels_ord
+write.table(test_fit_pvalues, file=paste(OUT_DIR, 'test_fit_pvalues.csv', sep=''), sep=',', row.names=TRUE, col.names=TRUE)
 
 # -- Graphs --
 # Boxplot best test fitness by sample size
