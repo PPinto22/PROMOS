@@ -15,7 +15,7 @@ def _default_params():
     params.MaxSpecies = 10
     params.RouletteWheelSelection = True
     params.RecurrentProb = 0.0
-    params.OverallMutationRate = 0.1
+    params.OverallMutationRate = 0.25
     params.MutateWeightsProb = 0.90
     params.WeightMutationMaxPower = 1.0
     params.WeightReplacementMaxPower = 5.0
@@ -25,6 +25,7 @@ def _default_params():
     params.MutateAddNeuronProb = 0.05
     params.MutateAddLinkProb = 0.1
     params.MutateRemLinkProb = 0.05
+    params.MutateRemSimpleNeuronProb = 0.05
     params.EliteFraction = 0.15
     params.CrossoverRate = 0.5
 
