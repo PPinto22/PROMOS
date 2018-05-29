@@ -134,9 +134,9 @@ namespace NEAT {
 
 #ifdef USE_BOOST_PYTHON
 
-        void Input_python_list(py::list &a_Inputs);
+        void Input_python_list(const py::list &a_Inputs);
 
-        void Input_numpy(py::numeric::array &a_Inputs);
+        void Input_numpy(const py::numeric::array &a_Inputs);
 
 #endif
 

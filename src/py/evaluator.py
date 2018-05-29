@@ -3,7 +3,6 @@ import argparse
 import datetime
 import multiprocessing
 import time
-from functools import partial
 
 import numpy as np
 
@@ -107,7 +106,6 @@ def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, process
     return evaluation_list
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('genome_file', help='path to genome file', metavar='GENOME')
@@ -121,6 +119,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 if __name__ == '__main__':
     args = parse_args()
     genome = neat.Genome(args.genome_file)
@@ -129,4 +128,3 @@ if __name__ == '__main__':
 
     evaluation = evaluate_auc(genome, data)
     print(evaluation.fitness)
-

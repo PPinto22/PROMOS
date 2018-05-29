@@ -17,9 +17,9 @@
 using namespace NEAT;
 
 
-const char* DATA_FILE_PATH = "../data/data.csv";
-const char* OUT_DIR = "../results";
-const int GENERATIONS = 25;
+const char* DATA_FILE_PATH = "../data/data_micro.csv";
+const char* OUT_DIR = "../results/TEMP";
+const int GENERATIONS = 5;
 
 
 std::vector< std::map< std::string, double > > readData(const string& filePath){

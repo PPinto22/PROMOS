@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument('-t', '--test', dest='test_file', default=None,
                         help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
-                        help='directory where to save results', metavar='DIR')
+                        help='directory where to save results. If NULL, do not save results.', metavar='DIR')
     methods = ['neat', 'hyperneat', 'eshyperneat']
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
@@ -61,6 +61,7 @@ def parse_args():
     options = parser.parse_args()
 
     options.id = options.id if options.id is not None else util.get_current_datetime_string()
+    options.out_dir = options.out_dir if options.out_dir != 'NULL' else None
 
     return options
 
@@ -161,17 +162,24 @@ class Evolver:
             print(msg)
 
     def make_out_dir(self):
+        if self.options.out_dir is None:
+            raise ValueError('out_dir is None')
+
         if not os.path.exists(self.options.out_dir):
             os.makedirs(self.options.out_dir)
 
     def get_out_file_path(self, suffix):
+        if self.options.out_dir is None:
+            raise ValueError('out_dir is None')
+
         return '{}/{}_{}_{}'.format(self.options.out_dir, self.options.method, self.options.id, suffix)
 
     def write_results(self):
-        self.make_out_dir()
-        self.write_summary(self.get_out_file_path('summary.json'))
-        self.pop.Save(self.get_out_file_path('population.txt'))
-        self.get_best().genome.Save(self.get_out_file_path('best.txt'))
+        if self.options.out_dir is not None:
+            self.make_out_dir()
+            self.write_summary(self.get_out_file_path('summary.json'))
+            self.pop.Save(self.get_out_file_path('population.txt'))
+            self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def get_summary(self):
         best_evaluation = self.get_best()
@@ -190,6 +198,9 @@ class Evolver:
             f.write(json.dumps(self.get_summary().__dict__, default=util.serializer, indent=4))
 
     def save_evaluations(self, evaluations):
+        if self.options.out_dir is None:
+            return
+
         self.make_out_dir()
         file_path = self.get_out_file_path('evaluations.csv')
         if self.generation == 0:

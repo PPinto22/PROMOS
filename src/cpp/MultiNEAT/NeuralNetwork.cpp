@@ -509,7 +509,7 @@ namespace NEAT {
 
 #ifdef USE_BOOST_PYTHON
 
-    void NeuralNetwork::Input_python_list(py::list &a_Inputs) {
+    void NeuralNetwork::Input_python_list(const py::list &a_Inputs) {
         int len = py::len(a_Inputs);
         std::vector<double> inp;
         inp.resize(len);
@@ -526,7 +526,7 @@ namespace NEAT {
         Input(inp);
     }
 
-    void NeuralNetwork::Input_numpy(py::numeric::array &a_Inputs) {
+    void NeuralNetwork::Input_numpy(const py::numeric::array &a_Inputs) {
         int len = py::len(a_Inputs);
         std::vector<double> inp;
         inp.resize(len);

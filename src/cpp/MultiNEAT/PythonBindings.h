@@ -107,8 +107,8 @@ BOOST_PYTHON_MODULE(MultiNEAT)
     void (NeuralNetwork::*NN_Save)(const char*) = &NeuralNetwork::Save;
     bool (NeuralNetwork::*NN_Load)(const char*) = &NeuralNetwork::Load;
     void (Genome::*Genome_Save)(const char*) = &Genome::Save;
-    void (NeuralNetwork::*NN_Input)(py::list&) = &NeuralNetwork::Input_python_list;
-    void (NeuralNetwork::*NN_Input_numpy)(numeric::array&) = &NeuralNetwork::Input_numpy;
+    void (NeuralNetwork::*NN_Input)(const py::list&) = &NeuralNetwork::Input_python_list;
+    void (NeuralNetwork::*NN_Input_numpy)(const numeric::array&) = &NeuralNetwork::Input_numpy;
     void (Parameters::*Parameters_Save)(const char*) = &Parameters::Save;
     int (Parameters::*Parameters_Load)(const char*) = &Parameters::Load;
 
@@ -116,59 +116,39 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
             .def(init<bool>())
 
-            .def("InitRTRLMatrix",
-            &NeuralNetwork::InitRTRLMatrix)
-            .def("RTRL_update_gradients",
-            &NeuralNetwork::RTRL_update_gradients)
-            .def("RTRL_update_error",
-            &NeuralNetwork::RTRL_update_error)
-            .def("RTRL_update_weights",
-            &NeuralNetwork::RTRL_update_weights)
+            .def("InitRTRLMatrix", &NeuralNetwork::InitRTRLMatrix)
+            .def("RTRL_update_gradients", &NeuralNetwork::RTRL_update_gradients)
+            .def("RTRL_update_error", &NeuralNetwork::RTRL_update_error)
+            .def("RTRL_update_weights", &NeuralNetwork::RTRL_update_weights)
 
-            .def("ActivateFast",
-            &NeuralNetwork::ActivateFast)
-            .def("Activate",
-            &NeuralNetwork::Activate)
-            .def("ActivateUseInternalBias",
-            &NeuralNetwork::ActivateUseInternalBias)
-            .def("ActivateLeaky",
-            &NeuralNetwork::ActivateLeaky)
+            .def("ActivateFast", &NeuralNetwork::ActivateFast)
+            .def("Activate", &NeuralNetwork::Activate)
+            .def("ActivateUseInternalBias", &NeuralNetwork::ActivateUseInternalBias)
+            .def("ActivateLeaky", &NeuralNetwork::ActivateLeaky)
             .def("SortConnections", &NeuralNetwork::SortConnections)
             .def("FeedForward", &NeuralNetwork::FeedForward)
 
-            .def("Adapt",
-            &NeuralNetwork::Adapt)
+            .def("Adapt", &NeuralNetwork::Adapt)
 
-            .def("Flush",
-            &NeuralNetwork::Flush)
-            .def("FlushCude",
-            &NeuralNetwork::InitRTRLMatrix)
+            .def("Flush", &NeuralNetwork::Flush)
+            .def("FlushCude", &NeuralNetwork::InitRTRLMatrix)
 
-            .def("NumInputs",
-            &NeuralNetwork::NumInputs)
-            .def("NumOutputs",
-            &NeuralNetwork::NumOutputs)
+            .def("NumInputs", &NeuralNetwork::NumInputs)
+            .def("NumOutputs", &NeuralNetwork::NumOutputs)
 
-            .def("Clear",
-            &NeuralNetwork::Clear)
-            .def("Save",
-            NN_Save)
-            .def("Load",
-            NN_Load)
+            .def("Clear", &NeuralNetwork::Clear)
+            .def("Save", NN_Save)
+            .def("Load", NN_Load)
 
-            .def("Input",
-            NN_Input)
-            .def("Input",
-            NN_Input_numpy)
-            .def("Output",
-            &NeuralNetwork::Output)
+            .def("Input", NN_Input)
+            .def("Input", NN_Input_numpy)
+
+            .def("Input", &NeuralNetwork::Input)
+            .def("Output", &NeuralNetwork::Output)
             
-            .def("AddNeuron",
-            &NeuralNetwork::AddNeuron)
-            .def("AddConnection",
-            &NeuralNetwork::AddConnection)
-            .def("SetInputOutputDimentions",
-            &NeuralNetwork::SetInputOutputDimentions)
+            .def("AddNeuron", &NeuralNetwork::AddNeuron)
+            .def("AddConnection", &NeuralNetwork::AddConnection)
+            .def("SetInputOutputDimentions", &NeuralNetwork::SetInputOutputDimentions)
 
             .def("GetTotalConnectionLength", &NeuralNetwork::GetTotalConnectionLength)
 
