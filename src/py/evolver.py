@@ -49,7 +49,8 @@ def parse_args():
     parser.add_argument('-l', '--load', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
     parser.add_argument('-r', '--runs', dest='runs', metavar='R', help='run R times', type=int, default=1)
-    parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='Do not print any messages to stdout')
+    parser.add_argument('-q', '--quiet', dest='quiet', action='store_true',
+                        help='Do not print any messages to stdout, except for the result')
     parser.add_argument('--id', dest='id', metavar='ID', default=None,
                         help='run identifier. This ID will be used to name all output files '
                              '(e.g., neat_ID_summary.txt). '
@@ -163,8 +164,8 @@ class Evolver:
                      self.elapsed_time().total_seconds() / 60 >= self.options.time_limit
         return generation_limit or time_limit
 
-    def print(self, msg):
-        if not self.options.quiet:
+    def print(self, msg, override=False):
+        if not self.options.quiet or override:
             print(msg)
 
     def make_out_dir(self):
@@ -292,7 +293,7 @@ class Evolver:
         best_test_str = ' Fitness (test): {:.6f},'.format(self.best_test.fitness) if self.best_test is not None else ''
 
         self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
-                   format(best.fitness, best_test_str, best.neurons, best.connections))
+                   format(best.fitness, best_test_str, best.neurons, best.connections), override=True)
 
     def evaluate_best_test(self):
         best = self.get_best()
@@ -358,5 +359,4 @@ class Evolver:
 if __name__ == '__main__':
     options = parse_args()
     evolver = Evolver(options)
-    best, test = evolver.run()
-    print(best.fitness)
+    evolver.run()
