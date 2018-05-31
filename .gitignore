@@ -69,3 +69,8 @@ data.csv
 # Results
 results/*
 !results/.gitkeep
+
+
+# iRace
+irace/arena/*
+!irace/arena/.gitkeep

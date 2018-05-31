@@ -5,11 +5,11 @@
 ## 1: Name of the parameter. An unquoted alphanumeric string,
 ##    example: ants
 
-## 2: Switch to pass the parameter. A quoted (possibly empty) string,
+## 2: Switch to pass the parameter. A quoted (possibly empty) string, 
 ##    if the value and the switch must be separated, add a space at
 ##    the end of the string. Example : "--version1 --ants "
 
-## 3: Type. An unquoted single letter, among
+## 3: Type. An unquoted single letter, among 
 ##     i: Integer, c: categorical, o: ordinal, r: real.
 
 ## 4: For c and o: All possible values, that is, a variable number of
@@ -17,19 +17,18 @@
 ##    parenthesis. Empty strings and strings containing commas or
 ##    spaces must be quoted.
 ##    For i,r: a pair of unquoted numbers representing minimum and
-##    maximum values.
+##    maximum values. 
 
 ## 5: A conditional parameter can be defined according to the values of
 ##    one or several other parameters.  This is done by adding a
 ##    character '|' followed by an R expression involving the names of
-##    other parameters. This expression must return TRUE if the
+##    other parameters. This expression must return TRUE if the 
 ##    condition is satisfied, FALSE otherwise.
 
-# 1:      2:                          3: 4:            5:
-popsize	  "PopulationSize="	           i (50, 300)
-addneuron "MutateAddNeuronProb="       r (0.01, 0.40)
-remneuron "MutateRemSimpleNeuronProb=" r (0.01, 0.30)
-addlink   "MutateAddLinkProb="         r (0.01, 0.40)
-remlink   "MutateRemLinkProb="         r (0.01, 0.30)
-elitism   "Elitism="                   r (0.00, 0.30)
-crossover "CrossoverRate="             r (0.20, 0.90)
+# 1:            2:                   3: 4:      5:
+param1          "--param1 "          i  (1, 10) | mode %in% c("x1", "x2")
+param2          "--param2 "          i  (1, 10) | mode %in% c("x1", "x3") && real > 2.5 && real <= 3.5
+mode            "--"                 c  ("x1" ,"x2", "x3")
+real            "--paramreal="       r  (1.5, 4.5)
+mutation        "--mutation="        o  ("none", "very low", "low", "medium", "high", "very high", "all")
+#unused         "-u "                c  (1, 2, 10, 20)

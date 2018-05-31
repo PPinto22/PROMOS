@@ -1,0 +1,12 @@
+## This is an example of specifying instances with a file.
+
+# Each line is an instance relative to trainInstancesDir
+# (see scenario.txt.tmpl) and an optional sequence of instance-specific
+# parameters that will be passed to target-runnerx when invoked on that
+# instance.
+
+# Empty lines and comments are ignored.
+
+# Paths are relative to irace/arena/
+# INSTANCE_NAME TRAIN_DATA TEST_DATA
+train_instance1 ../../data/data_train.csv ../../data/data_test.csv
