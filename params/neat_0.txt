@@ -1,6 +1,6 @@
 NEAT_ParametersStart
+
 PopulationSize 10
-DynamicCompatibility true
 AllowClones true
 CompatTreshold 5.0
 CompatTresholdModifier 0.3
@@ -21,7 +21,7 @@ MaxWeight 20
 MutateAddNeuronProb 0.05
 MutateAddLinkProb 0.1
 MutateRemLinkProb 0.05
-EliteFraction 0.15
+Elitism 0.15
 CrossoverRate 0.5
 
 ActivationFunction_UnsignedGauss_Prob 0.25
@@ -32,4 +32,5 @@ ActivationFunction_Relu_Prob 0.25
 MutateNeuronTraitsProb 0
 MutateLinkTraitsProb 0
 MutateGenomeTraitsProb 0
+
 NEAT_ParametersEnd

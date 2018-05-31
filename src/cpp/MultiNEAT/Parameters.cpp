@@ -210,10 +210,10 @@ namespace NEAT
         LinkTries = 32;
 
         // Probability that a link mutation will be made recurrent
-        RecurrentProb = 0.25;
+        RecurrentProb = 0;
 
         // Probability that a recurrent link mutation will be looped
-        RecurrentLoopProb = 0.25;
+        RecurrentLoopProb = 0;
 
 
 
@@ -426,14 +426,13 @@ namespace NEAT
         }
         while (s != "NEAT_ParametersStart");
 
+        a_DataFile >> s;
         while (s != "NEAT_ParametersEnd")
         {
 			if(a_DataFile.eof()){
         		throw std::invalid_argument( "Reached end of file before reading the end tag. "
         			"A valid parameters file must start with NEAT_ParametersStart and end with NEAT_ParametersEnd." );
         	}
-
-            a_DataFile >> s;
 
             if (s == "PopulationSize")
                 a_DataFile >> PopulationSize;
@@ -470,7 +469,7 @@ namespace NEAT
                 else
                     AllowClones = false;
             }
-    
+
             else if (s == "NormalizeGenomeSize")
             {
                 a_DataFile >> tf;
@@ -479,8 +478,8 @@ namespace NEAT
                 else
                     NormalizeGenomeSize = false;
             }
-    
-    
+
+
             else if (s == "YoungAgeTreshold")
                 a_DataFile >> YoungAgeTreshold;
 
@@ -651,10 +650,10 @@ namespace NEAT
 
             else if (s == "WeightMutationMaxPower")
                 a_DataFile >> WeightMutationMaxPower;
-    
+
             else if (s == "WeightReplacementRate")
                 a_DataFile >> WeightReplacementRate;
-    
+
             else if (s == "WeightReplacementMaxPower")
                 a_DataFile >> WeightReplacementMaxPower;
 
@@ -885,12 +884,16 @@ namespace NEAT
             else if (s == "MutateGenomeTraitsProb"){
             	a_DataFile >> MutateGenomeTraitsProb;
             }
+            else{
+                throw std::invalid_argument( std::string("Unrecognized parameter: ") + s );
+            }
 
             // End of else if chain
             if(!a_DataFile){
             	throw std::invalid_argument( "Error while parsing parameters file." );
             }
-
+            
+            a_DataFile >> s;
         }
 
         return 0;
