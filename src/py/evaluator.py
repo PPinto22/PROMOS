@@ -2,6 +2,7 @@ import MultiNEAT as neat
 import argparse
 import datetime
 import multiprocessing
+import random
 import time
 
 import numpy as np
@@ -84,7 +85,7 @@ def _create_genome_evaluation(genome, fitness, net, generation=None, initial_tim
 
 def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, processes=1, sort=True):
     if sample_size is not None:
-        data = data.get_sample(sample_size, seed=int(time.clock() * 100))
+        data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
 
     # Set data as a global variable to avoid copying it to every process
     global global_data

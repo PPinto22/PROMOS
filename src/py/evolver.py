@@ -5,6 +5,7 @@ import csv
 import json
 import math
 import os
+import random
 import time
 import argparse
 import datetime
@@ -53,6 +54,8 @@ def parse_args():
                         help='run identifier. This ID will be used to name all output files '
                              '(e.g., neat_ID_summary.txt). '
                              'If unspecified, the ID will be the datetime of when the run was started.')
+    parser.add_argument('--seed', dest='seed', metavar='S', type=int, default=None,
+                        help='specify an RNG integer seed')
     parser.add_argument('--no-reevaluation', dest='no_reevaluation', action='store_true',
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
@@ -62,6 +65,9 @@ def parse_args():
 
     options.id = options.id if options.id is not None else util.get_current_datetime_string()
     options.out_dir = options.out_dir if options.out_dir != 'NULL' else None
+
+    if options.seed is not None:
+        random.seed(options.seed)
 
     return options
 
@@ -126,23 +132,23 @@ class Evolver:
         self.best_list.clear()
         self.best_test = None
 
-    def init_population(self, seed=int(time.clock() * 100)):
+    def init_population(self):
         if self.options.pop_file is not None:
             return neat.Population(self.options.pop_file)
 
         pop = None
         output_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
         hidden_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
+        seed = random.randint(0, 2147483647) if self.options.seed is None else self.options.seed
 
         if self.options.method == 'neat':
             g = neat.Genome(0, 10, 0, 1, False, output_act_f, hidden_act_f, 0, self.params, 0)
-            pop = neat.Population(g, self.params, True, 1.0, 0)
+            pop = neat.Population(g, self.params, True, 1.0, seed)
         elif self.options.method in ['hyperneat', 'eshyperneat']:
             g = neat.Genome(0, self.substrate.GetMinCPPNInputs(), 0, self.substrate.GetMinCPPNOutputs(),
                             False, output_act_f, hidden_act_f, 0, self.params, 0)
-            pop = neat.Population(g, self.params, True, 1.0, 0)
+            pop = neat.Population(g, self.params, True, 1.0, seed)
 
-        pop.RNG.Seed(seed)
         return pop
 
     def get_genome_list(self):
