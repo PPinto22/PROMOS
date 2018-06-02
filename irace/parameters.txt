@@ -25,11 +25,12 @@
 ##    other parameters. This expression must return TRUE if the
 ##    condition is satisfied, FALSE otherwise.
 
-# 1:      2:                          3: 4:            5:
-popsize	  "PopulationSize="	           i (50, 300)
-addneuron "MutateAddNeuronProb="       r (0.01, 0.40)
-remneuron "MutateRemSimpleNeuronProb=" r (0.01, 0.30)
-addlink   "MutateAddLinkProb="         r (0.01, 0.40)
-remlink   "MutateRemLinkProb="         r (0.01, 0.30)
-elitism   "Elitism="                   r (0.00, 0.30)
-crossover "CrossoverRate="             r (0.20, 0.90)
+# 1:          2:                           3:    4:            5:
+popsize	      "PopulationSize="	            i    (50, 300)
+addneuron     "MutateAddNeuronProb="        r    (0.01, 0.40)
+remneuron     "MutateRemSimpleNeuronProb="  r    (0.01, 0.30)
+addlink       "MutateAddLinkProb="          r    (0.01, 0.40)
+remlink       "MutateRemLinkProb="          r    (0.01, 0.30)
+elitism       "Elitism="                    r    (0.00, 0.30)
+crossover     "CrossoverRate="              r    (0.20, 0.90)
+activation    "Activation="                 i    (0, 14)
