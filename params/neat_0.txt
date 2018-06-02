@@ -29,8 +29,4 @@ ActivationFunction_UnsignedSigmoid_Prob 0.25
 ActivationFunction_UnsignedSine_Prob 0.25
 ActivationFunction_Relu_Prob 0.25
 
-MutateNeuronTraitsProb 0
-MutateLinkTraitsProb 0
-MutateGenomeTraitsProb 0
-
 NEAT_ParametersEnd
