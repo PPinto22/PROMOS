@@ -11,3 +11,4 @@
 ## Examples of valid logical operators are: ==  !=  >=  <=  >  <  &  |  !  %in%
 remlink > addlink
 remneuron > addneuron
+(addneuron + remneuron + addlink + remlink + mutbias + mutactiv) > 1

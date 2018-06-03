@@ -31,6 +31,11 @@ activation_functions() {
 # Read parameters into array
 IFS=' ' read -r -a params <<< $arguments
 
+# Static parameters
+echo "MutateNeuronTraitsProb 0"
+echo "MutateLinkTraitsProb 0"
+echo "MutateGenomeTraitsProb 0"
+
 echo -e "NEAT_ParametersStart\n"
 # Print parameters received as input
 for p in "${params[@]}"

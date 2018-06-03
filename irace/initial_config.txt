@@ -12,5 +12,5 @@
 ## are not enabled for a given configuration) and, if given, the
 ## constraints that describe forbidden configurations.
 
-popsize addneuron remneuron addlink remlink elitism crossover
-100     0.05      0.03      0.1     0.05    0.1     0.6
+popsize addneuron remneuron addlink remlink mutbias mutactiv  elitism crossover activation
+100     0.05      0.03      0.1     0.05    0.03    0.02      0.1     0.6       1
