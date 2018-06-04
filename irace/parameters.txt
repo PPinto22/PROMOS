@@ -25,14 +25,50 @@
 ##    other parameters. This expression must return TRUE if the
 ##    condition is satisfied, FALSE otherwise.
 
-# 1:          2:                               3:    4:            5:
-popsize	      "PopulationSize="	                i    (100, 300)
-addneuron     "MutateAddNeuronProb="            r    (0.01, 0.20)
-remneuron     "MutateRemSimpleNeuronProb="      r    (0.01, 0.20)
-addlink       "MutateAddLinkProb="              r    (0.01, 0.20)
-remlink       "MutateRemLinkProb="              r    (0.01, 0.20)
-mutbias       "MutateNeuronBiasesProb="         r    (0.00, 0.10)
-mutactiv      "MutateNeuronActivationTypeProb=" r    (0.00, 0.05)   | activation > 4
-elitism       "Elitism="                        r    (0.00, 0.15)
-crossover     "CrossoverRate="                  r    (0.50, 0.90)
-activation    "Activation="                     i    (0, 14)
+# 1:          2:                               3:   4:            5:
+popsize	      "PopulationSize="	                i   (100, 300)
+minspecies    "MinSpecies="                     i   (2, 6)
+maxspecies    "MaxSpecies="                     i   (8, 20)
+clones        "AllowClones="                    c   (true, false)
+youngtresh    "YoungAgeTreshold="               i   (3, 10)       | youngboost > 1.0
+youngboost    "YoungAgeFitnessBoost="           r   (1.00, 1.50)
+oldtresh      "OldAgeTreshold="                 i   (25, 70)      | oldpenalty < 1.0
+oldpenalty    "OldAgePenalty="                  r   (0.50, 1.00)
+survival      "SurvivalRate="                   r   (0.25, 0.75)
+crossover     "CrossoverRate="                  r   (0.50, 0.90)
+# The "interspecies" parameter is represented as a percentage, which is later
+# converted to a decimal by the targetRunner, i.e., (0.01, 0.50) -> (0.0001, 0.0050)
+interspecies  "InterspeciesCrossoverRate="      r   (0.01, 0.50)
+mutation      "OverallMutationRate="            r   (0.15, 0.80)
+elitism       "Elitism="                        r   (0.00, 0.15)
+multipoint    "MultipointCrossoverRate="        r   (0.00, 1.00)
+addneuron     "MutateAddNeuronProb="            r   (0.01, 0.20)
+remneuron     "MutateRemSimpleNeuronProb="      r   (0.01, 0.20)
+addlink       "MutateAddLinkProb="              r   (0.01, 0.20)
+remlink       "MutateRemLinkProb="              r   (0.01, 0.20)
+# <Weight mutations>
+mutweights    "MutateWeightsProb="              r   (0.60, 0.95)
+mutsevere     "MutateWeightsSevereProb="        r   (0.10, 0.40)
+mutgene       "WeightMutationRate="             r   (0.70, 1.00)
+replweight    "WeightReplacementRate="          r   (0.00, 0.40)
+maxweight     "MaxWeight="                      i   (6, 20)
+# Fictional parameter (WeightMutationMaxProportion): defines the maximum weight mutation
+# proportionally to the weight maximum (MaxWeight)
+mutweightmax  "WeightMutationMaxProportion="    r   (0.05, 0.30)
+# </Weight mutations>
+mutbias       "MutateNeuronBiasesProb="         r   (0.00, 0.10)
+mutactiv      "MutateNeuronActivationTypeProb=" r   (0.00, 0.05)  | activation > 4
+# Each integer in "activation" corresponds to a predefined combination of activation functions
+activation    "Activation="                     i   (0, 14)
+# compat        "CompatTreshold="                 i   (2, 10)
+
+# These parameters are related to stagnation, which would require long execution times to be properly tuned
+# maxstag       "SpeciesMaxStagnation="           i   (30, 70)
+# coevolstag    "DetectCompetetiveCoevolutionStagnation="   c   (true, false)
+# killgens      "KillWorstSpeciesEach="           i   (15, 50)      | coevolstag == "true"
+# killage       "KillWorstAge="                   i   (10, 30)      | coevolstag == "true"
+# deltacoding   "DeltaCoding="                    c   (true, false)
+# phased        "PhasedSearching="                c   (true, false)
+# simplmpc      "SimplifyingPhaseMPCTreshold="    i   (10, 50)
+# simplstag     "SimplifyingPhaseStagnationTreshold=" i (20, 50)
+# complstag     "ComplexityFloorGenerations="     i   (25, 60)

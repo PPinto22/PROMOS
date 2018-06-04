@@ -9,6 +9,14 @@
 ## then the configuration is discarded.
 ##
 ## Examples of valid logical operators are: ==  !=  >=  <=  >  <  &  |  !  %in%
+
+# The probability of removing a neuron or link cannot be greater than the probability of adding one
 remlink > addlink
 remneuron > addneuron
-(addneuron + remneuron + addlink + remlink + mutbias + mutactiv) > 1
+
+# The sum of mutation probabilities cannot be > 1
+(addneuron + remneuron + addlink + remlink +
+mutweights + mutbias + mutactiv) > 1
+
+# Prevent species from having less than 10 individuals, on average
+popsize/maxspecies < 10

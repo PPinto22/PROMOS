@@ -31,13 +31,15 @@ activation_functions() {
 # Read parameters into array
 IFS=' ' read -r -a params <<< $arguments
 
+# Begin tag
+echo -e "NEAT_ParametersStart\n"
+
 # Static parameters
 echo "MutateNeuronTraitsProb 0"
 echo "MutateLinkTraitsProb 0"
 echo "MutateGenomeTraitsProb 0"
 
-echo -e "NEAT_ParametersStart\n"
-# Print parameters received as input
+# Parameters received as input
 for p in "${params[@]}"
 do
     # Split the parameter and value by the '='
@@ -47,8 +49,27 @@ do
     case ${param} in
       Activation) # Convert activation function parameter
         echo | activation_functions $value;;
+      InterspeciesCrossoverRate) # Convert from percentage to decimal
+        value=$(echo "scale=5; ${value}/100" | bc)
+        echo $param $value;;
+      WeightMutationMaxProportion) # Dependent on MaxWeight
+        mutweightprop=$value
+        if [ ! -z ${maxweight+x} ]; then
+          mutweightmax=$(echo "scale=2; ${maxweight}*${mutweightprop}" | bc)
+          echo "WeightMutationMaxPower ${mutweightmax}"
+          echo "WeightReplacementMaxPower ${mutweightmax}"
+        fi;;
+      MaxWeight) # Required for WeightMutationMaxProportion
+        maxweight=$value
+        if [ ! -z ${mutweightprop+x} ]; then
+          mutweightmax=$(echo "scale=2; ${maxweight}*${mutweightprop}" | bc)
+          echo "WeightMutationMaxPower ${mutweightmax}"
+          echo "WeightReplacementMaxPower ${mutweightmax}"
+        fi;;
       *) # Default case: print "param value"
         echo $param $value;;
     esac
 done
+
+# End tag
 echo -e "\nNEAT_ParametersEnd"
