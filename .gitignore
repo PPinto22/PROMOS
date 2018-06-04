@@ -2,6 +2,7 @@ build/*
 !build/.gitkeep
 build-debug/
 .idea/
+cmake-build*/
 **.so
 **.pyd
 
