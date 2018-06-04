@@ -247,13 +247,13 @@ namespace NEAT
             }
 
             // boost the fitness up to some young age
-            if (m_AgeGenerations < a_Parameters.YoungAgeTreshold)
+            if (m_AgeGenerations < a_Parameters.YoungAgeThreshold)
             {
                 t_fitness *= a_Parameters.YoungAgeFitnessBoost;
             }
 
             // penalty for old species
-            if (m_AgeGenerations > a_Parameters.OldAgeTreshold)
+            if (m_AgeGenerations > a_Parameters.OldAgeThreshold)
             {
                 t_fitness *= a_Parameters.OldAgePenalty;
             }

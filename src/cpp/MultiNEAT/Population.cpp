@@ -526,19 +526,19 @@ void Population::Epoch()
     // adjust the compatibility threshold
     if (m_Parameters.DynamicCompatibility == true)
     {
-        if ((m_Generation % m_Parameters.CompatTreshChangeInterval_Generations) == 0)
+        if ((m_Generation % m_Parameters.CompatThreshChangeInterval_Generations) == 0)
         {
             if (m_Species.size() > m_Parameters.MaxSpecies)
             {
-                m_Parameters.CompatThreshold += m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold += m_Parameters.CompatThresholdModifier;
             }
             else if (m_Species.size() < m_Parameters.MinSpecies)
             {
-                m_Parameters.CompatThreshold -= m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold -= m_Parameters.CompatThresholdModifier;
             }
         }
 
-        if (m_Parameters.CompatThreshold < m_Parameters.MinCompatTreshold) m_Parameters.CompatThreshold = m_Parameters.MinCompatTreshold;
+        if (m_Parameters.CompatThreshold < m_Parameters.MinCompatThreshold) m_Parameters.CompatThreshold = m_Parameters.MinCompatThreshold;
     }
 
 
@@ -616,10 +616,10 @@ void Population::Epoch()
         if (m_SearchMode == COMPLEXIFYING)
         {
             // Need to begin simplification?
-            if (m_CurrentMPC > (m_BaseMPC + m_Parameters.SimplifyingPhaseMPCTreshold))
+            if (m_CurrentMPC > (m_BaseMPC + m_Parameters.SimplifyingPhaseMPCThreshold))
             {
                 // Do this only if the whole population is stagnating
-                if (m_GensSinceBestFitnessLastChanged > m_Parameters.SimplifyingPhaseStagnationTreshold)
+                if (m_GensSinceBestFitnessLastChanged > m_Parameters.SimplifyingPhaseStagnationThreshold)
                 {
                     // Change the current search mode
                     m_SearchMode = SIMPLIFYING;
@@ -979,20 +979,20 @@ Genome* Population::Tick(Genome& a_deleted_genome)
     bool t_changed = false;
     if (m_Parameters.DynamicCompatibility == true)
     {
-        if ((m_NumEvaluations % m_Parameters.CompatTreshChangeInterval_Evaluations) == 0)
+        if ((m_NumEvaluations % m_Parameters.CompatThreshChangeInterval_Evaluations) == 0)
         {
             if (m_Species.size() > m_Parameters.MaxSpecies)
             {
-                m_Parameters.CompatThreshold += m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold += m_Parameters.CompatThresholdModifier;
                 t_changed = true;
             }
             else if (m_Species.size() < m_Parameters.MinSpecies)
             {
-                m_Parameters.CompatThreshold -= m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold -= m_Parameters.CompatThresholdModifier;
                 t_changed = true;
             }
 
-            if (m_Parameters.CompatThreshold < m_Parameters.MinCompatTreshold) m_Parameters.CompatThreshold = m_Parameters.MinCompatTreshold;
+            if (m_Parameters.CompatThreshold < m_Parameters.MinCompatThreshold) m_Parameters.CompatThreshold = m_Parameters.MinCompatThreshold;
         }
     }
 
@@ -1279,7 +1279,7 @@ bool Population::NoveltySearchTick(Genome& a_SuccessfulGenome)
     if (m_Parameters.NoveltySearch_Dynamic_Pmin)
     {
         // too many generations without adding to the archive?
-        if (m_GensSinceLastArchiving > m_Parameters.NoveltySearch_No_Archiving_Stagnation_Treshold)
+        if (m_GensSinceLastArchiving > m_Parameters.NoveltySearch_No_Archiving_Stagnation_Threshold)
         {
             m_Parameters.NoveltySearch_P_min *= m_Parameters.NoveltySearch_Pmin_lowering_multiplier;
             if (m_Parameters.NoveltySearch_P_min < m_Parameters.NoveltySearch_Pmin_min)

@@ -3,10 +3,10 @@ NEAT_ParametersStart
 PopulationSize 10
 AllowClones true
 CompatThreshold 5.0
-CompatTresholdModifier 0.3
-YoungAgeTreshold 15
+CompatThresholdModifier 0.3
+YoungAgeThreshold 15
 SpeciesDropoffAge 100
-OldAgeTreshold 35
+OldAgeThreshold 35
 MinSpecies 2
 MaxSpecies 10
 RouletteWheelSelection true

@@ -146,10 +146,10 @@ int main() {
     params.DynamicCompatibility = true;
     params.AllowClones = false;
     params.CompatThreshold = 5.0;
-    params.CompatTresholdModifier = 0.3;
-    params.YoungAgeTreshold = 15;
+    params.CompatThresholdModifier = 0.3;
+    params.YoungAgeThreshold = 15;
     params.SpeciesMaxStagnation = 100;
-    params.OldAgeTreshold = 35;
+    params.OldAgeThreshold = 35;
     params.MinSpecies = 2;
     params.MaxSpecies = 5;
     params.RouletteWheelSelection = true;

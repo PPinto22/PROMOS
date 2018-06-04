@@ -61,7 +61,7 @@ namespace NEAT
         ////////////////////////////////
 
         // AgeGens threshold, meaning if a species is below it, it is considered young
-        YoungAgeTreshold = 5;
+        YoungAgeThreshold = 5;
 
         // Fitness boost multiplier for young species (1.0 means no boost)
         // Make sure it is >= 1.0 to avoid confusion
@@ -75,7 +75,7 @@ namespace NEAT
         StagnationDelta = 0.0;
 
         // AgeGens threshold, meaning if a species is above it, it is considered old
-        OldAgeTreshold = 30;
+        OldAgeThreshold = 30;
 
         // Multiplier that penalizes old species.
         // Make sure it is <= 1.0 to avoid confusion.
@@ -131,10 +131,10 @@ namespace NEAT
         DeltaCoding = false;
 
         // What is the MPC + base MPC needed to begin simplifying phase
-        SimplifyingPhaseMPCTreshold = 20;
+        SimplifyingPhaseMPCThreshold = 20;
 
         // How many generations of global stagnation should have passed to enter simplifying phase
-        SimplifyingPhaseStagnationTreshold = 30;
+        SimplifyingPhaseStagnationThreshold = 30;
 
         // How many generations of MPC stagnation are needed to turn back on complexifying
         ComplexityFloorGenerations = 40;
@@ -159,7 +159,7 @@ namespace NEAT
 
         // How many evaluations should pass without adding to the archive
         // in order to lower Pmin
-        NoveltySearch_No_Archiving_Stagnation_Treshold = 150;
+        NoveltySearch_No_Archiving_Stagnation_Threshold = 150;
 
         // How should it be multiplied (make it less than 1.0)
         NoveltySearch_Pmin_lowering_multiplier = 0.9;
@@ -348,18 +348,18 @@ namespace NEAT
         CompatThreshold = 5.0;
 
         // Minumal value of the compatibility threshold
-        MinCompatTreshold = 0.2;
+        MinCompatThreshold = 0.2;
 
         // Modifier per generation for keeping the species stable
-        CompatTresholdModifier = 0.3;
+        CompatThresholdModifier = 0.3;
 
         // Per how many generations to change the threshold
         // (used in generational mode)
-        CompatTreshChangeInterval_Generations = 1;
+        CompatThreshChangeInterval_Generations = 1;
 
         // Per how many evaluations to change the threshold
         // (used in steady state mode)
-        CompatTreshChangeInterval_Evaluations = 10;
+        CompatThreshChangeInterval_Evaluations = 10;
 
 
 
@@ -480,8 +480,8 @@ namespace NEAT
             }
 
 
-            else if (s == "YoungAgeTreshold")
-                a_DataFile >> YoungAgeTreshold;
+            else if (s == "YoungAgeThreshold")
+                a_DataFile >> YoungAgeThreshold;
 
             else if (s == "YoungAgeFitnessBoost")
                 a_DataFile >> YoungAgeFitnessBoost;
@@ -492,8 +492,8 @@ namespace NEAT
             else if (s == "StagnationDelta")
                 a_DataFile >> StagnationDelta;
 
-            else if (s == "OldAgeTreshold")
-                a_DataFile >> OldAgeTreshold;
+            else if (s == "OldAgeThreshold")
+                a_DataFile >> OldAgeThreshold;
 
             else if (s == "OldAgePenalty")
                 a_DataFile >> OldAgePenalty;
@@ -555,11 +555,11 @@ namespace NEAT
                     DeltaCoding = false;
             }
 
-            else if (s == "SimplifyingPhaseMPCTreshold")
-                a_DataFile >> SimplifyingPhaseMPCTreshold;
+            else if (s == "SimplifyingPhaseMPCThreshold")
+                a_DataFile >> SimplifyingPhaseMPCThreshold;
 
-            else if (s == "SimplifyingPhaseStagnationTreshold")
-                a_DataFile >> SimplifyingPhaseStagnationTreshold;
+            else if (s == "SimplifyingPhaseStagnationThreshold")
+                a_DataFile >> SimplifyingPhaseStagnationThreshold;
 
             else if (s == "ComplexityFloorGenerations")
                 a_DataFile >> ComplexityFloorGenerations;
@@ -579,8 +579,8 @@ namespace NEAT
                     NoveltySearch_Dynamic_Pmin = false;
             }
 
-            else if (s == "NoveltySearch_No_Archiving_Stagnation_Treshold")
-                a_DataFile >> NoveltySearch_No_Archiving_Stagnation_Treshold;
+            else if (s == "NoveltySearch_No_Archiving_Stagnation_Threshold")
+                a_DataFile >> NoveltySearch_No_Archiving_Stagnation_Threshold;
 
             else if (s == "NoveltySearch_Pmin_lowering_multiplier")
                 a_DataFile >> NoveltySearch_Pmin_lowering_multiplier;
@@ -794,17 +794,17 @@ namespace NEAT
             else if (s == "CompatThreshold")
                 a_DataFile >> CompatThreshold;
 
-            else if (s == "MinCompatTreshold")
-                a_DataFile >> MinCompatTreshold;
+            else if (s == "MinCompatThreshold")
+                a_DataFile >> MinCompatThreshold;
 
-            else if (s == "CompatTresholdModifier")
-                a_DataFile >> CompatTresholdModifier;
+            else if (s == "CompatThresholdModifier")
+                a_DataFile >> CompatThresholdModifier;
 
-            else if (s == "CompatTreshChangeInterval_Generations")
-                a_DataFile >> CompatTreshChangeInterval_Generations;
+            else if (s == "CompatThreshChangeInterval_Generations")
+                a_DataFile >> CompatThreshChangeInterval_Generations;
 
-            else if (s == "CompatTreshChangeInterval_Evaluations")
-                a_DataFile >> CompatTreshChangeInterval_Evaluations;
+            else if (s == "CompatThreshChangeInterval_Evaluations")
+                a_DataFile >> CompatThreshChangeInterval_Evaluations;
 
             else if (s == "DivisionThreshold")
                 a_DataFile >> DivisionThreshold;
@@ -930,11 +930,11 @@ namespace NEAT
         fprintf(a_fstream, "InnovationsForever %s\n", InnovationsForever == true ? "true" : "false");
         fprintf(a_fstream, "AllowClones %s\n", AllowClones == true ? "true" : "false");
         fprintf(a_fstream, "NormalizeGenomeSize %s\n", NormalizeGenomeSize == true ? "true" : "false");
-        fprintf(a_fstream, "YoungAgeTreshold %d\n", YoungAgeTreshold);
+        fprintf(a_fstream, "YoungAgeThreshold %d\n", YoungAgeThreshold);
         fprintf(a_fstream, "YoungAgeFitnessBoost %3.20f\n", YoungAgeFitnessBoost);
         fprintf(a_fstream, "SpeciesDropoffAge %d\n", SpeciesMaxStagnation);
         fprintf(a_fstream, "StagnationDelta %3.20f\n", StagnationDelta);
-        fprintf(a_fstream, "OldAgeTreshold %d\n", OldAgeTreshold);
+        fprintf(a_fstream, "OldAgeThreshold %d\n", OldAgeThreshold);
         fprintf(a_fstream, "OldAgePenalty %3.20f\n", OldAgePenalty);
         fprintf(a_fstream, "DetectCompetetiveCoevolutionStagnation %s\n",
                 DetectCompetetiveCoevolutionStagnation == true ? "true" : "false");
@@ -948,14 +948,14 @@ namespace NEAT
         fprintf(a_fstream, "RouletteWheelSelection %s\n", RouletteWheelSelection == true ? "true" : "false");
         fprintf(a_fstream, "PhasedSearching %s\n", PhasedSearching == true ? "true" : "false");
         fprintf(a_fstream, "DeltaCoding %s\n", DeltaCoding == true ? "true" : "false");
-        fprintf(a_fstream, "SimplifyingPhaseMPCTreshold %d\n", SimplifyingPhaseMPCTreshold);
-        fprintf(a_fstream, "SimplifyingPhaseStagnationTreshold %d\n", SimplifyingPhaseStagnationTreshold);
+        fprintf(a_fstream, "SimplifyingPhaseMPCThreshold %d\n", SimplifyingPhaseMPCThreshold);
+        fprintf(a_fstream, "SimplifyingPhaseStagnationThreshold %d\n", SimplifyingPhaseStagnationThreshold);
         fprintf(a_fstream, "ComplexityFloorGenerations %d\n", ComplexityFloorGenerations);
         fprintf(a_fstream, "NoveltySearch_K %d\n", NoveltySearch_K);
         fprintf(a_fstream, "NoveltySearch_P_min %3.20f\n", NoveltySearch_P_min);
         fprintf(a_fstream, "NoveltySearch_Dynamic_Pmin %s\n", NoveltySearch_Dynamic_Pmin == true ? "true" : "false");
-        fprintf(a_fstream, "NoveltySearch_No_Archiving_Stagnation_Treshold %d\n",
-                NoveltySearch_No_Archiving_Stagnation_Treshold);
+        fprintf(a_fstream, "NoveltySearch_No_Archiving_Stagnation_Threshold %d\n",
+                NoveltySearch_No_Archiving_Stagnation_Threshold);
         fprintf(a_fstream, "NoveltySearch_Pmin_lowering_multiplier %3.20f\n", NoveltySearch_Pmin_lowering_multiplier);
         fprintf(a_fstream, "NoveltySearch_Pmin_min %3.20f\n", NoveltySearch_Pmin_min);
         fprintf(a_fstream, "NoveltySearch_Quick_Archiving_Min_Evaluations %d\n",
@@ -1023,10 +1023,10 @@ namespace NEAT
         fprintf(a_fstream, "BiasDiffCoeff %3.20f\n", BiasDiffCoeff);
         fprintf(a_fstream, "ActivationFunctionDiffCoeff %3.20f\n", ActivationFunctionDiffCoeff);
         fprintf(a_fstream, "CompatThreshold %3.20f\n", CompatThreshold);
-        fprintf(a_fstream, "MinCompatTreshold %3.20f\n", MinCompatTreshold);
-        fprintf(a_fstream, "CompatTresholdModifier %3.20f\n", CompatTresholdModifier);
-        fprintf(a_fstream, "CompatTreshChangeInterval_Generations %d\n", CompatTreshChangeInterval_Generations);
-        fprintf(a_fstream, "CompatTreshChangeInterval_Evaluations %d\n", CompatTreshChangeInterval_Evaluations);
+        fprintf(a_fstream, "MinCompatThreshold %3.20f\n", MinCompatThreshold);
+        fprintf(a_fstream, "CompatThresholdModifier %3.20f\n", CompatThresholdModifier);
+        fprintf(a_fstream, "CompatThreshChangeInterval_Generations %d\n", CompatThreshChangeInterval_Generations);
+        fprintf(a_fstream, "CompatThreshChangeInterval_Evaluations %d\n", CompatThreshChangeInterval_Evaluations);
 
 
         fprintf(a_fstream, "DivisionThreshold %3.20f\n", DivisionThreshold);
