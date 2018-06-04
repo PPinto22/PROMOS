@@ -330,19 +330,19 @@ namespace NEAT
         WeightDiffCoeff = 0.5;
 
         // Node-specific activation parameter A difference importance
-        ActivationADiffCoeff = 0.0;
+        ActivationADiffCoeff = 0.1;
 
         // Node-specific activation parameter B difference importance
-        ActivationBDiffCoeff = 0.0;
+        ActivationBDiffCoeff = 0.1;
 
         // Average time constant difference importance
-        TimeConstantDiffCoeff = 0.0;
+        TimeConstantDiffCoeff = 0.1;
 
         // Average bias difference importance
-        BiasDiffCoeff = 0.0;
+        BiasDiffCoeff = 0.2;
 
         // Activation function type difference importance
-        ActivationFunctionDiffCoeff = 0.0;
+        ActivationFunctionDiffCoeff = 0.2;
 
         // Compatibility treshold
         CompatTreshold = 5.0;
