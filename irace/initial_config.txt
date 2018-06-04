@@ -12,5 +12,5 @@
 ## are not enabled for a given configuration) and, if given, the
 ## constraints that describe forbidden configurations.
 
-popsize addneuron remneuron addlink remlink mutbias mutactiv  elitism crossover activation
-100     0.05      0.03      0.1     0.05    0.03    0.02      0.1     0.6       1
+popsize minspecies maxspecies clones youngthresh youngboost oldthresh oldpenalty survival crossover interspecies mutation elitism multipoint addneuron remneuron addlink remlink mutweights mutsevere mutgene replweight maxweight mutweightmax mutbias mutactiv activation compat
+100     5          10         true   5           1.1        30        0.8        0.3      0.7       0.01         0.25     0.05    0.75       0.05      0.03      0.1     0.05    0.7        0.20      0.9     0.2        10        0.15         0.05    NA       0          5

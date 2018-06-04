@@ -70,8 +70,12 @@ done
 # It assumes that the objective value is the first number in
 # the first column of the last line of the output.
 if [ -s "${STDOUT}" ]; then
-    value=$(sed -rz 's/.*Fitness \(test\): ([+-]?([0-9]*[.])?[0-9]+).*/\1/' ${STDOUT})
-    echo -"$value"
+    value=-$(sed -rz 's/.*Fitness \(test\): ([+-]?([0-9]*[.])?[0-9]+).*/\1/' ${STDOUT})
+    if ! [[ $value =~ ^-?[0-9]+([.][0-9]+)?$ ]]; then
+      error "Return value \"${value}\" is not a valid number"
+      exit 1
+    fi
+    echo $value
 else
     error "${STDOUT}: No such file or directory"
 fi

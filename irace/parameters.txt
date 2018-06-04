@@ -30,9 +30,9 @@ popsize	      "PopulationSize="	                i   (100, 300)
 minspecies    "MinSpecies="                     i   (2, 6)
 maxspecies    "MaxSpecies="                     i   (8, 20)
 clones        "AllowClones="                    c   (true, false)
-youngtresh    "YoungAgeThreshold="               i   (3, 10)       | youngboost > 1.0
+youngthresh   "YoungAgeThreshold="              i   (3, 10)       | youngboost > 1.0
 youngboost    "YoungAgeFitnessBoost="           r   (1.00, 1.50)
-oldtresh      "OldAgeThreshold="                 i   (25, 70)      | oldpenalty < 1.0
+oldthresh     "OldAgeThreshold="                i   (25, 70)      | oldpenalty < 1.0
 oldpenalty    "OldAgePenalty="                  r   (0.50, 1.00)
 survival      "SurvivalRate="                   r   (0.25, 0.75)
 crossover     "CrossoverRate="                  r   (0.50, 0.90)
@@ -42,10 +42,10 @@ interspecies  "InterspeciesCrossoverRate="      r   (0.01, 0.50)
 mutation      "OverallMutationRate="            r   (0.15, 0.80)
 elitism       "Elitism="                        r   (0.00, 0.15)
 multipoint    "MultipointCrossoverRate="        r   (0.00, 1.00)
-addneuron     "MutateAddNeuronProb="            r   (0.01, 0.20)
-remneuron     "MutateRemSimpleNeuronProb="      r   (0.01, 0.20)
-addlink       "MutateAddLinkProb="              r   (0.01, 0.20)
-remlink       "MutateRemLinkProb="              r   (0.01, 0.20)
+addneuron     "MutateAddNeuronProb="            r   (0.01, 0.15)
+remneuron     "MutateRemSimpleNeuronProb="      r   (0.01, 0.15)
+addlink       "MutateAddLinkProb="              r   (0.01, 0.15)
+remlink       "MutateRemLinkProb="              r   (0.01, 0.15)
 # <Weight mutations>
 mutweights    "MutateWeightsProb="              r   (0.60, 0.95)
 mutsevere     "MutateWeightsSevereProb="        r   (0.10, 0.40)
@@ -57,10 +57,10 @@ maxweight     "MaxWeight="                      i   (6, 20)
 mutweightmax  "WeightMutationMaxProportion="    r   (0.05, 0.30)
 # </Weight mutations>
 mutbias       "MutateNeuronBiasesProb="         r   (0.00, 0.10)
-mutactiv      "MutateNeuronActivationTypeProb=" r   (0.00, 0.05)  | activation > 4
+mutactiv      "MutateNeuronActivationTypeProb=" r   (0.00, 0.01)  | activation > 4
 # Each integer in "activation" corresponds to a predefined combination of activation functions
 activation    "Activation="                     i   (0, 14)
-# compat        "CompatThreshold="                 i   (2, 10)
+compat        "CompatThreshold="                i   (2, 10)
 
 # These parameters are related to stagnation, which would require long execution times to be properly tuned
 # maxstag       "SpeciesMaxStagnation="           i   (30, 70)

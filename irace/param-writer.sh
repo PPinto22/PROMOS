@@ -48,26 +48,38 @@ do
     value=${psplit[1]}
     case ${param} in
       Activation) # Convert activation function parameter
-        echo | activation_functions $value;;
+        echo | activation_functions $value
+        ;;
       InterspeciesCrossoverRate) # Convert from percentage to decimal
         value=$(echo "scale=5; ${value}/100" | bc)
-        echo $param $value;;
+        echo $param $value
+        ;;
       WeightMutationMaxProportion) # Dependent on MaxWeight
         mutweightprop=$value
         if [ ! -z ${maxweight+x} ]; then
           mutweightmax=$(echo "scale=2; ${maxweight}*${mutweightprop}" | bc)
           echo "WeightMutationMaxPower ${mutweightmax}"
           echo "WeightReplacementMaxPower ${mutweightmax}"
-        fi;;
+        fi
+        ;;
       MaxWeight) # Required for WeightMutationMaxProportion
         maxweight=$value
         if [ ! -z ${mutweightprop+x} ]; then
           mutweightmax=$(echo "scale=2; ${maxweight}*${mutweightprop}" | bc)
           echo "WeightMutationMaxPower ${mutweightmax}"
           echo "WeightReplacementMaxPower ${mutweightmax}"
-        fi;;
+        fi
+        ;;
+      CompatThreshold)
+        minthresh=$(echo "scale=2; ${value}*0.04" | bc)
+        threshmod=$(echo "scale=2; ${value}*0.06" | bc)
+        echo $param $value
+        echo "MinCompatThreshold ${minthresh}"
+        echo "CompatThresholdModifier ${threshmod}"
+        ;;
       *) # Default case: print "param value"
-        echo $param $value;;
+        echo $param $value
+        ;;
     esac
 done
 

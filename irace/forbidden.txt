@@ -14,9 +14,5 @@
 remlink > addlink
 remneuron > addneuron
 
-# The sum of mutation probabilities cannot be > 1
-(addneuron + remneuron + addlink + remlink +
-mutweights + mutbias + mutactiv) > 1
-
 # Prevent species from having less than 10 individuals, on average
 popsize/maxspecies < 10
