@@ -1259,7 +1259,7 @@ namespace NEAT {
 
         double t_total_distance = CompatibilityDistance(a_G, a_Parameters);
 
-        if (t_total_distance <= a_Parameters.CompatTreshold)
+        if (t_total_distance <= a_Parameters.CompatThreshold)
             return true;  // compatible
         else
             return false; // incompatible

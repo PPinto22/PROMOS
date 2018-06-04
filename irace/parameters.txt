@@ -60,7 +60,7 @@ mutbias       "MutateNeuronBiasesProb="         r   (0.00, 0.10)
 mutactiv      "MutateNeuronActivationTypeProb=" r   (0.00, 0.05)  | activation > 4
 # Each integer in "activation" corresponds to a predefined combination of activation functions
 activation    "Activation="                     i   (0, 14)
-# compat        "CompatTreshold="                 i   (2, 10)
+# compat        "CompatThreshold="                 i   (2, 10)
 
 # These parameters are related to stagnation, which would require long execution times to be properly tuned
 # maxstag       "SpeciesMaxStagnation="           i   (30, 70)

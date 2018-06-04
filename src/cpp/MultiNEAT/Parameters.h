@@ -341,7 +341,7 @@ public:
     double ActivationFunctionDiffCoeff;
 
     // Compatibility treshold
-    double CompatTreshold;
+    double CompatThreshold;
 
     // Minumal value of the compatibility treshold
     double MinCompatTreshold;
@@ -878,7 +878,7 @@ public:
         ar & TimeConstantDiffCoeff;
         ar & BiasDiffCoeff;
         ar & ActivationFunctionDiffCoeff;
-        ar & CompatTreshold;
+        ar & CompatThreshold;
         ar & MinCompatTreshold;
         ar & CompatTresholdModifier;
         ar & CompatTreshChangeInterval_Generations;

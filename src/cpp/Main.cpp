@@ -145,7 +145,7 @@ int main() {
     params.PopulationSize = 25;
     params.DynamicCompatibility = true;
     params.AllowClones = false;
-    params.CompatTreshold = 5.0;
+    params.CompatThreshold = 5.0;
     params.CompatTresholdModifier = 0.3;
     params.YoungAgeTreshold = 15;
     params.SpeciesMaxStagnation = 100;

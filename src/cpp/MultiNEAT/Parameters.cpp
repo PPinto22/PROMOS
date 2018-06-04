@@ -60,7 +60,7 @@ namespace NEAT
         // GA Parameters
         ////////////////////////////////
 
-        // AgeGens treshold, meaning if a species is below it, it is considered young
+        // AgeGens threshold, meaning if a species is below it, it is considered young
         YoungAgeTreshold = 5;
 
         // Fitness boost multiplier for young species (1.0 means no boost)
@@ -151,7 +151,7 @@ namespace NEAT
         // the K constant
         NoveltySearch_K = 15;
 
-        // Sparseness treshold. Add to the archive if above
+        // Sparseness threshold. Add to the archive if above
         NoveltySearch_P_min = 0.5;
 
         // Dynamic Pmin?
@@ -344,20 +344,20 @@ namespace NEAT
         // Activation function type difference importance
         ActivationFunctionDiffCoeff = 0.2;
 
-        // Compatibility treshold
-        CompatTreshold = 5.0;
+        // Compatibility threshold
+        CompatThreshold = 5.0;
 
-        // Minumal value of the compatibility treshold
+        // Minumal value of the compatibility threshold
         MinCompatTreshold = 0.2;
 
         // Modifier per generation for keeping the species stable
         CompatTresholdModifier = 0.3;
 
-        // Per how many generations to change the treshold
+        // Per how many generations to change the threshold
         // (used in generational mode)
         CompatTreshChangeInterval_Generations = 1;
 
-        // Per how many evaluations to change the treshold
+        // Per how many evaluations to change the threshold
         // (used in steady state mode)
         CompatTreshChangeInterval_Evaluations = 10;
 
@@ -791,8 +791,8 @@ namespace NEAT
             else if (s == "ActivationFunctionDiffCoeff")
                 a_DataFile >> ActivationFunctionDiffCoeff;
 
-            else if (s == "CompatTreshold")
-                a_DataFile >> CompatTreshold;
+            else if (s == "CompatThreshold")
+                a_DataFile >> CompatThreshold;
 
             else if (s == "MinCompatTreshold")
                 a_DataFile >> MinCompatTreshold;
@@ -1022,7 +1022,7 @@ namespace NEAT
         fprintf(a_fstream, "TimeConstantDiffCoeff %3.20f\n", TimeConstantDiffCoeff);
         fprintf(a_fstream, "BiasDiffCoeff %3.20f\n", BiasDiffCoeff);
         fprintf(a_fstream, "ActivationFunctionDiffCoeff %3.20f\n", ActivationFunctionDiffCoeff);
-        fprintf(a_fstream, "CompatTreshold %3.20f\n", CompatTreshold);
+        fprintf(a_fstream, "CompatThreshold %3.20f\n", CompatThreshold);
         fprintf(a_fstream, "MinCompatTreshold %3.20f\n", MinCompatTreshold);
         fprintf(a_fstream, "CompatTresholdModifier %3.20f\n", CompatTresholdModifier);
         fprintf(a_fstream, "CompatTreshChangeInterval_Generations %d\n", CompatTreshChangeInterval_Generations);

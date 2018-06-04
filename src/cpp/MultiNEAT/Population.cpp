@@ -530,15 +530,15 @@ void Population::Epoch()
         {
             if (m_Species.size() > m_Parameters.MaxSpecies)
             {
-                m_Parameters.CompatTreshold += m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold += m_Parameters.CompatTresholdModifier;
             }
             else if (m_Species.size() < m_Parameters.MinSpecies)
             {
-                m_Parameters.CompatTreshold -= m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold -= m_Parameters.CompatTresholdModifier;
             }
         }
 
-        if (m_Parameters.CompatTreshold < m_Parameters.MinCompatTreshold) m_Parameters.CompatTreshold = m_Parameters.MinCompatTreshold;
+        if (m_Parameters.CompatThreshold < m_Parameters.MinCompatTreshold) m_Parameters.CompatThreshold = m_Parameters.MinCompatTreshold;
     }
 
 
@@ -983,16 +983,16 @@ Genome* Population::Tick(Genome& a_deleted_genome)
         {
             if (m_Species.size() > m_Parameters.MaxSpecies)
             {
-                m_Parameters.CompatTreshold += m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold += m_Parameters.CompatTresholdModifier;
                 t_changed = true;
             }
             else if (m_Species.size() < m_Parameters.MinSpecies)
             {
-                m_Parameters.CompatTreshold -= m_Parameters.CompatTresholdModifier;
+                m_Parameters.CompatThreshold -= m_Parameters.CompatTresholdModifier;
                 t_changed = true;
             }
 
-            if (m_Parameters.CompatTreshold < m_Parameters.MinCompatTreshold) m_Parameters.CompatTreshold = m_Parameters.MinCompatTreshold;
+            if (m_Parameters.CompatThreshold < m_Parameters.MinCompatTreshold) m_Parameters.CompatThreshold = m_Parameters.MinCompatTreshold;
         }
     }
 
