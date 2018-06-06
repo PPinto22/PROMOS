@@ -24,7 +24,7 @@ class Data:
 
     def _init_from_file(self, file_path):
         with open(file_path, 'r') as file:
-            reader = csv.reader(file, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
+            reader = csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
             # Read fieldnames (aka labels)
             file_labels = list(next(reader))
             if self.input_labels is None:
