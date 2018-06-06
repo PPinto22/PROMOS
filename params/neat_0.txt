@@ -1,6 +1,6 @@
 NEAT_ParametersStart
 
-PopulationSize 10
+PopulationSize 150
 AllowClones true
 CompatThreshold 5.0
 CompatThresholdModifier 0.3
