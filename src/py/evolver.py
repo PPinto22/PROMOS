@@ -117,6 +117,9 @@ class Evolver:
         self.eval_time = datetime.timedelta()  # Time spent in evaluations
         self.ea_time = datetime.timedelta()  # Time spent in the EA
 
+        self.cur_run = None  # Current run, in case of multiple runs
+        self.cur_window = None  # Current sliding window index, in case of online training
+
         self.pop = self.init_population()  # C++ Population
         self.params = self.pop.Parameters  # Needed in case pop is loaded from file
         self.generation = 0  # Current generation
@@ -128,6 +131,8 @@ class Evolver:
         self.initial_time = None
         self.eval_time = datetime.timedelta()
         self.ea_time = datetime.timedelta()
+        self.cur_run = None
+        self.cur_window = None
         self.pop = self.init_population()
         self.generation = 0
         self.best_list.clear()
@@ -179,7 +184,8 @@ class Evolver:
         if self.options.out_dir is None:
             raise ValueError('out_dir is None')
 
-        return '{}/{}_{}_{}'.format(self.options.out_dir, self.options.method, self.options.id, suffix)
+        run = '({})'.format(self.cur_run) if self.cur_run is not None else ''
+        return '{}/{}_{}{}_{}'.format(self.options.out_dir, self.options.method, self.options.id, run, suffix)
 
     def write_results(self):
         if self.options.out_dir is not None:
@@ -334,16 +340,13 @@ class Evolver:
                 self.average_run_time = sum(run_time_list, datetime.timedelta()) / len(run_time_list)
                 self.total_run_time = sum(run_time_list, datetime.timedelta())
 
-        base_id = self.options.id
         runs_summary_list = []
         for i in range(self.options.runs):
-            run_id = base_id + "({})".format(i)
-            self.options.id = run_id
+            self.cur_run = i
             self._run()
             runs_summary_list.append(self.get_summary())
             self.clear()
 
-        self.options.id = base_id
         with open(self.get_out_file_path('summary.json'), 'w', encoding='utf8') as f:
             f.write(json.dumps(Summary(runs_summary_list).__dict__, default=util.serializer, indent=4))
 
@@ -352,8 +355,6 @@ class Evolver:
             self._multiple_runs()
         else:
             self._run()
-
-        return self.get_best(), self.best_test
 
 
 if __name__ == '__main__':
