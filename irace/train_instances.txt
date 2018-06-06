@@ -9,4 +9,4 @@
 
 # Paths are relative to irace/arena/
 # INSTANCE_NAME TRAIN_DATA TEST_DATA
-train_instance1 ../../data/data_train.csv ../../data/data_test.csv
+train1 ../../data/old/train.csv ../../data/old/test1.csv

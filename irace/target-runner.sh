@@ -27,7 +27,7 @@ CONFIG_PARAMS=$*
 
 EXE="python ../../src/py/evolver.py"
 PARAM_WRITER=../param-writer.sh
-FIXED_PARAMS="${TRAIN_DATA} -t ${TEST_DATA} -g1 -p4 -o NULL --quiet"
+FIXED_PARAMS="${TRAIN_DATA} -t ${TEST_DATA} -T10 -p7 -s1000 -o NULL --quiet"
 
 STDOUT=c${CONFIG_ID}-${INSTANCE_ID}.stdout
 STDERR=c${CONFIG_ID}-${INSTANCE_ID}.stderr
