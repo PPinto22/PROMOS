@@ -47,7 +47,8 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
     # Group by generation
-    run_dt = run_dt[ , .(fitness.mean = mean(fitness), fitness.max = max(fitness),
+    run_dt = run_dt[ , .(fitness.mean = mean(fitness), fitness.max = max(fitness), 
+                         fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
                          neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
                          connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
                          time = mean(run_minutes)), by = generation]
@@ -62,6 +63,7 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
 
   # Get the average of run_type_dts
   type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
+                                 fitness.test.mean = mean(fitness.test.mean), fitness.test.best = mean(fitness.test.best),
                                  neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
                                  connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
                                  time = mean(time)), by = generation]
