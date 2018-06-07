@@ -6,7 +6,6 @@ import json
 import math
 import os
 import random
-import time
 import argparse
 import datetime
 from sortedcontainers import SortedListWithKey
@@ -44,8 +43,8 @@ def parse_args():
     parser.add_argument('-p', '--processes', dest='processes', type=int, default=1,
                         help='number of processes to use for parallel evaluation. '
                              'If P=1, the evaluations will be sequential', metavar='P')
-    parser.add_argument('-s', '--sample', dest='sample_size', type=int, default=None,
-                        help='use a balanced sample of size N in evaluations', metavar='N')
+    parser.add_argument('-s', '--sample', dest='sample_size', type=int, default=0, metavar='N',
+                        help='use a balanced sample of size N in evaluations. If S=0, use the whole data-set')
     parser.add_argument('-l', '--load', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
     parser.add_argument('-r', '--runs', dest='runs', metavar='R', help='run R times', type=int, default=1)
@@ -57,6 +56,12 @@ def parse_args():
                              'If unspecified, the ID will be the datetime of when the run was started.')
     parser.add_argument('--seed', dest='seed', metavar='S', type=int, default=None,
                         help='specify an RNG integer seed')
+    parser.add_argument('--test-fitness', dest='test_fitness', action='store_true',
+                        help='evaluate every individual with a sample (of size N=sample_size) of the test data-set. '
+                             'These evaluations are for validation only, and have no influence over the evolutionary'
+                             ' process. This option slows down the execution speed by half.')
+    parser.add_argument('--no-statistics', dest='no_statistics', action='store_true',
+                        help='do not record any statistics regarding the progress of individuals over time')
     parser.add_argument('--no-reevaluation', dest='no_reevaluation', action='store_true',
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
@@ -95,23 +100,23 @@ class Evolver:
         self.options = options
 
         # Evaluation function
-        if options.evaluator == 'auc':
+        if self.options.evaluator == 'auc':
             self.genome_evaluator = evaluator.evaluate_auc
         else:
-            raise ValueError('Invalid genome evaluator: {}'.format(options.evaluator))
+            raise ValueError('Invalid genome evaluator: {}'.format(self.options.evaluator))
 
         # MultiNEAT parameters
         self.params = params.get_params(self.options.params)
         # Substrate for HyperNEAT and ES-HyperNEAT
         try:
             self.substrate = subst.get_substrate(self.options.substrate) if \
-                options.method in ['hyperneat', 'eshyperneat'] else None
+                self.options.method in ['hyperneat', 'eshyperneat'] else None
         except IndexError:
             raise ValueError('Invalid substrate choice: {} (should be 0 <= S <= {})'.
                              format(self.options.substrate, len(subst.substrates) - 1)) from None
 
         self.data = Data(self.options.data_file)  # Training data
-        self.data_test = Data(self.options.test_file) if self.options.test_file is not None else None  # Test data
+        self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None  # Test data
 
         self.initial_time = None  # Time when the run starts
         self.eval_time = datetime.timedelta()  # Time spent in evaluations
@@ -187,6 +192,9 @@ class Evolver:
             raise ValueError('out_dir is None')
 
         run = '({})'.format(self.cur_run) if self.cur_run is not None else ''
+
+        # Format: '<OUTDIR>/<METHOD>_<ID><(RUN_INDEX)>_<SUFFIX>
+        # Example: 'results/neat_sample1K(0)_summary.json'
         return '{}/{}_{}{}_{}'.format(self.options.out_dir, self.options.method, self.options.id, run, suffix)
 
     def write_results(self):
@@ -204,7 +212,7 @@ class Evolver:
                        # Other info
                        params=params.ParametersWrapper(self.params), generations=self.generation,
                        run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
-                       ea_time=self.ea_time, evaluation_processes=self.options.processes,
+                       ea_time=self.ea_time, processes=self.options.processes,
                        sample_size=self.options.sample_size if self.options.sample_size is not None \
                            else len(self.data))
 
@@ -213,7 +221,7 @@ class Evolver:
             f.write(json.dumps(self.get_summary().__dict__, default=util.serializer, indent=4))
 
     def save_evaluations(self, evaluations):
-        if self.options.out_dir is None:
+        if self.options.no_statistics or self.options.out_dir is None:
             return
 
         self.make_out_dir()
@@ -221,12 +229,13 @@ class Evolver:
         if self.generation == 0:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
-                header = ['generation', 'genome_id', 'fitness', 'neurons', 'connections', 'run_minutes']
+                header = ['generation', 'genome_id', 'fitness', 'fitness_test', 'neurons', 'connections', 'run_minutes']
                 writer.writerow(header)
         with open(file_path, 'a') as file:
             writer = csv.writer(file, delimiter=',')
             for e in evaluations:
-                writer.writerow([e.generation, e.genome_id, e.fitness, e.neurons, e.connections,
+                fitness_test = e.fitness_test if e.fitness_test is not None else -1
+                writer.writerow([e.generation, e.genome_id, e.fitness, fitness_test, e.neurons, e.connections,
                                  e.global_time.total_seconds() / 60.0])
 
     def get_best(self):
@@ -264,30 +273,26 @@ class Evolver:
         del self.best_list[index]
 
     def reevaluate_best_list(self):
-        genome_list = [e.genome for e in self.best_list]
-        evaluation_list = evaluator.evaluate_genome_list(
-            genome_list,
-            partial(self.genome_evaluator, method=options.method,
-                    substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
-            data=self.data, sample_size=None, processes=options.processes
-        )
+        evaluation_list = self.evaluate_list([[e.genome for e in self.best_list]], sample_size=0)
         self.best_list.clear()
         for e in evaluation_list:
             self.best_list.add(e)
 
-    def evaluate_list(self, genome_list):
+    def evaluate_list(self, genome_list, sample_size=None):
+        sample_size = sample_size if sample_size is not None else self.options.sample_size
+        test_data = self.test_data if self.options.test_fitness and not self.options.no_statistics else None
         return evaluator.evaluate_genome_list(
             genome_list,
-            partial(self.genome_evaluator, method=options.method,
+            partial(self.genome_evaluator, method=self.options.method,
                     substrate=self.substrate, generation=self.generation, initial_time=self.initial_time),
-            self.data, options.sample_size, options.processes
+            data=self.data, sample_size=sample_size, processes=self.options.processes, test_data=test_data
         )
 
     def evaluate(self, genome):
         return self._evaluate(genome, self.data)
 
     def evaluate_test(self, genome):
-        return self._evaluate(genome, self.data_test)
+        return self._evaluate(genome, self.test_data)
 
     def _evaluate(self, genome, data):
         return self.genome_evaluator(genome, data, generation=self.generation, initial_time=self.initial_time)
@@ -328,7 +333,7 @@ class Evolver:
             self.epoch()
 
         # Reevaluate the best individuals with full data if sample_size is specified
-        if self.options.sample_size is not None and not self.options.no_reevaluation:
+        if self.options.sample_size != 0 and not self.options.no_reevaluation:
             self.print("\nReevaluating the best individuals with the whole data-set...")
             self.reevaluate_best_list()
 

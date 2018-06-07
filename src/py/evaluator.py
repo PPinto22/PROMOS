@@ -12,10 +12,12 @@ import util
 from data import Data
 
 global_data = None
+global_test_data = None
 
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, neurons=None, connections=None, generation=None, global_time=None, **kwargs):
+    def __init__(self, genome, fitness, fitness_test=None, neurons=None, connections=None, generation=None,
+                 global_time=None, **kwargs):
         """
         :type connections: int
         :type neurons: int
@@ -24,6 +26,7 @@ class GenomeEvaluation:
         self.genome = genome
         self.genome_id = genome.GetID()
         self.fitness = fitness
+        self.fitness_test = fitness_test
         self.neurons = neurons
         self.connections = connections
         self.generation = generation
@@ -47,17 +50,25 @@ def predict(net, inputs):
     return predictions
 
 
-def evaluate_auc(genome, data=None, **kwargs):
+def _evaluate_auc(net, data):
+    predictions = predict(net, data.inputs)
+    fpr, tpr, thresholds = roc_curve(data.targets, predictions)
+    roc_auc = auc(fpr, tpr)
+    return roc_auc
+
+
+def evaluate_auc(genome, data=None, test_data=None, **kwargs):
     net = util.build_network(genome, **kwargs)
 
     if data is None:
         data = global_data
+    if test_data is None:
+        test_data = global_test_data
 
-    predictions = predict(net, data.inputs)
-    fpr, tpr, thresholds = roc_curve(data.targets, predictions)
-    roc_auc = auc(fpr, tpr)
+    fitness = _evaluate_auc(net, data)
+    fitness_test = _evaluate_auc(net, test_data) if test_data is not None else None
 
-    return _create_genome_evaluation(genome, roc_auc, net, **kwargs)
+    return _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test, **kwargs)
 
 
 def evaluate_error(genome, data, **kwargs):
@@ -69,25 +80,28 @@ def evaluate_error(genome, data, **kwargs):
     return _create_genome_evaluation(genome, fitness, net, **kwargs)
 
 
-def _create_genome_evaluation(genome, fitness, net, generation=None, initial_time=None, **kwargs):
+def _create_genome_evaluation(genome, fitness, net, fitness_test=None, generation=None, initial_time=None, **kwargs):
     genome.SetFitness(fitness)
     genome.SetEvaluated()
 
     global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
-    return GenomeEvaluation(genome, fitness,
+    return GenomeEvaluation(genome=genome, fitness=fitness, fitness_test=fitness_test,
                             neurons=len(util.get_network_neurons(net)),
                             connections=len(util.get_network_connections(net)),
                             generation=generation, global_time=global_time)
 
 
-def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, processes=1, sort=True):
-    if sample_size is not None:
+def evaluate_genome_list(genome_list, evaluator, data, sample_size=0, processes=1, sort=True, test_data=None):
+    if sample_size != 0:
         data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
+        if test_data is not None:
+            test_data = test_data.get_sample(sample_size, seed=random.randint(0, 2147483647))
 
-    # Set data as a global variable to avoid copying it to every process
-    global global_data
+    # Set data as a global variables to avoid copies for every process
+    global global_data, global_test_data
     global_data = data
+    global_test_data = test_data
 
     if processes == 1:
         evaluation_list = [evaluator(genome) for genome in genome_list]
@@ -101,6 +115,9 @@ def evaluate_genome_list(genome_list, evaluator, data, sample_size=None, process
 
     if sort:
         evaluation_list.sort(key=lambda e: e.fitness, reverse=True)
+
+    global_data = None
+    global_test_data = None
 
     return evaluation_list
 
