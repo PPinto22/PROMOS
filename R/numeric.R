@@ -7,9 +7,11 @@ library(hash)
 TARGET <- "target"
 POSITIVE_CLASS <- "Sale"
 DATE <- "date_added_utc"
+INPUT <- '../data/week1_best/ColetasPROMOSBESTTreated2018-05-16.json'
+OUTPUT <- '../data/week1_best/week1_best.csv'
 
 # Read data
-dt <- as.data.table(fromJSON('../data/ColetasPROMOSBESTTreated2018-05-16.json'))
+dt <- as.data.table(fromJSON(INPUT))
 dt$id <- NULL
 
 # Rename country_name to country
@@ -38,4 +40,4 @@ idfDeep=function(v)
 cols <- colnames(dt)[!colnames(dt) %in% c(TARGET, DATE)]
 dt[, (cols) := lapply(.SD, idfDeep), .SDcols = cols]
 
-write.table(dt, file = '../data/week1_best.csv', sep=',', row.names = FALSE)
+write.table(dt, file = OUTPUT, sep=',', row.names = FALSE)
