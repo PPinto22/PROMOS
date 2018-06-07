@@ -498,8 +498,9 @@ namespace NEAT {
 
     void NeuralNetwork::Input(std::vector<double> &a_Inputs) {
         unsigned mx = a_Inputs.size();
-        if (mx > m_num_inputs) {
-            mx = m_num_inputs;
+        if (mx != m_num_inputs) {
+            throw std::invalid_argument( std::string("Number of inputs received (") + to_string(mx) + ") " +
+                                         "does not match the network's number of inputs (" + to_string(m_num_inputs) + ")." );
         }
 
         for (unsigned int i = 0; i < mx; i++) {
@@ -517,12 +518,6 @@ namespace NEAT {
             inp[i] = py::extract<double>(a_Inputs[i]);
         }
 
-        // if the number of passed inputs differs from the actual number of inputs,
-        // clip them to fit.
-        if (inp.size() != m_num_inputs) {
-            inp.resize(m_num_inputs);
-        }
-
         Input(inp);
     }
 
@@ -532,12 +527,6 @@ namespace NEAT {
         inp.resize(len);
         for (int i = 0; i < len; i++) {
             inp[i] = py::extract<double>(a_Inputs[i]);
-        }
-
-        // if the number of passed inputs differs from the actual number of inputs,
-        // clip them to fit.
-        if (inp.size() != m_num_inputs) {
-            inp.resize(m_num_inputs);
         }
 
         Input(inp);
