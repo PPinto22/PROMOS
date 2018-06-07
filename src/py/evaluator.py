@@ -3,10 +3,8 @@ import argparse
 import datetime
 import multiprocessing
 import random
-import time
 
 import numpy as np
-
 from sklearn.metrics import roc_curve, auc
 
 import substrate

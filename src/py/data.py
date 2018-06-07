@@ -86,6 +86,12 @@ class Data:
     def is_balanced(self):
         return abs(len(self.positives) - len(self.negatives)) <= 1
 
+    def get_num_inputs(self):
+        if self.input_labels is not None:
+            return len(self.input_labels)
+        else:
+            return len(self.inputs[0])
+
     def get_sample(self, size, balanced=True, seed=None):
         random.seed(seed)
 

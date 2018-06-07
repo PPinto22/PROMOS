@@ -125,6 +125,7 @@ class Evolver:
         self.generation = 0  # Current generation
         # All time best evaluations, ordered from best to worst fitness
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
+        self.best_set = set()
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
 
     def clear(self):
@@ -136,6 +137,7 @@ class Evolver:
         self.pop = self.init_population()
         self.generation = 0
         self.best_list.clear()
+        self.best_set.clear()
         self.best_test = None
 
     def init_population(self):
@@ -148,7 +150,7 @@ class Evolver:
         seed = random.randint(0, 2147483647) if self.options.seed is None else self.options.seed
 
         if self.options.method == 'neat':
-            g = neat.Genome(0, 10, 0, 1, False, output_act_f, hidden_act_f, 0, self.params, 0)
+            g = neat.Genome(0, self.data.get_num_inputs(), 0, 1, False, output_act_f, hidden_act_f, 0, self.params, 0)
             pop = neat.Population(g, self.params, True, 1.0, seed)
         elif self.options.method in ['hyperneat', 'eshyperneat']:
             g = neat.Genome(0, self.substrate.GetMinCPPNInputs(), 0, self.substrate.GetMinCPPNOutputs(),
@@ -231,7 +233,7 @@ class Evolver:
         return self.best_list[0]
 
     def update_best_list(self, evaluations):
-        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most 5% of evaluations
+        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most the best 5% of evaluations
 
         # Evaluations must be sorted by descending fitness
         for i in range(max_updates):
@@ -239,17 +241,27 @@ class Evolver:
             # Break condition (best_list is full and e is worse than the worst evaluation in best_list)
             if len(self.best_list) == self.params.PopulationSize and e.fitness < self.best_list[-1].fitness:
                 break
+            elif e.genome_id in self.best_set:  # Individual already exists in best_list; skip
+                continue
             else:  # Add to best_list
-                i = self.best_list.bisect_left(e)
-                if i < self.params.PopulationSize:
-                    e.save_genome_copy()
-                    self.best_list.insert(i, e)
+                self._add_to_best_list(e)
 
-                    self.print("New best (#{})> Fitness: {:.6f}, Neurons: {}, Connections:{}".
-                               format(i, e.fitness, e.neurons, e.connections))
+                self.print("New best (#{})> Fitness: {:.6f}, Neurons: {}, Connections:{}".
+                           format(i, e.fitness, e.neurons, e.connections))
 
-                    if len(self.best_list) > self.params.PopulationSize:
-                        del self.best_list[-1]
+                # Cap the size of best_list at PopulationSize
+                if len(self.best_list) > self.params.PopulationSize:
+                    self._remove_from_best_list(-1)
+
+    def _add_to_best_list(self, evaluation):
+        evaluation.save_genome_copy()
+        i = self.best_list.bisect_left(evaluation)
+        self.best_list.insert(i, evaluation)
+        self.best_set.add(evaluation.genome_id)
+
+    def _remove_from_best_list(self, index):
+        self.best_set.remove(self.best_list[index].genome_id)
+        del self.best_list[index]
 
     def reevaluate_best_list(self):
         genome_list = [e.genome for e in self.best_list]
