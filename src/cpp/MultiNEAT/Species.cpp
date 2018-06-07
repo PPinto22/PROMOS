@@ -459,23 +459,21 @@ namespace NEAT
                             }
                         }
                     }
+                    // We have a new offspring now
+                    // give the offspring a new ID
+                    t_baby.SetID(a_Pop.GetNextGenomeID());
+                    a_Pop.IncrementNextGenomeID();
+
+                    // sort the baby's genes
+                    t_baby.SortGenes();
                 }
                 while (t_baby_exists_in_pop || (t_baby.FailsConstraints(a_Parameters))); // end do
             }
-
-            // We have a new offspring now
-            // give the offspring a new ID
-            t_baby.SetID(a_Pop.GetNextGenomeID());
-            a_Pop.IncrementNextGenomeID();
-
-            // sort the baby's genes
-            t_baby.SortGenes();
 
             // clear the baby's fitness
             t_baby.SetFitness(0);
             t_baby.SetAdjFitness(0);
             t_baby.SetOffspringAmount(0);
-
             t_baby.ResetEvaluated();
 
             // Archive the baby if needed
