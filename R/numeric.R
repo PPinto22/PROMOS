@@ -14,15 +14,12 @@ OUTPUT <- '../data/week1_best/week1_best.csv'
 dt <- as.data.table(fromJSON(INPUT))
 dt$id <- NULL
 
-# Rename country_name to country
-names(dt)[names(dt) == 'country_name'] <- 'country'
-
 # Replace empty cells with the keyword EMPTY
 dt <- dt[, lapply(.SD, function(x) replace(x, which(x==''), 'empty'))]
 
 # Transform TARGET from categorical to numeric
-dt[[TARGET]] <- replace(dt[[TARGET]], dt[[TARGET]]==POSITIVE_CLASS, 1)
 dt[[TARGET]] <- replace(dt[[TARGET]], dt[[TARGET]]!=POSITIVE_CLASS, 0)
+dt[[TARGET]] <- replace(dt[[TARGET]], dt[[TARGET]]==POSITIVE_CLASS, 1)
 dt[[TARGET]] <- as.numeric(dt[[TARGET]])
 
 idfDeep=function(v)
@@ -39,5 +36,9 @@ idfDeep=function(v)
 
 cols <- colnames(dt)[!colnames(dt) %in% c(TARGET, DATE)]
 dt[, (cols) := lapply(.SD, idfDeep), .SDcols = cols]
+
+# Rename columns
+names(dt)[names(dt) == 'country_name'] <- 'country'
+names(dt)[names(dt) == 'date_added_utc'] <- 'timestamp'
 
 write.table(dt, file = OUTPUT, sep=',', row.names = FALSE)
