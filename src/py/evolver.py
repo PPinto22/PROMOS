@@ -66,6 +66,12 @@ def parse_args():
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
                              'the best individuals with the whole data-set.')
+    parser.add_argument('-W', '--window', dest='window', metavar='W', default=None,
+                        help='TODO')
+    parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', default=None,
+                        help='TODO')
+    parser.add_argument('-f', '--frequency', dest='frequency', metavar='F', default=None,
+                        help='TODO')
 
     options = parser.parse_args()
 
