@@ -904,7 +904,7 @@ namespace NEAT
     {
         std::ifstream data(a_FileName);
         if (!data.is_open())
-            return 0;
+            throw std::invalid_argument( std::string("Could not open ") + a_FileName );
 
         int result = Load(data);
         data.close();
