@@ -279,7 +279,7 @@ class Evolver:
         del self.best_list[index]
 
     def reevaluate_best_list(self):
-        evaluation_list = self.evaluate_list([[e.genome for e in self.best_list]], sample_size=0)
+        evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0)
         self.best_list.clear()
         for e in evaluation_list:
             self.best_list.add(e)
