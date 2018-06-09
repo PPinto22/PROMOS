@@ -108,7 +108,7 @@ def evaluate_genome_list(genome_list, evaluator, data, sample_size=0, processes=
     else:
         with multiprocessing.Pool(processes=processes) as pool:
             evaluation_list = pool.map(evaluator, genome_list, chunksize=len(genome_list) // processes)
-
+        pass
         for genome, eval in zip(genome_list, evaluation_list):
             genome.SetFitness(eval.fitness)
             genome.SetEvaluated()
