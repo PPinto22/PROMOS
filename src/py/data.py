@@ -13,13 +13,13 @@ class Data:
         self.inputs = None  # np.array of input rows
         self.targets = None  # np.array of target values
         self.timestamps = None  # np.array of timestamps
-        self.positives = None  # np.array of positive cases indexes
-        self.negatives = None  # np.array of negative indexes
+        self.positives = None  # list of positive cases indexes
+        self.negatives = None  # list of negative cases indexes
         self.input_labels = input_labels  # List of input labels; values are stored in the same order as their labels
         self.target_label = target_label  # Label of the target column
         self.timestamp_label = timestamp_label  # Label of the timestamp column
         self.positive_class = positive_class  # Which target value is to be considered positive
-        self.n_inputs = None  # Number of input columns
+        self.n_inputs = 0  # Number of input columns
         self.has_timestamps = False  # Does the data contain timestamps
         self.is_sorted = is_sorted  # Is the data sorted by time
         self.date_format = date_format  # Date format to use with datetime.strptime
@@ -31,7 +31,6 @@ class Data:
 
         if self.has_timestamps and not is_sorted:
             self.sort()
-        print("DEBUG")  # FIXME
 
     def _init_from_file(self, file_path):
         self._init_arrays(list)
@@ -51,7 +50,7 @@ class Data:
             self.n_inputs = len(self.input_labels)
 
             # Map the order of labels in _file_labels to that specified in input_labels
-            input_order = [np.NaN] * self.n_inputs
+            input_order = np.zeros(self.n_inputs, dtype=int)
             for i, label in enumerate(self.input_labels):
                 input_order[i] = file_labels.index(label)
             target_idx = file_labels.index(self.target_label)
@@ -63,7 +62,7 @@ class Data:
                     raise ValueError('Row length mismatch')
 
                 # Read row inputs
-                inputs = [np.NaN] * self.n_inputs
+                inputs = np.zeros(self.n_inputs)
                 for j in range(len(inputs)):
                     inputs[j] = row[input_order[j]]
                 # Read target
@@ -80,14 +79,13 @@ class Data:
         if length != len(targets) or length != len(timestamps):
             raise ValueError('The number of rows of inputs, targets and timestamps do not match')
 
-        self._init_arrays(np.ndarray, length)
-
         try:
             self.n_inputs = len(inputs[0])
             self.has_timestamps = timestamps[0] is not None
         except IndexError:
             pass
 
+        self._init_arrays(np.ndarray, rows=length, input_columns=self.n_inputs)
         for i, (input, target, timestamp) in enumerate(zip(inputs, targets, timestamps)):
             if len(input) != self.n_inputs:
                 raise ValueError('Row length mismatch')
@@ -95,63 +93,53 @@ class Data:
             self._add_row(input, target, timestamp, i, use_numpy=True)
 
     def _add_row(self, input, target, timestamp, row_idx, use_numpy=False):
-        positive_or_negative = self.positives if target == self.positive_class else self.negatives
         if use_numpy:
             self.inputs[row_idx] = input
             self.targets[row_idx] = target
-            positive_or_negative[row_idx] = row_idx
             self.timestamps[row_idx] = timestamp
         else:
             self.inputs.append(input)
             self.targets.append(target)
-            positive_or_negative.append(row_idx)
             self.timestamps.append(timestamp)
 
-    def _init_arrays(self, list_type, length=None):
+        positive_or_negative = self.positives if target == self.positive_class else self.negatives
+        positive_or_negative.append(row_idx)
+
+    def _init_arrays(self, list_type, rows=None, input_columns=None):
         if list_type is list:
             self.inputs = list()
             self.targets = list()
             self.timestamps = list()
-            self.positives = list()
-            self.negatives = list()
         elif list_type is np.ndarray:
-            if length is None or length < 0:
-                raise AttributeError('Invalid length: ' + str(length))
-            self.inputs = np.zeros(length)
-            self.targets = np.zeros(length)
-            self.timestamps = np.zeros(length)
-            self.positives = np.zeros(length)
-            self.negatives = np.zeros(length)
+            if rows is None or rows < 0:
+                raise AttributeError('Invalid number of rows: ' + str(rows))
+            self.inputs = np.zeros((rows, input_columns))
+            self.targets = np.zeros(rows)
+            self.timestamps = np.empty(rows, dtype='datetime64[s]')
         else:
             raise AttributeError('Invalid type: ' + str(list_type))
+        self.positives = list()
+        self.negatives = list()
 
     def _convert_to_numpy(self):
         self.inputs = np.array(self.inputs)
         self.targets = np.array(self.targets)
         self.timestamps = np.array(self.timestamps)
-        self.positives = np.array(self.positives)
-        self.negatives = np.array(self.negatives)
 
     def sort(self):
         assert self.has_timestamps, "Cannot sort if there are no timestamps."
 
-        # inputs = np.array(self.inputs)
-        # targets = np.array(self.targets)
-        # timestamps = np.array(self.timestamps)
-        # order = np.argsort(timestamps)[::-1]
-        #
-        # inputs_sorted = inputs[order]
-        # targets_sorted = targets[order]
-        # timestamps_sorted = timestamps[order]
-        #
-        # print(np.array_equal(inputs_sorted, list(reversed(inputs))))
-        # print(np.array_equal(targets_sorted, list(reversed(targets))))
-        # print(np.array_equal(timestamps_sorted, list(reversed(timestamps))))
-        #
-        # teste = np.array(range(45998))
-        # print(np.array_equal(order[::-1], teste))
-        #
-        # self.is_sorted = True
+        order = np.argsort(self.timestamps)
+        self.inputs = self.inputs[order]
+        self.targets = self.targets[order]
+        self.timestamps = self.timestamps[order]
+
+        # Recreate the positive and negative lists
+        for i, target in enumerate(self.targets):
+            positive_or_negative = self.positives if target == self.positive_class else self.negatives
+            positive_or_negative.append(i)
+
+        self.is_sorted = True
         return self
 
     def __len__(self):
@@ -188,23 +176,17 @@ class Data:
             positives_size = (len(self.positives) * size) // len(self)
             negatives_size = (len(self.negatives) * size) // len(self)
 
-        # positives_sample = random.sample(self.positives, positives_size)
-        # negatives_sample = random.sample(self.negatives, negatives_size)
-
         positives_sample = np.random.choice(self.positives, positives_size, replace=False)
-        if len(positives_sample) != len(set(positives_sample)):
-            print("Oh no!")
         negatives_sample = np.random.choice(self.negatives, negatives_size, replace=False)
-        if len(negatives_sample) != len(set(negatives_sample)):
-            print("Oh no!")
 
+        total_sample = np.concatenate((positives_sample, negatives_sample))
+        total_sample.sort()  # To preserve order
 
-        total_sample = sorted(positives_sample + negatives_sample)
-        sample_inputs = [self.inputs[i] for i in total_sample]
-        sample_targets = [self.targets[i] for i in total_sample]
-        sample_timestamps = [self.timestamps[i] for i in total_sample]
+        sample_inputs = self.inputs[total_sample]
+        sample_targets = self.targets[total_sample]
+        sample_timestamps = self.timestamps[total_sample]
 
         return Data(inputs=sample_inputs, targets=sample_targets, timestamps=sample_timestamps,
                     input_labels=self.input_labels, target_label=self.target_label,
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
-                    date_format=self.date_format)
+                    date_format=self.date_format, is_sorted=self.is_sorted)
