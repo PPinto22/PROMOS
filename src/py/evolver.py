@@ -382,5 +382,8 @@ class Evolver:
 
 if __name__ == '__main__':
     options = parse_args()
-    evolver = Evolver(options)
-    evolver.run()
+    # evolver = Evolver(options)
+    # evolver.run()
+    # FIXME wip...
+    import data
+    data.main(options)

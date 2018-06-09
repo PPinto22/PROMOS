@@ -1,6 +1,6 @@
 import csv
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 
 
@@ -85,7 +85,7 @@ class Data:
         except IndexError:
             pass
 
-        self._init_arrays(np.ndarray, rows=length, input_columns=self.n_inputs)
+        self._init_arrays(np.ndarray, rows=length)
         for i, (input, target, timestamp) in enumerate(zip(inputs, targets, timestamps)):
             if len(input) != self.n_inputs:
                 raise ValueError('Row length mismatch')
@@ -105,7 +105,7 @@ class Data:
         positive_or_negative = self.positives if target == self.positive_class else self.negatives
         positive_or_negative.append(row_idx)
 
-    def _init_arrays(self, list_type, rows=None, input_columns=None):
+    def _init_arrays(self, list_type, rows=None):
         if list_type is list:
             self.inputs = list()
             self.targets = list()
@@ -113,7 +113,7 @@ class Data:
         elif list_type is np.ndarray:
             if rows is None or rows < 0:
                 raise AttributeError('Invalid number of rows: ' + str(rows))
-            self.inputs = np.zeros((rows, input_columns))
+            self.inputs = np.zeros((rows, self.n_inputs))
             self.targets = np.zeros(rows)
             self.timestamps = np.empty(rows, dtype='datetime64[s]')
         else:
@@ -151,11 +151,36 @@ class Data:
     def is_balanced(self):
         return abs(len(self.positives) - len(self.negatives)) <= 1
 
+    def get_time_range(self):
+        assert self.has_timestamps
+
+        if self.is_sorted:
+            return self.timestamps[0], self.timestamps[-1]
+        else:
+            return np.amin(self.timestamps), np.amax(self.timestamps)
+
     def get_num_inputs(self):
         if self.input_labels is not None:
             return len(self.input_labels)
         else:
             return len(self.inputs[0])
+
+    # Returns the index of the first occurrence of a timestamp that is >= than dt
+    def find_first_datetime(self, dt, start=0):
+        assert self.is_sorted
+        for i in range(start, len(self)):
+            if self.timestamps[i] >= dt:
+                return i
+        raise ValueError('No datetime >= {} was found'.format(str(dt)))
+
+    # Returns the index of the last occurrence of a timestamp that is <= than dt
+    def find_last_datetime(self, dt, start=0):
+        assert len(self) > 1
+        assert self.is_sorted
+        for i in range(start, len(self) - 1):
+            if self.timestamps[i + 1] > dt:
+                return i + 1
+        return len(self.timestamps) - 1
 
     def get_sample(self, size, balanced=True, seed=None):
         np.random.seed(seed)
@@ -190,3 +215,92 @@ class Data:
                     input_labels=self.input_labels, target_label=self.target_label,
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
+
+    def get_subset(self, start, end):
+        assert end > start
+        assert start >= 0 and end < len(self)
+
+        length = end - start + 1
+        inputs = np.zeros((length, self.n_inputs))
+        targets = np.zeros(length)
+        timestamps = np.empty(length, dtype='datetime64[s]')
+
+        for i in range(length):
+            inputs[i] = self.inputs[start + i]
+            targets[i] = self.targets[start + i]
+            timestamps[i] = self.timestamps[start + i]
+
+        return Data(inputs=inputs, targets=targets, timestamps=timestamps,
+                    input_labels=self.input_labels, target_label=self.target_label,
+                    timestamp_label=self.timestamp_label, positive_class=self.positive_class,
+                    date_format=self.date_format, is_sorted=self.is_sorted)
+
+
+class SlidingWindow(Data):
+    # Widths and frequency in hours
+    def __init__(self, width, frequency, test_width, **kwargs):
+        self.test_width = test_width if test_width is not None else 0
+        assert test_width >= 0
+        assert all(x > 0 for x in (width, frequency))
+        assert test_width < width
+
+        super().__init__(**kwargs)
+
+        assert self.has_timestamps
+
+        self.has_test = test_width > 0
+        self.width = timedelta(hours=width)
+        self.frequency = timedelta(hours=frequency)
+        self.test_width = timedelta(hours=test_width)
+        self.train_width = self.width - self.test_width
+
+        # List of index tuples: (train_begin, train_end, test_begin, test_end)
+        # or (train_begin, train_end), if there is no test data
+        self.windows = list()
+        self.setup_windows()
+        self.n_windows = len(self.windows)
+
+    def setup_windows(self):
+        global_start, global_end = self.get_time_range()  # Start and end datetimes
+
+        t_start = global_start  # Trial window start time
+        t_end = min(t_start + self.width, global_end)  # Trial window end time
+        t_width = t_end - t_start  # Trial window width
+        # While the trial window's width is at least 75% of the regular width, accept it
+        while t_width > 0.75 * self.width:
+            # Fix indexes based on the datetime limits
+            train_start = self.find_first_datetime(t_start)
+            if self.has_test:
+                train_end_dt = t_start + self.train_width
+                train_end = self.find_last_datetime(train_end_dt, start=train_start)
+                test_start = train_end + 1
+                test_end = self.find_last_datetime(t_end, start=test_start)
+                window = (train_start, train_end, test_start, test_end)
+            else:
+                train_end = self.find_last_datetime(t_end, start=train_start)
+                window = (train_start, train_end)
+            self.windows.append(window)
+
+            # Next window
+            t_start = t_start + self.frequency
+            t_end = min(t_start + self.width, global_end)
+            t_width = t_end - t_start
+
+    def get_window_data(self, window_i):
+        if window_i < 0 or window_i > len(self.windows):
+            raise ValueError('Invalid window index: {}'.format(window_i))
+        window = self.windows[window_i]
+        train = self.get_subset(window[0], window[1])
+        test = self.get_subset(window[2], window[3]) if self.has_test else None
+
+        return train, test
+
+# FIXME Remove this
+def main(options):
+    all_data = SlidingWindow(96, 24, 36, file_path=options.data_file)
+    for i in range(all_data.n_windows):
+        train, test = all_data.get_window_data(i)
+    all_data2 = SlidingWindow(96, 24, 0, file_path=options.data_file)
+    for i in range(all_data2.n_windows):
+        train, test = all_data2.get_window_data(i)
+
