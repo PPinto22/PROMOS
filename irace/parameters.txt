@@ -26,7 +26,7 @@
 ##    condition is satisfied, FALSE otherwise.
 
 # 1:          2:                               3:   4:            5:
-popsize	      "PopulationSize="	                i   (100, 300)
+popsize	      "PopulationSize="	                i   (100, 500)
 minspecies    "MinSpecies="                     i   (2, 6)
 maxspecies    "MaxSpecies="                     i   (8, 20)
 clones        "AllowClones="                    c   (true, false)

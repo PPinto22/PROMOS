@@ -81,5 +81,5 @@ else
 fi
 
 # Clean up
-rm -f "${STDOUT}" "${STDERR}" "${PARAM_FILE}"
+# rm -f "${STDOUT}" "${STDERR}" "${PARAM_FILE}"
 exit 0
