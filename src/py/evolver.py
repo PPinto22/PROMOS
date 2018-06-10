@@ -19,7 +19,6 @@ import substrate as subst
 from data import Data, SlidingWindow
 
 
-# TODO Positive int
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('data_file', help='path to train data file', metavar='DATA'),
@@ -37,9 +36,9 @@ def parse_args():
     evaluation_functions = ['auc']
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluation_functions, default='auc',
                         help='evaluation function: ' + ', '.join(evaluation_functions), metavar='E')
-    parser.add_argument('-g', '--generations', dest='generations', type=util.uint,  metavar='G', default=None,
+    parser.add_argument('-g', '--generations', dest='generations', type=util.uint, metavar='G', default=None,
                         help='number of generations per run or, if the option -W is specified, per sliding window')
-    parser.add_argument('-T', '--time', dest='time_limit', type=util.uint,  metavar='MIN', default=None,
+    parser.add_argument('-T', '--time', dest='time_limit', type=util.uint, metavar='MIN', default=None,
                         help='time limit (in minutes) per run or, if the option -W is specified, per sliding window')
     parser.add_argument('-p', '--processes', dest='processes', type=util.uint, default=1,
                         help='number of processes to use for parallel evaluation. '
