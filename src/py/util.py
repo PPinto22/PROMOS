@@ -1,4 +1,5 @@
 import MultiNEAT as neat
+import argparse
 import csv
 import datetime
 import json
@@ -39,14 +40,27 @@ def avg(l):
 def serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
 
-    if isinstance(obj, datetime.date) or isinstance(obj, datetime.time):
+    if any(isinstance(obj, x) for x in (datetime.date, datetime.time)):
         serial = obj.isoformat()
         return serial
 
-    if isinstance(obj, datetime.timedelta):
+    if any(isinstance(obj, x) for x in (datetime.timedelta, np.datetime64)):
         return str(obj)
 
     if isinstance(obj, np.ndarray):
         return obj.tolist()
 
     return obj.__dict__
+
+
+def uint(value):
+    def raise_arg_type_error(s):
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+
+    try:
+        ivalue = int(value)
+        if ivalue <= 0:
+            raise_arg_type_error(value)
+        return ivalue
+    except ValueError:
+        raise_arg_type_error(value)

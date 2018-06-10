@@ -16,8 +16,8 @@ global_test_data = None
 
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, fitness_test=None, neurons=None, connections=None, generation=None,
-                 global_time=None, **kwargs):
+    def __init__(self, genome, fitness, fitness_test=None, neurons=None, connections=None,
+                 generation=None, window=None, global_time=None, **kwargs):
         """
         :type connections: int
         :type neurons: int
@@ -30,6 +30,7 @@ class GenomeEvaluation:
         self.neurons = neurons
         self.connections = connections
         self.generation = generation
+        self.window = window
         self.global_time = global_time
         for key, value in kwargs.items():
             self.__setattr__(key, value)
@@ -80,7 +81,8 @@ def evaluate_error(genome, data, **kwargs):
     return _create_genome_evaluation(genome, fitness, net, **kwargs)
 
 
-def _create_genome_evaluation(genome, fitness, net, fitness_test=None, generation=None, initial_time=None, **kwargs):
+def _create_genome_evaluation(genome, fitness, net, fitness_test=None,
+                              window=None, generation=None, initial_time=None, **kwargs):
     genome.SetFitness(fitness)
     genome.SetEvaluated()
 
@@ -89,7 +91,7 @@ def _create_genome_evaluation(genome, fitness, net, fitness_test=None, generatio
     return GenomeEvaluation(genome=genome, fitness=fitness, fitness_test=fitness_test,
                             neurons=len(util.get_network_neurons(net)),
                             connections=len(util.get_network_connections(net)),
-                            generation=generation, global_time=global_time)
+                            generation=generation, window=window, global_time=global_time)
 
 
 def evaluate_genome_list(genome_list, evaluator, data, sample_size=0, processes=1, sort=True, test_data=None):

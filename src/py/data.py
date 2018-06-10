@@ -237,11 +237,11 @@ class Data:
 
 
 class SlidingWindow(Data):
-    # Widths and frequency in hours
-    def __init__(self, width, frequency, test_width, **kwargs):
+    # Widths and shift in hours
+    def __init__(self, width, shift, test_width, **kwargs):
         self.test_width = test_width if test_width is not None else 0
         assert test_width >= 0
-        assert all(x > 0 for x in (width, frequency))
+        assert all(x > 0 for x in (width, shift))
         assert test_width < width
 
         super().__init__(**kwargs)
@@ -250,7 +250,7 @@ class SlidingWindow(Data):
 
         self.has_test = test_width > 0
         self.width = timedelta(hours=width)
-        self.frequency = timedelta(hours=frequency)
+        self.shift = timedelta(hours=shift)
         self.test_width = timedelta(hours=test_width)
         self.train_width = self.width - self.test_width
 
@@ -259,6 +259,7 @@ class SlidingWindow(Data):
         self.windows = list()
         self.setup_windows()
         self.n_windows = len(self.windows)
+        self._window = 0  # Current window + 1
 
     def setup_windows(self):
         global_start, global_end = self.get_time_range()  # Start and end datetimes
@@ -266,12 +267,13 @@ class SlidingWindow(Data):
         t_start = global_start  # Trial window start time
         t_end = min(t_start + self.width, global_end)  # Trial window end time
         t_width = t_end - t_start  # Trial window width
-        # While the trial window's width is at least 75% of the regular width, accept it
-        while t_width > 0.75 * self.width:
+        # While the trial window's width is at least 80% of the regular width, accept it
+        while t_width > 0.8 * self.width:
             # Fix indexes based on the datetime limits
             train_start = self.find_first_datetime(t_start)
             if self.has_test:
-                train_end_dt = t_start + self.train_width
+                # train_end_dt = t_start + self.train_width
+                train_end_dt = t_end - self.test_width
                 train_end = self.find_last_datetime(train_end_dt, start=train_start)
                 test_start = train_end + 1
                 test_end = self.find_last_datetime(t_end, start=test_start)
@@ -282,25 +284,41 @@ class SlidingWindow(Data):
             self.windows.append(window)
 
             # Next window
-            t_start = t_start + self.frequency
+            t_start = t_start + self.shift
             t_end = min(t_start + self.width, global_end)
             t_width = t_end - t_start
 
     def get_window_data(self, window_i):
         if window_i < 0 or window_i > len(self.windows):
-            raise ValueError('Invalid window index: {}'.format(window_i))
+            raise IndexError('Invalid window index: {}'.format(window_i))
         window = self.windows[window_i]
         train = self.get_subset(window[0], window[1])
         test = self.get_subset(window[2], window[3]) if self.has_test else None
 
         return train, test
 
-# FIXME Remove this
-def main(options):
-    all_data = SlidingWindow(96, 24, 36, file_path=options.data_file)
-    for i in range(all_data.n_windows):
-        train, test = all_data.get_window_data(i)
-    all_data2 = SlidingWindow(96, 24, 0, file_path=options.data_file)
-    for i in range(all_data2.n_windows):
-        train, test = all_data2.get_window_data(i)
+    def get_current_window_data(self):
+        return self.get_window_data(self._window)
 
+    def get_current_window_index(self):
+        return self._window - 1
+
+    def __getitem__(self, item):
+        return self.get_window_data(item)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            train, test = self.get_current_window_data()
+        except IndexError:
+            raise StopIteration
+        self._window += 1
+        return train, test
+
+    def has_next(self):
+        return self._window < self.n_windows
+
+    def reset(self):
+        self._window = 0
