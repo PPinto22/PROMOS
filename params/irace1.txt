@@ -1,0 +1,40 @@
+NEAT_ParametersStart
+
+MutateNeuronTraitsProb 0
+MutateLinkTraitsProb 0
+MutateGenomeTraitsProb 0
+PopulationSize 222
+MinSpecies 2
+MaxSpecies 10
+AllowClones true
+YoungAgeThreshold 7
+YoungAgeFitnessBoost 1.165
+OldAgeThreshold 59
+OldAgePenalty 0.952
+SurvivalRate 0.645
+CrossoverRate 0.839
+InterspeciesCrossoverRate .00108
+OverallMutationRate 0.568
+Elitism 0.069
+MultipointCrossoverRate 0.807
+MutateAddNeuronProb 0.113747954173486
+MutateRemSimpleNeuronProb 0.0450081833060556
+MutateAddLinkProb 0.0867430441898527
+MutateRemLinkProb 0.0229132569558101
+MutateWeightsProb 0.689034369885434
+MutateWeightsSevereProb 0.167
+WeightMutationRate 0.997
+WeightReplacementRate 0.074
+WeightMutationMaxPower 2.652
+WeightReplacementMaxPower 2.652
+MutateNeuronBiasesProb 0.0392798690671031
+MutateNeuronActivationTypeProb 0.00327332242225859
+ActivationFunction_UnsignedSigmoid_Prob 0
+ActivationFunction_UnsignedGauss_Prob 0
+ActivationFunction_UnsignedSine_Prob 0.5
+ActivationFunction_Relu_Prob 0.5
+CompatThreshold 6
+MinCompatThreshold .24
+CompatThresholdModifier .36
+
+NEAT_ParametersEnd
