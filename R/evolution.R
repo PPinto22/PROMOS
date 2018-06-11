@@ -17,7 +17,7 @@ library(rjson)
 library(chron)
 
 # ---- CONFIGURATION ----
-RUNS <- 30
+RUNS <- 30 # FIXME
 RESULTS_DIR <- '../results/NEAT/samples_30runs/'
 RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
 RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000', '100'))
@@ -92,32 +92,31 @@ summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_
                                      neurons=round(mean(neurons)), neurons_ci=list(t.test(neurons)$conf.int),
                                      connections=round(mean(connections)), connections_ci=list(t.test(connections)$conf.int)),
                                      by = run_type]
+ci_col_names <- c('train_fit_ci', 'test_fit_ci', 'neurons_ci', 'connections_ci')
 
 # ---- OUTPUTS ----
 # Create OUT_DIR
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
 # -- Summary table --
-summaries_avg_str_dt <- summaries_avg_dt[, !c('train_fit', 'test_fit', 'neurons', 'connections')]
-ci2str <- function(ci){paste('[', format(ci[1], digits=DIGITS), ', ', format(ci[2], digits=DIGITS), ']', sep='')}
-original_colnames <- copy(colnames(summaries_avg_str_dt))
-ci_col_names <- c('train_fit_ci', 'test_fit_ci', 'neurons_ci', 'connections_ci')
-summaries_avg_str_dt[, (paste(ci_col_names,'TEMP')):=lapply(.SD, function(x) sapply(x, ci2str)), .SDcols=ci_col_names][,(ci_col_names):=NULL]
-setnames(summaries_avg_str_dt, paste(ci_col_names,'TEMP'), ci_col_names)
-setcolorder(summaries_avg_str_dt, original_colnames)
-write.table(summaries_avg_str_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',',
-          col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+# Use confidence intervals
+# summaries_avg_str_dt <- summaries_avg_dt[, !c('train_fit', 'test_fit', 'neurons', 'connections')]
+# ci2str <- function(ci){paste('[', format(ci[1], digits=DIGITS), ', ', format(ci[2], digits=DIGITS), ']', sep='')}
+# original_colnames <- copy(colnames(summaries_avg_str_dt))
+# summaries_avg_str_dt[, (paste(ci_col_names,'TEMP')):=lapply(.SD, function(x) sapply(x, ci2str)), .SDcols=ci_col_names][,(ci_col_names):=NULL]
+# setnames(summaries_avg_str_dt, paste(ci_col_names,'TEMP'), ci_col_names)
+# setcolorder(summaries_avg_str_dt, original_colnames)
+# write.table(summaries_avg_str_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',',
+#           col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
 
-# -- P-values table --
-test_fit_pvalues <- as.data.table(lapply(labels_ord, function(run_type1){
-  sapply(labels_ord, function(run_type2){
-    format(t.test(summaries_dt[run_type==run_type1, train_fit], summaries_dt[run_type==run_type2, train_fit])$p.value, digits=1)
-  })
-}))
-test_fit_pvalues[upper.tri(test_fit_pvalues, diag=TRUE)] <- NA
-colnames(test_fit_pvalues) <- labels_ord
-rownames(test_fit_pvalues) <- labels_ord
-write.table(test_fit_pvalues, file=paste(OUT_DIR, 'pvalues_fitness.csv', sep=''), sep=',', row.names=TRUE, col.names=NA, na = '-')
+# Use means
+write.table(summaries_avg_dt[, !..ci_col_names], file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',', 
+            col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+
+# -- Statistical tests --
+sink(paste(OUT_DIR, 'statistical_test.txt', sep = ''))
+pairwise.t.test(summaries_dt$train_fit, summaries_dt$run_type,  paired=TRUE)
+sink()
 
 # -- Graphs --
 # Boxplot best test fitness by sample size
