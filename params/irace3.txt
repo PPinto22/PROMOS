@@ -25,6 +25,8 @@ MutateWeightsProb 0.604672057502246
 MutateWeightsSevereProb 0.203
 WeightMutationRate 0.882
 WeightReplacementRate 0.133
+WeightMutationMaxPower 3.74
+WeightReplacementMaxPower 3.74
 MutateNeuronBiasesProb 0.0584007187780773
 MutateNeuronActivationTypeProb 0.00179694519317161
 ActivationFunction_UnsignedSigmoid_Prob 0.334
