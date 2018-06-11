@@ -326,10 +326,10 @@ class Evolver:
             elif e.genome_id in self.best_set:  # Individual already exists in best_list; skip
                 continue
             else:  # Add to best_list
-                self._add_to_best_list(e)
+                index = self._add_to_best_list(e)
 
                 self.print("New best (#{})> Fitness: {:.6f}, Neurons: {}, Connections:{}".
-                           format(i, e.fitness, e.neurons, e.connections))
+                           format(index, e.fitness, e.neurons, e.connections))
 
                 # Cap the size of best_list at PopulationSize
                 if len(self.best_list) > self.params.PopulationSize:
@@ -340,6 +340,7 @@ class Evolver:
         i = self.best_list.bisect_left(evaluation)
         self.best_list.insert(i, evaluation)
         self.best_set.add(evaluation.genome_id)
+        return i
 
     def _remove_from_best_list(self, index):
         self.best_set.remove(self.best_list[index].genome_id)
