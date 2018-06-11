@@ -1,7 +1,7 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/week1_best/all.csv"
-options="-P ../params/neat0.txt -o ../results/window -m neat -g750 -s1000 -p7 -W96 -w24 -S96 --test-fitness --quiet"
+options="-P ../params/neat0.txt -o ../results/window -m neat -g750 -s1000 -p7 -W96 -w24 -S24 --test-fitness --quiet"
 runs=16
 parallel=8
 
