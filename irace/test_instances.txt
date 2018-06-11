@@ -5,8 +5,27 @@
 # parameters that will be passed to target-runnerx when invoked on that
 # instance.
 
-# Empty lines and comments are ignored.
-
 # Paths are relative to irace/arena/
-# INSTANCE_NAME TRAIN_DATA TEST_DATA
-test1 ../../data/old/train.csv ../../data/old/test2.csv
+# Instances can be duplicated to force multiple tests
+# for higher statistical confidence
+
+# INSTANCE TRAIN_DATA                TEST_DATA
+test1.0    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.1    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.2    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.4    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.5    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.6    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.7    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.8    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.9    ../../data/old/train.csv  ../../data/old/test2.csv
+test1.10   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.11   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.12   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.13   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.14   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.15   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.16   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.17   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.18   ../../data/old/train.csv  ../../data/old/test2.csv
+test1.19   ../../data/old/train.csv  ../../data/old/test2.csv

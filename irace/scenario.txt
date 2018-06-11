@@ -76,7 +76,7 @@ testInstancesFile = "test_instances.txt"
 
 ## Number of elite configurations returned by irace that will be tested
 ## if test instances are provided.
-testNbElites = 1
+testNbElites = 5
 
 ## Enable/disable testing the elite configurations found at each iteration.
 testIterationElites = 0
