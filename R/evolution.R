@@ -1,4 +1,4 @@
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # This script reads result files from multiple executions named as, e.g., 'neat_1K(N)_evaluations.csv', where 
 # neat_1K is a prefix that identifies the run type, and 'N' is an integer ranging from 1 to the number of runs
@@ -17,21 +17,31 @@ library(rjson)
 library(chron)
 
 # ---- CONFIGURATION ----
-RUNS <- 30 # FIXME
-RESULTS_DIR <- '../results/NEAT/samples_30runs/'
-RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
-RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000', '100'))
-SERIES_LABEL <- 'Sample size'
+RUNS <- 16
+WINDOWS <- 4
+# RESULTS_DIR <- '../results/NEAT/samples_30runs/'
+# RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
+# RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000', '100'))
+# SERIES_LABEL <- 'Sample size'
+
+RESULTS_DIR <- '../results/window/'
+RUN_TYPES <- c('neat_windows') # These are the prefixes of the result files
+RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
+SERIES_LABEL <- 'Run'
+
 FITNESS_FUNC <- 'AUC'
-OUT_DIR <- 'out/samples_30/'
+OUT_DIR <- 'out/window/'
 DIGITS <- 5
 
 # ---- SETUP ----
+has_types <- length(RUN_TYPES) > 1
+has_windows <- exists("WINDOWS") && WINDOWS > 1
 options(digits=DIGITS)
 labels_ord = sapply(RUN_TYPES, function(x){RUN_TYPE_LABEL[[x]]})
 # Map, for each run type (i.e., each prefix in PREFIX), a list of all respective data files
 evals_file_names <- hash()
 summs_file_names <- hash()
+windows_file_names <- hash()
 for(type in RUN_TYPES){
   prefix = paste(RESULTS_DIR, type, sep='')
   if(RUNS > 1)
@@ -39,6 +49,7 @@ for(type in RUN_TYPES){
   
   evals_file_names[type] <- paste(prefix, '_evaluations.csv', sep='')
   summs_file_names[type] <- paste(prefix, '_summary.json', sep='')
+  if(has_windows){ windows_file_names[type] <- paste(prefix, '_windows.csv', sep='') }
 }
 
 # Read all evaluations.csv files and store the averages of all runs
@@ -75,31 +86,46 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
 evals_dt$run_type <- factor(evals_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
 
 # Read summaries
-summaries_dt <- rbindlist(lapply(RUN_TYPES, function(type){
-  run_type_summaries = lapply(summs_file_names[[type]], function(file_name){
-    summary_json = fromJSON(file=file_name)
-    summary_dt = data.table(run_type=RUN_TYPE_LABEL[[type]], time_ea=chron(time=summary_json$ea_time), time_eval=chron(time=summary_json$eval_time),
-                             time_total=chron(time=summary_json$run_time), generations=summary_json$generations, train_fit=summary_json$best$fitness,
-                             test_fit=summary_json$best$fitness_test, neurons=summary_json$best$neurons_qty, connections=summary_json$best$connections_qty)
-  })
-  run_type_summaries = rbindlist(run_type_summaries)
-}))
-summaries_dt$run_type <- factor(summaries_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
-
-summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_eval), time_total=mean(time_total), generations=round(mean(generations)),
-                                     train_fit=mean(train_fit), train_fit_ci=list(t.test(train_fit)$conf.int),
-                                     test_fit=mean(test_fit), test_fit_ci=list(t.test(test_fit)$conf.int),
-                                     neurons=round(mean(neurons)), neurons_ci=list(t.test(neurons)$conf.int),
-                                     connections=round(mean(connections)), connections_ci=list(t.test(connections)$conf.int)),
-                                     by = run_type]
-ci_col_names <- c('train_fit_ci', 'test_fit_ci', 'neurons_ci', 'connections_ci')
+if(!has_windows){
+  summaries_dt <- rbindlist(lapply(RUN_TYPES, function(type){
+    run_type_summaries = lapply(summs_file_names[[type]], function(file_name){
+      summary_json = fromJSON(file=file_name)
+      summary_dt = data.table(run_type=RUN_TYPE_LABEL[[type]], time_ea=chron(time=summary_json$ea_time), time_eval=chron(time=summary_json$eval_time),
+                               time_total=chron(time=summary_json$run_time), generations=summary_json$generations, train_fit=summary_json$best$fitness,
+                               test_fit=summary_json$best$fitness_test, neurons=summary_json$best$neurons_qty, connections=summary_json$best$connections_qty)
+    })
+    run_type_summaries = rbindlist(run_type_summaries)
+  }))
+  summaries_dt$run_type <- factor(summaries_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+  
+  summaries_avg_dt <- summaries_dt[, .(time_ea=mean(time_ea), time_eval=mean(time_eval), time_total=mean(time_total), generations=round(mean(generations)),
+                                       train_fit=mean(train_fit), test_fit=mean(test_fit), neurons=round(mean(neurons)), connections=round(mean(connections))),
+                                       by = run_type]
+} else { # Read window summaries
+  windows_dt <- rbindlist(lapply(RUN_TYPES, function(type){
+    run_type_windows = lapply(windows_file_names[[type]], function(file_name){
+      summary_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
+      summary_dt$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(summary_dt))
+      summary_dt
+    })
+    run_type_windows = rbindlist(run_type_windows)
+  }))
+  windows_dt$run_type <- factor(windows_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+  
+  windows_avg_dt <- windows_dt[, .(begin_date=first(begin_date), end_date=first(end_date), generations=mean(generations), run_minutes=mean(run_minutes),
+                                   train_size=mean(train_size), train_positives=mean(train_positives), train_negatives=mean(train_negatives),
+                                   test_size=mean(test_size), test_positives=mean(test_positives), test_negatives=mean(test_negatives),
+                                   train_fitness=mean(train_fitness), test_fitness=mean(test_fitness), 
+                                   best_neurons=round(mean(best_neurons)), best_connections=round(mean(best_connections))),
+                                  by = list(run_type, window)]
+}
 
 # ---- OUTPUTS ----
 # Create OUT_DIR
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
 # -- Summary table --
-# Use confidence intervals
+# Use confidence intervals [OUTDATED]
 # summaries_avg_str_dt <- summaries_avg_dt[, !c('train_fit', 'test_fit', 'neurons', 'connections')]
 # ci2str <- function(ci){paste('[', format(ci[1], digits=DIGITS), ', ', format(ci[2], digits=DIGITS), ']', sep='')}
 # original_colnames <- copy(colnames(summaries_avg_str_dt))
@@ -110,20 +136,30 @@ dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 #           col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
 
 # Use means
-write.table(summaries_avg_dt[, !..ci_col_names], file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',', 
+if(!has_windows){
+  write.table(summaries_avg_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',', 
             col.names = c(SERIES_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+} else{
+  write.table(windows_avg_dt, file=paste(OUT_DIR, 'windows.csv', sep=''), row.names = FALSE, sep=',', 
+              col.names = c(SERIES_LABEL, 'Window', 'Window Begin', 'Window End', 'Generations', 'Minutes', 'Train Size', 'Train Pos', 'Train Neg',
+                            'Test Size', 'Test Pos', 'Test Neg', 'Train Fitness', 'Test Fitness', 'Neurons', 'Connections'))
+}
 
 # -- Statistical tests --
-sink(paste(OUT_DIR, 'statistical_test.txt', sep = ''))
-pairwise.t.test(summaries_dt$train_fit, summaries_dt$run_type,  paired=TRUE)
-sink()
+if(has_multiple_types){
+  sink(paste(OUT_DIR, 'ttest.txt', sep = ''))
+  pairwise.t.test(summaries_dt$train_fit, summaries_dt$run_type,  paired=TRUE)
+  sink()
+}
 
 # -- Graphs --
+run_type = if(has_multiple_types) 'run_type' else NULL
+
 # Boxplot best test fitness by sample size
 png(filename = paste(OUT_DIR, 'fitness_best_bp.png', sep=''))
 gg_best_testfit <- ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
   geom_boxplot() +
-  labs(x=SERIES_LABEL, y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')) +
+  labs(x=if(has_multiple_types) SERIES_LABEL else NULL, y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')) + 
   theme_minimal()
 gg_best_testfit
 dev.off()
@@ -132,7 +168,7 @@ dev.off()
 png(filename = paste(OUT_DIR, 'connections_best_bp.png', sep=''))
 gg_best_connections <- ggplot(data=summaries_dt, aes(x=run_type, y=connections)) +
   geom_boxplot() +
-  labs(x=SERIES_LABEL, y=paste("Connections", sep='')) +
+  labs(x=if(has_multiple_types) SERIES_LABEL else NULL, y=paste("Connections", sep='')) +
   theme_minimal()
 gg_best_connections
 dev.off()
@@ -140,7 +176,7 @@ dev.off()
 # Plot mean fitness over time
 png(filename = paste(OUT_DIR, 'fitness_mean.png', sep=''))
 gg_meanfit <- ggplot(data=evals_dt, aes(time)) + 
-  geom_smooth(aes(y=fitness.mean, col=run_type), method='loess') +
+  geom_smooth(aes_string(y='fitness.mean', col=run_type) , method='loess') +
   labs(x="Run time (min)", y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep=''), col=SERIES_LABEL) +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
@@ -150,7 +186,7 @@ dev.off()
 # Plot max fitness over time
 png(filename = paste(OUT_DIR, 'fitness_max.png', sep=''))
 gg_maxfit <- ggplot(data=evals_dt, aes(time)) + 
-  geom_smooth(aes(y=fitness.max, col=run_type), method='loess') +
+  geom_smooth(aes_string(y='fitness.max', col=run_type), method='loess') +
   labs(x="Run time (min)", y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep=''), col="Sample size") +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
@@ -160,7 +196,7 @@ dev.off()
 # Plot generations over time
 png(filename = paste(OUT_DIR, 'generations.png', sep=''))
 gg_generations <- ggplot(data=evals_dt, aes(time)) + 
-  geom_smooth(aes(y=generation, col=run_type), method='loess') +
+  geom_smooth(aes_string(y='generation', col=run_type), method='loess') +
   labs(x="Run time (min)", y="Generations", col=SERIES_LABEL) + 
   theme_minimal()
 gg_generations
@@ -169,7 +205,7 @@ dev.off()
 # Plot mean complexity (connections) over time
 png(filename = paste(OUT_DIR, 'connections_mean.png', sep=''))
 gg_connections <- ggplot(data=evals_dt, aes(time)) + 
-  geom_line(aes(y=connections.mean, col=run_type)) +
+  geom_line(aes_string(y='connections.mean', col=run_type)) +
   labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_connections
@@ -178,7 +214,7 @@ dev.off()
 # Plot complexity (connections) of the best individual over time
 png(filename = paste(OUT_DIR, 'connections_best.png', sep=''))
 gg_connections <- ggplot(data=evals_dt, aes(time)) + 
-  geom_line(aes(y=connections.best, col=run_type)) +
+  geom_line(aes_string(y='connections.best', col=run_type)) +
   labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_connections
