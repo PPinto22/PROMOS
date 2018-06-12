@@ -1,0 +1,11 @@
+
+	Pairwise comparisons using paired t tests 
+
+data:  as.vector(results) and conf 
+
+         Config 1 Config 2 Config 3
+Config 2 0.2      -        -       
+Config 3 1.0      0.3      -       
+Config 4 1.0      0.2      1.0     
+
+P value adjustment method: holm 
