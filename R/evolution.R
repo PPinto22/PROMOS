@@ -245,6 +245,7 @@ if(has_windows){
     geom_vline(xintercept=window_gen_splits, linetype=3) +
     labs(x="Generation", y="Fitness", col='') + 
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+    scale_x_continuous(breaks=windows_avg_dt$generations) + 
     theme_minimal()
   dev.off()
   
@@ -256,6 +257,7 @@ if(has_windows){
     geom_vline(xintercept=window_gen_splits, linetype=3) +
     labs(x="Generation", y="Fitness", col='') + 
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+    scale_x_continuous(breaks=windows_avg_dt$generations) + 
     theme_minimal()
   dev.off()
   
