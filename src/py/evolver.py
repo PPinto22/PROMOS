@@ -122,13 +122,6 @@ class Evolver:
 
         # MultiNEAT parameters
         self.params = params.get_params(self.options.params)
-        # Substrate for HyperNEAT and ES-HyperNEAT
-        try:
-            self.substrate = subst.get_substrate(self.options.substrate) if \
-                self.options.method in ['hyperneat', 'eshyperneat'] else None
-        except IndexError:
-            raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
-                             format(self.options.substrate, len(subst.substrates) - 1)) from None
 
         # Sliding window
         self.width = self.options.width if self.options.width is not None else 0
@@ -146,6 +139,17 @@ class Evolver:
         else:  # Use static data
             self.train_data = Data(self.options.data_file)
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+
+        # Substrate for HyperNEAT and ES-HyperNEAT
+        try:
+            self.substrate = subst.get_substrate(self.options.substrate,
+                                                 inputs=self.train_data.n_inputs,
+                                                 hidden_layers=10, nodes_per_layer=[10] * 10,
+                                                 outputs=1) \
+                if self.options.method in ['hyperneat', 'eshyperneat'] else None
+        except IndexError:
+            raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
+                             format(self.options.substrate, len(subst.substrates) - 1)) from None
 
         self.initial_time = None  # Time when the run starts
         self.eval_time = datetime.timedelta()  # Time spent in evaluations

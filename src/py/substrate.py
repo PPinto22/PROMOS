@@ -19,7 +19,7 @@ def get_2d_point_line(npoints, point1, point2):
     return [(float(p.x), float(p.y)) for p in line]
 
 
-def init_2d_grid_substrate(inputs: int, hidden_layers: int, nodes_per_layer: [int], outputs: int):
+def grid2d_substrate(inputs: int, hidden_layers: int, nodes_per_layer: [int], outputs: int):
     input_nodes = get_2d_point_line(inputs, (-1.0, -1.0), (-1.0, 1.0))
     hidden_nodes = []
     layers = get_2d_point_line(hidden_layers + 2, (-1, 0), (1, 0))
@@ -31,16 +31,11 @@ def init_2d_grid_substrate(inputs: int, hidden_layers: int, nodes_per_layer: [in
     return neat.Substrate(input_nodes, hidden_nodes, output_nodes)
 
 
-# 10x10 Hidden nodes in a 2D grid
-def get_substrate0():
-    return init_2d_grid_substrate(11, 10, [10] * 10, 1)
+substrates = [grid2d_substrate]
 
 
-substrates = [get_substrate0]
-
-
-def get_substrate(i):
-    return substrates[i]()
+def get_substrate(i, **kwargs):
+    return substrates[i](**kwargs)
 
 
 def save_substrate(substrate, file_path):
