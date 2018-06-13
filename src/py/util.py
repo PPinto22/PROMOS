@@ -55,11 +55,24 @@ def serializer(obj):
 
 def uint(value):
     def raise_arg_type_error(s):
-        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+        raise argparse.ArgumentTypeError("{} is an invalid positive int value".format(value))
 
     try:
         ivalue = int(value)
         if ivalue <= 0:
+            raise_arg_type_error(value)
+        return ivalue
+    except ValueError:
+        raise_arg_type_error(value)
+
+
+def range_int(value, lower=0, upper=0):
+    def raise_arg_type_error(s):
+        raise argparse.ArgumentTypeError("{} is not an int value between [{}, {}]".format(value, lower, upper))
+
+    try:
+        ivalue = int(value)
+        if ivalue < lower or ivalue > upper:
             raise_arg_type_error(value)
         return ivalue
     except ValueError:

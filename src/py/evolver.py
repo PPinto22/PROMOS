@@ -31,7 +31,8 @@ def parse_args():
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
     parser.add_argument('-P', '--params', dest='params', metavar='FILE', default=None,
                         help='path to a parameters file. If not specified, default values will be used.')
-    parser.add_argument('-x', '--substrate', dest='substrate', type=util.uint, metavar='X', default=0,
+    parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
+                        type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
     evaluation_functions = ['auc']
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluation_functions, default='auc',
