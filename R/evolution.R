@@ -17,20 +17,26 @@ library(rjson)
 library(chron)
 
 # ---- CONFIGURATION ----
-RUNS <- 16
-WINDOWS <- 4
+# RUNS <- 30
+# WINDOWS <- 1
 # RESULTS_DIR <- '../results/NEAT/samples_30runs/'
 # RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
 # RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000', '100'))
 # SERIES_LABEL <- 'Sample size'
+# OUT_DIR <- 'out/samples_30/'
 
-RESULTS_DIR <- '../results/window/'
-RUN_TYPES <- c('neat_windows') # These are the prefixes of the result files
+# RESULTS_DIR <- '../results/window/'
+# RUN_TYPES <- c('neat_windows') # These are the prefixes of the result files
+
+RUNS <- 32
+WINDOWS <- 4
+RESULTS_DIR <- '../results/hyperneat_window/'
+RUN_TYPES <- c('hyperneat_windows') # These are the prefixes of the result files
 RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
 SERIES_LABEL <- 'Run'
+OUT_DIR <- 'out/hyperneat_window/'
 
 FITNESS_FUNC <- 'AUC'
-OUT_DIR <- 'out/window/'
 DIGITS <- 5
 
 # ---- SETUP ----
@@ -53,12 +59,42 @@ for(type in RUN_TYPES){
 }
 
 # Read all evaluations.csv files and store the averages of all runs
+# evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
+#   # Read all runs of the current type
+#   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
+#     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
+#     # Group by generation
+#     run_dt = run_dt[ , .(window=round(median(window)), fitness.mean = mean(fitness), fitness.max = max(fitness), 
+#                          fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
+#                          neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
+#                          connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
+#                          time = mean(run_minutes)), by = generation]
+#   })
+#   # Join all runs into a single data.table
+#   run_type_dts = rbindlist(run_type_dts)
+# 
+#   # Count how many times each generation occurs
+#   generation_count = table(run_type_dts$generation)
+#   # Crop outlier generations that appear in less than 80% of runs
+#   run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
+# 
+#   # Get the average of run_type_dts
+#   type_avg_dt = run_type_dts[, .(window=median(window), fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
+#                                  fitness.test.mean = mean(fitness.test.mean), fitness.test.best = mean(fitness.test.best),
+#                                  neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
+#                                  connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
+#                                  time = mean(time)), by = generation]
+#   # Add "run_type" column
+#   run_type = rep(RUN_TYPE_LABEL[[type]], nrow(type_avg_dt))
+#   type_avg_dt = cbind(type_avg_dt, run_type)
+#   return(type_avg_dt)
+# }))
 evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   # Read all runs of the current type
   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
     # Group by generation
-    run_dt = run_dt[ , .(window=round(median(window)), fitness.mean = mean(fitness), fitness.max = max(fitness), 
+    run_dt = run_dt[ , .(fitness.mean = mean(fitness), fitness.max = max(fitness), 
                          fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
                          neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
                          connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
@@ -66,14 +102,14 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   })
   # Join all runs into a single data.table
   run_type_dts = rbindlist(run_type_dts)
-
+  
   # Count how many times each generation occurs
   generation_count = table(run_type_dts$generation)
   # Crop outlier generations that appear in less than 80% of runs
   run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
-
+  
   # Get the average of run_type_dts
-  type_avg_dt = run_type_dts[, .(window=median(window), fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
+  type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
                                  fitness.test.mean = mean(fitness.test.mean), fitness.test.best = mean(fitness.test.best),
                                  neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
                                  connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
@@ -148,7 +184,7 @@ if(!has_windows){
 }
 
 # -- Statistical tests --
-if(has_multiple_types){
+if(has_types){
   sink(paste(OUT_DIR, 'ttest.txt', sep = ''))
   pairwise.t.test(summaries_dt$train_fit, summaries_dt$run_type,  paired=TRUE)
   sink()
@@ -224,6 +260,25 @@ gg_connections <- ggplot(data=evals_dt, aes(time)) +
 gg_connections
 dev.off()
 
+# Plot mean complexity (connections) over generations
+png(filename = paste(OUT_DIR, 'connections_mean_by_gens.png', sep=''))
+gg_mean_connections_gen <- ggplot(data=evals_dt, aes(generation)) + 
+  geom_line(aes_string(y='connections.mean', col=run_type)) +
+  labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
+  theme_minimal()
+gg_mean_connections_gen
+dev.off()
+
+# Plot complexity (connections) of the best individual over generations
+png(filename = paste(OUT_DIR, 'connections_best_by_gens.png', sep=''))
+gg_best_connections_gen <- ggplot(data=evals_dt, aes(generation)) + 
+  geom_line(aes_string(y='connections.best', col=run_type)) +
+  labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
+  theme_minimal()
+gg_best_connections_gen
+dev.off()
+
+
 if(has_windows){
   # Box plot of results by window
   for(type in RUN_TYPES){
@@ -239,7 +294,7 @@ if(has_windows){
   
   # Max and mean train fitness
   png(filename = paste(OUT_DIR, 'window_train_fit.png', sep=''))
-  ggplot(data=evals_dt, aes(generation)) + 
+  gg_window_train_fit <- ggplot(data=evals_dt, aes(generation)) + 
     geom_smooth(aes(y=fitness.max, col='Best'), method='loess') +
     geom_smooth(aes(y=fitness.mean, col='Mean'), method='loess') +
     geom_vline(xintercept=window_gen_splits, linetype=3) +
@@ -247,11 +302,12 @@ if(has_windows){
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
     scale_x_continuous(breaks=windows_avg_dt$generations) + 
     theme_minimal()
+  print(gg_window_train_fit)
   dev.off()
   
   # Max and mean test fitness
   png(filename = paste(OUT_DIR, 'window_test_fit.png', sep=''))
-  ggplot(data=evals_dt, aes(generation)) + 
+  gg_window_test_fit <- ggplot(data=evals_dt, aes(generation)) + 
     geom_smooth(aes(y=fitness.test.best, col='Max'), method='loess') +
     geom_smooth(aes(y=fitness.test.mean, col='Mean'), method='loess') +
     geom_vline(xintercept=window_gen_splits, linetype=3) +
@@ -259,14 +315,16 @@ if(has_windows){
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
     scale_x_continuous(breaks=windows_avg_dt$generations) + 
     theme_minimal()
+  print(gg_window_test_fit)
   dev.off()
   
   # Network connections
   png(filename = paste(OUT_DIR, 'window_connections.png', sep=''))
-  ggplot(data=evals_dt, aes(generation)) + 
+  gg_window_connections <- ggplot(data=evals_dt, aes(generation)) + 
     geom_smooth(aes(y=connections.mean), method='loess') +
     geom_vline(xintercept=window_gen_splits, linetype=3) +
     labs(x="Generation", y="Connections", col='') + 
     theme_minimal()
+  print(gg_window_connections)
   dev.off()
 }
