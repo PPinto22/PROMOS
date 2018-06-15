@@ -25,8 +25,13 @@ library(chron)
 # SERIES_LABEL <- 'Sample size'
 # OUT_DIR <- 'out/samples_30/'
 
+# RUNS <- 16
+# WINDOWS <- 4
 # RESULTS_DIR <- '../results/window/'
 # RUN_TYPES <- c('neat_windows') # These are the prefixes of the result files
+# RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
+# SERIES_LABEL <- 'Run'
+# OUT_DIR <- 'out/window'
 
 RUNS <- 32
 WINDOWS <- 4
@@ -59,42 +64,12 @@ for(type in RUN_TYPES){
 }
 
 # Read all evaluations.csv files and store the averages of all runs
-# evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
-#   # Read all runs of the current type
-#   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
-#     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
-#     # Group by generation
-#     run_dt = run_dt[ , .(window=round(median(window)), fitness.mean = mean(fitness), fitness.max = max(fitness), 
-#                          fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
-#                          neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
-#                          connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
-#                          time = mean(run_minutes)), by = generation]
-#   })
-#   # Join all runs into a single data.table
-#   run_type_dts = rbindlist(run_type_dts)
-# 
-#   # Count how many times each generation occurs
-#   generation_count = table(run_type_dts$generation)
-#   # Crop outlier generations that appear in less than 80% of runs
-#   run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
-# 
-#   # Get the average of run_type_dts
-#   type_avg_dt = run_type_dts[, .(window=median(window), fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
-#                                  fitness.test.mean = mean(fitness.test.mean), fitness.test.best = mean(fitness.test.best),
-#                                  neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
-#                                  connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
-#                                  time = mean(time)), by = generation]
-#   # Add "run_type" column
-#   run_type = rep(RUN_TYPE_LABEL[[type]], nrow(type_avg_dt))
-#   type_avg_dt = cbind(type_avg_dt, run_type)
-#   return(type_avg_dt)
-# }))
 evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   # Read all runs of the current type
   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
     # Group by generation
-    run_dt = run_dt[ , .(fitness.mean = mean(fitness), fitness.max = max(fitness), 
+    run_dt = run_dt[ , .(window=round(median(window)), fitness.mean = mean(fitness), fitness.max = max(fitness),
                          fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
                          neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
                          connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
@@ -102,14 +77,14 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   })
   # Join all runs into a single data.table
   run_type_dts = rbindlist(run_type_dts)
-  
+
   # Count how many times each generation occurs
   generation_count = table(run_type_dts$generation)
   # Crop outlier generations that appear in less than 80% of runs
   run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
-  
+
   # Get the average of run_type_dts
-  type_avg_dt = run_type_dts[, .(fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
+  type_avg_dt = run_type_dts[, .(window=median(window), fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
                                  fitness.test.mean = mean(fitness.test.mean), fitness.test.best = mean(fitness.test.best),
                                  neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
                                  connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
@@ -119,7 +94,6 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   type_avg_dt = cbind(type_avg_dt, run_type)
   return(type_avg_dt)
 }))
-evals_dt$run_type <- factor(evals_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
 
 # Read summaries
 if(!has_windows){
