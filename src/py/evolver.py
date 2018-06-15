@@ -306,14 +306,15 @@ class Evolver:
         if self.generation == 0:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
-                header = ['window', 'generation', 'genome_id', 'fitness', 'fitness_test',
-                          'neurons', 'connections', 'run_minutes']
+                header = ['window', 'generation', 'genome_id', 'fitness', 'fitness_test', 'neurons', 'connections',
+                          'build_time', 'pred_time', 'pred_avg_time', 'fit_time', 'run_time']
                 writer.writerow(header)
         with open(file_path, 'a') as file:
             writer = csv.writer(file, delimiter=',')
             for e in evaluations:
                 fitness_test = e.fitness_test if e.fitness_test is not None else -1
                 writer.writerow([e.window, e.generation, e.genome_id, e.fitness, fitness_test, e.neurons, e.connections,
+                                 e.build_time, e.pred_time, e.pred_avg_time, e.fit_time,
                                  e.global_time.total_seconds() / 60.0])
 
     def get_best(self):

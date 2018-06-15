@@ -73,7 +73,7 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
                          fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
                          neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
                          connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
-                         time = mean(run_minutes)), by = generation]
+                         time = mean(run_time)), by = generation]
   })
   # Join all runs into a single data.table
   run_type_dts = rbindlist(run_type_dts)

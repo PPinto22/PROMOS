@@ -3,6 +3,7 @@ import argparse
 import datetime
 import multiprocessing
 import random
+from functools import partial
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
@@ -16,8 +17,8 @@ global_test_data = None
 
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, fitness_test=None, neurons=None, connections=None,
-                 generation=None, window=None, global_time=None, **kwargs):
+    def __init__(self, genome, fitness, fitness_test=None, neurons=None, connections=None, generation=None,
+                 window=None, global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None):
         """
         :type connections: int
         :type neurons: int
@@ -32,8 +33,11 @@ class GenomeEvaluation:
         self.generation = generation
         self.window = window
         self.global_time = global_time
-        for key, value in kwargs.items():
-            self.__setattr__(key, value)
+        self.build_time = build_time
+        self.pred_time = pred_time
+        self.pred_avg_time = pred_avg_time
+        self.fit_time = fit_time
+        self.eval_time = sum(x for x in (build_time, pred_time, fit_time) if x is not None)
 
     def save_genome_copy(self):
         self.genome = neat.Genome(self.genome)
@@ -51,25 +55,29 @@ def predict(net, inputs):
     return predictions
 
 
-def _evaluate_auc(net, data):
-    predictions = predict(net, data.inputs)
+def _evaluate_auc(net, data, predictions=None):
+    predictions = predictions if predictions is not None else predict(net, data.inputs)
     fpr, tpr, thresholds = roc_curve(data.targets, predictions)
     roc_auc = auc(fpr, tpr)
     return roc_auc
 
 
 def evaluate_auc(genome, data=None, test_data=None, **kwargs):
-    net = util.build_network(genome, **kwargs)
+    build_time, net = util.time(lambda: util.build_network(genome, **kwargs), as_microseconds=True)
 
     if data is None:
         data = global_data
     if test_data is None:
         test_data = global_test_data
 
-    fitness = _evaluate_auc(net, data)
+    pred_time, predictions = util.time(lambda: predict(net, data.inputs), as_microseconds=True)
+    pred_avg_time = pred_time / len(data)
+    fit_time, fitness = util.time(lambda: _evaluate_auc(net, data, predictions=predictions), as_microseconds=True)
     fitness_test = _evaluate_auc(net, test_data) if test_data is not None else None
 
-    return _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test, **kwargs)
+    return _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test,
+                                     build_time=build_time, pred_time=pred_time,
+                                     pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
 
 
 def evaluate_error(genome, data, **kwargs):
@@ -81,8 +89,8 @@ def evaluate_error(genome, data, **kwargs):
     return _create_genome_evaluation(genome, fitness, net, **kwargs)
 
 
-def _create_genome_evaluation(genome, fitness, net, fitness_test=None,
-                              window=None, generation=None, initial_time=None, **kwargs):
+def _create_genome_evaluation(genome, fitness, net, fitness_test=None, window=None, generation=None, initial_time=None,
+                              build_time=None, pred_time=None, pred_avg_time=None, fit_time=None, **kwargs):
     genome.SetFitness(fitness)
     genome.SetEvaluated()
 
@@ -91,7 +99,8 @@ def _create_genome_evaluation(genome, fitness, net, fitness_test=None,
     return GenomeEvaluation(genome=genome, fitness=fitness, fitness_test=fitness_test,
                             neurons=len(util.get_network_neurons(net)),
                             connections=len(util.get_network_connections(net)),
-                            generation=generation, window=window, global_time=global_time)
+                            generation=generation, window=window, global_time=global_time, build_time=build_time,
+                            pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
 
 
 def evaluate_genome_list(genome_list, evaluator, data, sample_size=0, processes=1, sort=True, test_data=None):

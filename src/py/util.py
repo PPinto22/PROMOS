@@ -1,8 +1,6 @@
 import MultiNEAT as neat
 import argparse
-import csv
 import datetime
-import json
 from collections import namedtuple
 
 import numpy as np
@@ -35,6 +33,15 @@ def build_network(genome, method='neat', substrate=None, **kwargs):
 
 def avg(l):
     return sum(l) / len(l)
+
+
+def time(f, as_microseconds=False):
+    pre = datetime.datetime.now()
+    f_out = f()
+    elapsed_time = datetime.datetime.now() - pre
+    if as_microseconds:
+        elapsed_time = (elapsed_time.days * 86400 + elapsed_time.seconds) * 10**6 + elapsed_time.microseconds
+    return elapsed_time, f_out
 
 
 def serializer(obj):
