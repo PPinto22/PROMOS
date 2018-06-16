@@ -31,15 +31,15 @@ library(chron)
 # RUN_TYPES <- c('neat_windows') # These are the prefixes of the result files
 # RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
 # SERIES_LABEL <- 'Run'
-# OUT_DIR <- 'out/window'
+# OUT_DIR <- 'out/window/'
 
-RUNS <- 32
-WINDOWS <- 4
-RESULTS_DIR <- '../results/hyperneat_window/'
-RUN_TYPES <- c('hyperneat_windows') # These are the prefixes of the result files
-RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
-SERIES_LABEL <- 'Run'
-OUT_DIR <- 'out/hyperneat_window/'
+# RUNS <- 32
+# WINDOWS <- 4
+# RESULTS_DIR <- '../results/hyperneat_window/'
+# RUN_TYPES <- c('hyperneat_windows') # These are the prefixes of the result files
+# RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
+# SERIES_LABEL <- 'Run'
+# OUT_DIR <- 'out/hyperneat_window/'
 
 FITNESS_FUNC <- 'AUC'
 DIGITS <- 5
@@ -49,6 +49,7 @@ has_types <- length(RUN_TYPES) > 1
 has_windows <- exists("WINDOWS") && WINDOWS > 1
 options(digits=DIGITS)
 labels_ord = sapply(RUN_TYPES, function(x){RUN_TYPE_LABEL[[x]]})
+fit_label <- paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')
 # Map, for each run type (i.e., each prefix in PREFIX), a list of all respective data files
 evals_file_names <- hash()
 summs_file_names <- hash()
@@ -69,11 +70,13 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   run_type_dts = lapply(evals_file_names[[type]], function(file_name){
     run_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
     # Group by generation
-    run_dt = run_dt[ , .(window=round(median(window)), fitness.mean = mean(fitness), fitness.max = max(fitness),
-                         fitness.test.mean = mean(fitness_test), fitness.test.best = fitness_test[which.max(fitness)],
-                         neurons.mean = mean(neurons), neurons.max = max(neurons), neurons.best = neurons[which.max(fitness)],
-                         connections.mean = mean(connections), connections.max = max(connections), connections.best = connections[which.max(fitness)],
-                         time = mean(run_time)), by = generation]
+    run_dt = run_dt[ , .(window=round(median(window)), fitness_mean = mean(fitness), fitness_max = max(fitness),
+                         fitness_test_mean = mean(fitness_test), fitness_test_best = fitness_test[which.max(fitness)],
+                         neurons_mean = mean(neurons), neurons_max = max(neurons), neurons_best = neurons[which.max(fitness)],
+                         connections_mean = mean(connections), connections_max = max(connections), connections_best = connections[which.max(fitness)],
+                         build_time=mean(build_time), pred_time=mean(pred_time), pred_avg_time=mean(pred_avg_time), 
+                         fit_time=mean(fit_time), eval_time=mean(build_time+pred_time+fit_time),
+                         run_time = mean(run_time)), by = generation]
   })
   # Join all runs into a single data.table
   run_type_dts = rbindlist(run_type_dts)
@@ -84,11 +87,13 @@ evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   run_type_dts = run_type_dts[run_type_dts$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
 
   # Get the average of run_type_dts
-  type_avg_dt = run_type_dts[, .(window=median(window), fitness.mean = mean(fitness.mean), fitness.max = mean(fitness.max),
-                                 fitness.test.mean = mean(fitness.test.mean), fitness.test.best = mean(fitness.test.best),
-                                 neurons.mean = mean(neurons.mean), neurons.max = mean(neurons.max), neurons.best = mean(neurons.best),
-                                 connections.mean = mean(connections.mean), connections.max = mean(connections.max), connections.best = mean(connections.best),
-                                 time = mean(time)), by = generation]
+  type_avg_dt = run_type_dts[, .(window=median(window), fitness_mean = mean(fitness_mean), fitness_max = mean(fitness_max),
+                                 fitness_test_mean = mean(fitness_test_mean), fitness_test_best = mean(fitness_test_best),
+                                 neurons_mean = mean(neurons_mean), neurons_max = mean(neurons_max), neurons_best = mean(neurons_best),
+                                 connections_mean = mean(connections_mean), connections_max = mean(connections_max), connections_best = mean(connections_best),
+                                 build_time=mean(build_time), pred_time=mean(pred_time), pred_avg_time=mean(pred_avg_time), 
+                                 fit_time=mean(fit_time), eval_time=mean(build_time+pred_time+fit_time),
+                                 run_time = mean(run_time)), by = generation]
   # Add "run_type" column
   run_type = rep(RUN_TYPE_LABEL[[type]], nrow(type_avg_dt))
   type_avg_dt = cbind(type_avg_dt, run_type)
@@ -172,7 +177,7 @@ if(!has_windows){
   png(filename = paste(OUT_DIR, 'fitness_best_bp.png', sep=''))
   gg_best_testfit <- ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
     geom_boxplot() +
-    labs(x=if(has_multiple_types) SERIES_LABEL else NULL, y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')) + 
+    labs(x=if(has_multiple_types) SERIES_LABEL else NULL, y=fit_label) + 
     theme_minimal()
   gg_best_testfit
   dev.off()
@@ -189,9 +194,9 @@ if(!has_windows){
 
 # Plot mean fitness over time
 png(filename = paste(OUT_DIR, 'fitness_mean.png', sep=''))
-gg_meanfit <- ggplot(data=evals_dt, aes(time)) + 
-  geom_smooth(aes_string(y='fitness.mean', col=run_type) , method='loess') +
-  labs(x="Run time (min)", y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep=''), col=SERIES_LABEL) +
+gg_meanfit <- ggplot(data=evals_dt, aes(run_time)) + 
+  geom_smooth(aes_string(y='fitness_mean', col=run_type) , method='loess') +
+  labs(x="Run time (min)", y=fit_label, col=SERIES_LABEL) +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
 gg_meanfit
@@ -199,9 +204,9 @@ dev.off()
 
 # Plot max fitness over time
 png(filename = paste(OUT_DIR, 'fitness_max.png', sep=''))
-gg_maxfit <- ggplot(data=evals_dt, aes(time)) + 
-  geom_smooth(aes_string(y='fitness.max', col=run_type), method='loess') +
-  labs(x="Run time (min)", y=paste("Fitness ", "(", FITNESS_FUNC, ")", sep=''), col="Sample size") +
+gg_maxfit <- ggplot(data=evals_dt, aes(run_time)) + 
+  geom_smooth(aes_string(y='fitness_max', col=run_type), method='loess') +
+  labs(x="Run time (min)", y=fit_label, col="Sample size") +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
 gg_maxfit
@@ -209,7 +214,7 @@ dev.off()
 
 # Plot generations over time
 png(filename = paste(OUT_DIR, 'generations.png', sep=''))
-gg_generations <- ggplot(data=evals_dt, aes(time)) + 
+gg_generations <- ggplot(data=evals_dt, aes(run_time)) + 
   geom_smooth(aes_string(y='generation', col=run_type), method='loess') +
   labs(x="Run time (min)", y="Generations", col=SERIES_LABEL) + 
   theme_minimal()
@@ -218,8 +223,8 @@ dev.off()
 
 # Plot mean complexity (connections) over time
 png(filename = paste(OUT_DIR, 'connections_mean.png', sep=''))
-gg_connections <- ggplot(data=evals_dt, aes(time)) + 
-  geom_line(aes_string(y='connections.mean', col=run_type)) +
+gg_connections <- ggplot(data=evals_dt, aes(run_time)) + 
+  geom_line(aes_string(y='connections_mean', col=run_type)) +
   labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_connections
@@ -227,8 +232,8 @@ dev.off()
 
 # Plot complexity (connections) of the best individual over time
 png(filename = paste(OUT_DIR, 'connections_best.png', sep=''))
-gg_connections <- ggplot(data=evals_dt, aes(time)) + 
-  geom_line(aes_string(y='connections.best', col=run_type)) +
+gg_connections <- ggplot(data=evals_dt, aes(run_time)) + 
+  geom_line(aes_string(y='connections_best', col=run_type)) +
   labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_connections
@@ -237,7 +242,7 @@ dev.off()
 # Plot mean complexity (connections) over generations
 png(filename = paste(OUT_DIR, 'connections_mean_by_gens.png', sep=''))
 gg_mean_connections_gen <- ggplot(data=evals_dt, aes(generation)) + 
-  geom_line(aes_string(y='connections.mean', col=run_type)) +
+  geom_line(aes_string(y='connections_mean', col=run_type)) +
   labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_mean_connections_gen
@@ -246,7 +251,7 @@ dev.off()
 # Plot complexity (connections) of the best individual over generations
 png(filename = paste(OUT_DIR, 'connections_best_by_gens.png', sep=''))
 gg_best_connections_gen <- ggplot(data=evals_dt, aes(generation)) + 
-  geom_line(aes_string(y='connections.best', col=run_type)) +
+  geom_line(aes_string(y='connections_best', col=run_type)) +
   labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
   theme_minimal()
 gg_best_connections_gen
@@ -260,7 +265,7 @@ if(has_windows){
     png(filename = paste(OUT_DIR, type, '_best_bp.png', sep=''))
     gg_windows = ggplot(data=type_windows_dt, aes(x=window, y=test_fitness)) +
       geom_boxplot() +
-      labs(x=NULL, y="Fitness") +
+      labs(x=NULL, y=fit_label) +
       theme_minimal()
     print(gg_windows)
     dev.off()
@@ -269,10 +274,10 @@ if(has_windows){
   # Max and mean train fitness
   png(filename = paste(OUT_DIR, 'window_train_fit.png', sep=''))
   gg_window_train_fit <- ggplot(data=evals_dt, aes(generation)) + 
-    geom_smooth(aes(y=fitness.max, col='Best'), method='loess') +
-    geom_smooth(aes(y=fitness.mean, col='Mean'), method='loess') +
+    geom_smooth(aes(y=fitness_max, col='Best'), method='loess') +
+    geom_smooth(aes(y=fitness_mean, col='Mean'), method='loess') +
     geom_vline(xintercept=window_gen_splits, linetype=3) +
-    labs(x="Generation", y="Fitness", col='') + 
+    labs(x="Generation", y=fit_label, col='') + 
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
     scale_x_continuous(breaks=windows_avg_dt$generations) + 
     theme_minimal()
@@ -282,10 +287,10 @@ if(has_windows){
   # Max and mean test fitness
   png(filename = paste(OUT_DIR, 'window_test_fit.png', sep=''))
   gg_window_test_fit <- ggplot(data=evals_dt, aes(generation)) + 
-    geom_smooth(aes(y=fitness.test.best, col='Max'), method='loess') +
-    geom_smooth(aes(y=fitness.test.mean, col='Mean'), method='loess') +
+    geom_smooth(aes(y=fitness_test_best, col='Max'), method='loess') +
+    geom_smooth(aes(y=fitness_test_mean, col='Mean'), method='loess') +
     geom_vline(xintercept=window_gen_splits, linetype=3) +
-    labs(x="Generation", y="Fitness", col='') + 
+    labs(x="Generation", y=fit_label, col='') + 
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
     scale_x_continuous(breaks=windows_avg_dt$generations) + 
     theme_minimal()
@@ -295,10 +300,11 @@ if(has_windows){
   # Network connections
   png(filename = paste(OUT_DIR, 'window_connections.png', sep=''))
   gg_window_connections <- ggplot(data=evals_dt, aes(generation)) + 
-    geom_smooth(aes(y=connections.mean), method='loess') +
+    geom_smooth(aes(y=connections_mean), method='loess') +
     geom_vline(xintercept=window_gen_splits, linetype=3) +
     labs(x="Generation", y="Connections", col='') + 
     theme_minimal()
   print(gg_window_connections)
   dev.off()
 }
+

@@ -7,8 +7,8 @@ library(hash)
 TARGET <- "target"
 POSITIVE_CLASS <- "Sale"
 DATE <- "date_added_utc"
-INPUT <- '../data/week1_best/ColetasPROMOSBESTTreated2018-05-16.json'
-OUTPUT <- '../data/week1_best/week1_best.csv'
+INPUT <- '../data/2weeks/ColetasPROMOSTESTTreated2018-06-13.json'
+OUTPUT <- '../data/2weeks/test.csv'
 
 # Read data
 dt <- as.data.table(fromJSON(INPUT))
