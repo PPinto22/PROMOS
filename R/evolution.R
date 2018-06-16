@@ -134,7 +134,7 @@ if(!has_windows){
                                    train_fitness=mean(train_fitness), test_fitness=mean(test_fitness), 
                                    best_neurons=round(mean(best_neurons)), best_connections=round(mean(best_connections))),
                                   by = list(run_type, window)]
-  window_gen_splits <- windows_avg_dt$generations[1:(length(windows_avg_dt$generations)-1)]
+  windows_gen_splits <- windows_avg_dt$generations[1:(length(windows_avg_dt$generations)-1)]
 }
 
 # ---- OUTPUTS ----
@@ -276,7 +276,7 @@ if(has_windows){
   gg_window_train_fit <- ggplot(data=evals_dt, aes(generation)) + 
     geom_smooth(aes(y=fitness_max, col='Best'), method='loess') +
     geom_smooth(aes(y=fitness_mean, col='Mean'), method='loess') +
-    geom_vline(xintercept=window_gen_splits, linetype=3) +
+    geom_vline(xintercept=windows_gen_splits, linetype=3) +
     labs(x="Generation", y=fit_label, col='') + 
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
     scale_x_continuous(breaks=windows_avg_dt$generations) + 
@@ -289,7 +289,7 @@ if(has_windows){
   gg_window_test_fit <- ggplot(data=evals_dt, aes(generation)) + 
     geom_smooth(aes(y=fitness_test_best, col='Max'), method='loess') +
     geom_smooth(aes(y=fitness_test_mean, col='Mean'), method='loess') +
-    geom_vline(xintercept=window_gen_splits, linetype=3) +
+    geom_vline(xintercept=windows_gen_splits, linetype=3) +
     labs(x="Generation", y=fit_label, col='') + 
     scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
     scale_x_continuous(breaks=windows_avg_dt$generations) + 
@@ -301,7 +301,7 @@ if(has_windows){
   png(filename = paste(OUT_DIR, 'window_connections.png', sep=''))
   gg_window_connections <- ggplot(data=evals_dt, aes(generation)) + 
     geom_smooth(aes(y=connections_mean), method='loess') +
-    geom_vline(xintercept=window_gen_splits, linetype=3) +
+    geom_vline(xintercept=windows_gen_splits, linetype=3) +
     labs(x="Generation", y="Connections", col='') + 
     theme_minimal()
   print(gg_window_connections)
