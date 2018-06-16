@@ -152,9 +152,12 @@ class Evolver:
             raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
                              format(self.options.substrate, len(subst.substrates) - 1)) from None
 
-        self.initial_time = None  # Time when the run starts
-        self.eval_time = datetime.timedelta()  # Time spent in evaluations
-        self.ea_time = datetime.timedelta()  # Time spent in the EA
+        self.initial_time = None         # When the run started
+        self.window_initial_time = None  # When the current window started
+        self.eval_time = None            # Time spent in evaluations
+        self.window_eval_time = None     # Time spent in evaluations during the current window
+        self.ea_time = None              # Time spent in the EA
+        self.window_ea_time = None       # Time spent in the EA during the current window
 
         self.run_i = None  # Current run, in case of multiple runs
 
@@ -207,6 +210,9 @@ class Evolver:
 
     def elapsed_time(self):
         return datetime.datetime.now() - self.initial_time
+
+    def window_elapsed_time(self):
+        return datetime.datetime.now() - self.window_initial_time
 
     def is_finished(self):
         if not self.is_online:
@@ -278,9 +284,10 @@ class Evolver:
         if self.get_current_window() == 0:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
-                header = ['window', 'begin_date', 'end_date', 'generations', 'run_minutes', 'train_size',
-                          'train_positives', 'train_negatives',
-                          'test_size', 'test_positives', 'test_negatives', 'train_fitness', 'test_fitness',
+                header = ['window', 'begin_date', 'end_date', 'generations', 'run_time', 'eval_time', 'ea_time',
+                          'train_size', 'train_positives', 'train_negatives',
+                          'test_size', 'test_positives', 'test_negatives',
+                          'train_fitness', 'test_fitness',
                           'best_neurons', 'best_connections', ]
                 writer.writerow(header)
         with open(file_path, 'a') as file:
@@ -292,7 +299,9 @@ class Evolver:
             best = self.get_best()
             begin_date, end_date = self.train_data.get_time_range()
             writer.writerow([self.get_current_window(), begin_date, end_date, self.generation,
-                             self.elapsed_time().total_seconds() / 60.0,
+                             self.window_elapsed_time().total_seconds() / 60.0,
+                             self.window_eval_time.total_seconds() / 60.0,
+                             self.window_ea_time.total_seconds() / 60.0,
                              len(self.train_data), len(self.train_data.positives), len(self.train_data.negatives),
                              test_size, test_positives, test_negatives, best.fitness, test_fitness,
                              best.neurons, best.connections])
@@ -382,7 +391,9 @@ class Evolver:
     def evaluate_pop(self):
         pre_eval_time = datetime.datetime.now()
         evaluation_list = self.evaluate_list(self.get_genome_list())
-        self.eval_time += datetime.datetime.now() - pre_eval_time
+        time_diff = datetime.datetime.now() - pre_eval_time
+        self.eval_time += time_diff
+        self.window_eval_time += time_diff
 
         self.save_evaluations(evaluation_list)
         self.update_best_list(evaluation_list)
@@ -390,7 +401,9 @@ class Evolver:
     def epoch(self):
         pre_ea_time = datetime.datetime.now()
         self.pop.Epoch()
-        self.ea_time += datetime.datetime.now() - pre_ea_time
+        time_diff = datetime.datetime.now() - pre_ea_time
+        self.ea_time += time_diff
+        self.window_ea_time += time_diff
         self.generation += 1
 
     def print_best(self):
@@ -421,6 +434,7 @@ class Evolver:
         self.best_list.clear()
         self.best_set.clear()
         self.best_test = None
+        self.reset_window_timers()
 
         self.train_data, test = next(self.slider)
         if test is not None:
@@ -442,8 +456,19 @@ class Evolver:
     def get_current_window(self):
         return self.slider.get_current_window_index() if self.slider is not None else 0
 
-    def _run(self):
+    def init_timers(self):
         self.initial_time = datetime.datetime.now()
+        self.ea_time = datetime.timedelta()
+        self.eval_time = datetime.timedelta()
+        self.reset_window_timers()
+
+    def reset_window_timers(self):
+        self.window_initial_time = datetime.datetime.now()
+        self.window_ea_time = datetime.timedelta()
+        self.window_eval_time = datetime.timedelta()
+
+    def _run(self):
+        self.init_timers()
 
         # Run the EA
         while not self.is_finished():

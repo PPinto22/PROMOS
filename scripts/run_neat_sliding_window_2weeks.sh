@@ -2,8 +2,8 @@
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best.csv"
 options="-P ../params/irace2.txt -o ../results/2weeks/ -m neat -g750 -s1000 -p7 -W120 -w24 -S24 --test-fitness --quiet"
-runs=8
-parallel=8
+runs=4
+parallel=2
 
 for i in $(seq 1 $runs)
 do

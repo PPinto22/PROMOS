@@ -152,7 +152,8 @@ class Data:
         return abs(len(self.positives) - len(self.negatives)) <= 1
 
     def get_time_range(self):
-        assert self.has_timestamps
+        if not self.has_timestamps:
+            return None, None
 
         if self.is_sorted:
             return self.timestamps[0], self.timestamps[-1]
