@@ -3,6 +3,7 @@ library(data.table)
 setup <- function(multi_types=FALSE){
   fit_label <<- paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')
   has_windows <<- exists("WINDOWS") && WINDOWS > 1
+  multi_types <<- multi_types
   options(digits=DIGITS)
   
   if(multi_types){
@@ -117,23 +118,26 @@ group_windows <- function(windows_dt, group_by="window"){
                                    best_neurons=round(mean(best_neurons)), best_connections=round(mean(best_connections))), by = group_by]
 }
 
-read_windows_or_summaries <- function(multi_types=FALSE){
+read_windows_or_summaries <- function(){
   if(multi_types){
     if(!has_windows){
-      summaries_avg_dt <<- rbindlist(lapply(RUN_TYPES, function(type){
-        run_type_summaries = group_summaries(read_summaries(summs_file_names[[type]]))
-        run_type_summaries$run_type = list(RUN_TYPE_LABEL[[type]])
+      summaries_dt <<- rbindlist(lapply(RUN_TYPES, function(type){
+        run_type_summaries = read_summaries(summs_file_names[[type]])
+        run_type_summaries$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(run_type_summaries))
         run_type_summaries
       }))
-      summaries_avg_dt$run_type <- factor(summaries_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+      summaries_dt$run_type <<- factor(summaries_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+      setcolorder(summaries_dt, "run_type")
+      summaries_avg_dt <<- group_summaries(summaries_dt, group_by = 'run_type')
     } else {
       windows_dt <<- rbindlist(lapply(RUN_TYPES, function(type){
         run_type_windows = read_windows(windows_file_names[[type]])
         run_type_windows$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(run_type_windows))
         run_type_windows
       }))
-      windows_dt$run_type <- factor(windows_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
-      windows_avg_dt <<- group_windows(windows_avg_dt, group_by = c("run_type", "window"))
+      windows_dt$run_type <<- factor(windows_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+      setcolorder(windows_dt, "run_type")
+      windows_avg_dt <<- group_windows(windows_dt, group_by = c("run_type", "window"))
       windows_gen_splits <<- windows_avg_dt$generations[1:(length(windows_avg_dt$generations)-1)]
     }
   } else{
@@ -150,6 +154,32 @@ read_windows_or_summaries <- function(multi_types=FALSE){
 
 move_to_first <- function(data, move) {
   data[c(move, setdiff(names(data), move))]
+}
+
+melt_fitness <- function(evals_dt){
+  id_vars=c('window','generation')
+  if(multi_types){ id_vars = c(id_vars, 'run_type')}
+  
+  evals_train_fit <<- melt(evals_avg_dt, id.vars=id_vars, measure.vars = c('fitness_best', 'fitness_mean'), variable.name='mean_or_best', value.name ='fitness_train')
+  levels(evals_train_fit$mean_or_best) <<- c('Best', 'Mean')
+  evals_test_fit <<- melt(evals_avg_dt, id.vars=id_vars, measure.vars = c('fitness_test_best', 'fitness_test_mean'), variable.name='mean_or_best', value.name ='fitness_test')
+  levels(evals_test_fit$mean_or_best) <<- c('Best', 'Mean')
+  evals_fit <<- merge(evals_train_fit, evals_test_fit, by=c(id_vars, 'mean_or_best'))
+  evals_fit_long <<- melt(evals_fit, measure.vars=c('fitness_train', 'fitness_test'), variable.name='train_or_test', value.name = 'fitness')
+  levels(evals_fit_long$train_or_test) <<- c('Train', 'Test')
+}
+
+write_summary_table <- function(){
+  if(multi_types){run_type_label=c(SERIES_LABEL)} else{run_type_label=c()}
+  
+  if(!has_windows){
+    write.table(summaries_avg_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',', 
+                col.names = c(run_type_label, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+  } else{
+    write.table(windows_avg_dt[, !"window_factor"], file=paste(OUT_DIR, 'windows.csv', sep=''), row.names = FALSE, sep=',', 
+                col.names = c(run_type_label, 'Window', 'Window Begin', 'Window End', 'Generations', 'Run Time', 'Eval Time', 'EA Time', 'Train Size', 'Train Pos', 'Train Neg',
+                              'Test Size', 'Test Pos', 'Test Neg', 'Train Fitness', 'Test Fitness', 'Neurons', 'Connections'))
+  }
 }
 
 

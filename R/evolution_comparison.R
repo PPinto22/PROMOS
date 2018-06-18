@@ -11,33 +11,9 @@ library(rjson)
 library(chron)
 
 # ---- CONFIGURATION ----
-# RUNS <- 30
-# WINDOWS <- 1
-# RESULTS_DIR <- '../results/NEAT/samples_30runs/'
-# RUN_TYPES <- c('neat_ALL', 'neat_10K', 'neat_1K', 'neat_100') # These are the prefixes of the result files
-# RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('All (165K)', '10 000', '1 000', '100'))
-# SERIES_LABEL <- 'Sample size'
-# OUT_DIR <- 'out/samples_30/'
-
-# RUNS <- 2
-# WINDOWS <- 4
-# RESULTS_DIR <- '../results/window/'
-# RUN_TYPES <- c('neat_windows') # These are the prefixes of the result files
-# RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
-# SERIES_LABEL <- 'Run'
-# OUT_DIR <- 'out/window/'
-
-# RUNS <- 32
-# WINDOWS <- 4
-# RESULTS_DIR <- '../results/hyperneat_window/'
-# RUN_TYPES <- c('hyperneat_windows') # These are the prefixes of the result files
-# RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
-# SERIES_LABEL <- 'Run'
-# OUT_DIR <- 'out/hyperneat_window/'
-
 RUNS <- 2
 WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_temp/'
+RESULTS_DIR <- '../results/2weeks_temp/' # These are the prefixes of the result files
 RUN_TYPES <- c('neat_windows')
 RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
 SERIES_LABEL <- 'Run'
@@ -49,32 +25,27 @@ DIGITS <- 5
 # if(length(RUN_TYPES) <= 1){stop("Multiple run types are required for a comparison")}
 # ---- SETUP ----
 source('util.R')
-setup(multi_types = TRUE)
-
+setup(multi_types=TRUE)
 
 # Read evaluations
-evals_dt <- rbindlist(lapply(RUN_TYPES, function(type){
+evals_avg_dt <- rbindlist(lapply(RUN_TYPES, function(type){
   run_type_dt = group_evals(read_evaluations(evals_file_names[[type]]))  # Read all evals; average each run individually; then average the average of every run
   run_type_dt$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(run_type_dt))  # Add "run_type" column
   return(run_type_dt)
 }))
 
 # Read windows/summaries
-read_windows_or_summaries(multi_types = TRUE)
+read_windows_or_summaries()
+
+# -- WIDE TO LONG CONVERSIONS -- 
+melt_fitness()
 
 # ---- OUTPUTS ----
 # Create OUT_DIR
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
 # -- Summary table --
-if(!has_windows){
-  write.table(summaries_avg_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',', 
-            col.names = c('Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections', SERIES_LABEL))
-} else{
-  write.table(windows_avg_dt[, !"window_factor"], file=paste(OUT_DIR, 'windows.csv', sep=''), row.names = FALSE, sep=',', 
-              col.names = c('Window', 'Window Begin', 'Window End', 'Generations', 'Run Time', 'Eval Time', 'EA Time', 'Train Size', 'Train Pos', 'Train Neg',
-                            'Test Size', 'Test Pos', 'Test Neg', 'Train Fitness', 'Test Fitness', 'Neurons', 'Connections', SERIES_LABEL))
-}
+write_summary_table()
 
 # -- Statistical tests --
 if(!has_windows){
@@ -113,6 +84,10 @@ if(!has_windows){
   print(gg_windows)
   dev.off()
 }
+
+# TODO:
+# Fitness plot - best test fitness; color(run_tyoe)
+# Fitness plot - color(train best/mean), split(run_type)
 
 # Plot mean fitness over time
 png(filename = paste(OUT_DIR, 'fitness_mean.png', sep=''))
