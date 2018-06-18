@@ -4,6 +4,7 @@ library(ggplot2)
 library(ggpubr)
 library(data.table)
 library(RColorBrewer)
+library(GGally)
 
 # --- CONFIG
 RUNS <- 2
@@ -22,6 +23,9 @@ setup()
 evals_dt <- read_evaluations(evals_file_names)
 evals_avg_dt <- group_evals(evals_dt)
 evals_sample_dt <- get_evals_sample(evals_dt)
+evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness_test'), with=FALSE]
+setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness_test'))
+
 
 # Read windows
 read_windows_or_summaries()
@@ -47,8 +51,15 @@ levels(eval_times$state) <- c('Total', 'Predictions', FITNESS_FUNC, 'Build')
 
 melt_fitness()
 
+# Connection, eval_time and fitness deviation
+evals_dev <- evals_avg_dt[, c('window','generation', 'connections_mean', 'fitness_test_mean', 'eval_time')]
+for(col in c('connections_mean', 'fitness_test_mean', 'eval_time')){
+  evals_dev[[col]] <- deviation(evals_dev[[col]])
+}
+evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fitness_test_mean'))
+levels(evals_dev$variable) <- c('Connections', 'Eval time', 'Fitness')
+
 # ---- OUTPUTS ----
-gsmooth_color <- '#D0D0D0'
 # Create OUT_DIR
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
@@ -81,7 +92,7 @@ if(has_windows){
 # Max and mean train fitness over gens
 png(filename = paste(OUT_DIR, 'train_fit_per_gen.png', sep=''))
 gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) + 
-  geom_smooth(fill=gsmooth_color) + 
+  geom_smooth(fill=gsmooth_fill) + 
   labs(x="Generation", y=fit_label, col='') + 
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
@@ -96,7 +107,7 @@ dev.off()
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
 gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) + 
-  geom_smooth(fill=gsmooth_color) + 
+  geom_smooth(fill=gsmooth_fill) + 
   labs(x="Generation", y=fit_label, col='') + 
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
@@ -111,7 +122,7 @@ dev.off()
 # Max and mean train and test fitness over gens
 png(filename = paste(OUT_DIR, 'fits_per_gen.png', sep=''), width = 900, height = 500)
 gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_best)) + 
-  geom_smooth(fill=gsmooth_color) + 
+  geom_smooth(fill=gsmooth_fill) + 
   facet_wrap(~train_or_test) +
   labs(x="Generation", y=fit_label, col='') + 
   scale_color_brewer(palette = 'Set2') +
@@ -150,16 +161,29 @@ dev.off()
 # Times over generations
 png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
 ggplot(eval_times, aes(x=generation, y=time, color=state)) +
-  geom_smooth(fill=gsmooth_color) +
+  geom_smooth(fill=gsmooth_fill) +
   labs(x='Generation', y='Time (μs)', color='Times') + 
   scale_color_brewer(palette = 'Set2') +
   theme_minimal()
 dev.off()
 
-# Fitness | Connections
-png(filename = paste(OUT_DIR, 'connections_fitness_scatter.png', sep=''))
-ggplot(evals_sample_dt, aes(x=connections, y=fitness_test)) +
-  geom_point(size=.8, alpha=0.35) +
-  labs(x='Connections', y=fit_label) + 
+# Deviation | Fitness,connections,eval_time
+png(filename = paste(OUT_DIR, 'fit_con_time_deviation.png', sep=''))
+gg_devs <- ggplot(evals_dev, aes(x=generation)) + 
+  geom_smooth(aes(y=value, col=variable), fill=gsmooth_fill) + 
+  scale_color_brewer(palette = "Set2", direction=-1) +
+  labs(x='Generation', y='Deviation from mean', col='') +
   theme_minimal()
+if(has_windows){
+  gg_devs <- gg_devs + geom_vline(xintercept=windows_gen_splits, linetype=3) +
+    scale_x_continuous(breaks=windows_avg_dt$generations)
+}
+print(gg_devs)
 dev.off()
+
+# Pairs | Fitness,connections,eval_time
+png(filename = paste(OUT_DIR, 'fit_con_time_pairs.png', sep=''))
+ggpairs(evals_pairs, lower = list(continuous = wrap("points", alpha = 0.2, size=0.2)))
+dev.off()
+
+        

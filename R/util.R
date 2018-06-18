@@ -5,6 +5,7 @@ setup <- function(multi_types=FALSE){
   has_windows <<- exists("WINDOWS") && WINDOWS > 1
   multi_types <<- multi_types
   options(digits=DIGITS)
+  gsmooth_fill <<- '#D0D0D0'
   
   if(multi_types){
     labels_ord <<- sapply(RUN_TYPES, function(x){RUN_TYPE_LABEL[[x]]})
@@ -41,6 +42,14 @@ setup <- function(multi_types=FALSE){
     }
   }
 }
+
+deviation <- function(vec){
+  s = sd(vec)
+  m = mean(vec)
+  diffs = vec-m
+  diffs/s
+}
+
 
 read_evaluations <- function(evals_file_names){
   evals_dt = rbindlist(lapply(1:length(evals_file_names), function(i){

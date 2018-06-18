@@ -92,7 +92,7 @@ if(!has_windows){
 # Plot mean fitness over time
 png(filename = paste(OUT_DIR, 'fitness_mean.png', sep=''))
 gg_meanfit <- ggplot(data=evals_dt, aes(run_time)) + 
-  geom_smooth(aes(y=fitness_mean, col=run_type)) +
+  geom_smooth(aes(y=fitness_mean, col=run_type), fill=gsmooth_fill) +
   labs(x="Run time (min)", y=fit_label, col=SERIES_LABEL) +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
@@ -112,7 +112,7 @@ dev.off()
 # Plot generations over time
 png(filename = paste(OUT_DIR, 'generations.png', sep=''))
 gg_generations <- ggplot(data=evals_dt, aes(run_time)) + 
-  geom_smooth(aes(y=generation, col=run_type)) +
+  geom_smooth(aes(y=generation, col=run_type), fill=gsmooth_fill) +
   labs(x="Run time (min)", y="Generations", col=SERIES_LABEL) + 
   theme_minimal()
 gg_generations
