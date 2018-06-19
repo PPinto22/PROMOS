@@ -85,6 +85,18 @@ if(has_windows){
     theme_minimal()
   print(gg_pred_times)
   dev.off()
+  
+  # EA vs eval time
+  png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
+  gg_ea_eval <- ggplot(window_times, aes(x=generations, y=time, fill=state)) +
+    geom_area(position='stack') +
+    labs(x='Generation', y='Time', fill='State') + 
+    scale_fill_brewer(palette = 'Oranges') +
+    geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL) +
+    theme_minimal()
+  print(gg_ea_eval)
+  dev.off()
 }
 
 # TODO Fitness scatter plot
@@ -98,8 +110,8 @@ gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mea
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
 if(has_windows){
-  gg_train_fit <- gg_train_fit + geom_vline(xintercept=windows_gen_splits, linetype=3) +
-    scale_x_continuous(breaks=windows_avg_dt$generations)
+  gg_train_fit <- gg_train_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
 }
 print(gg_train_fit)
 dev.off()
@@ -113,8 +125,8 @@ gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
 if(has_windows){
-  gg_test_fit <- gg_test_fit + geom_vline(xintercept=windows_gen_splits, linetype=3) +
-    scale_x_continuous(breaks=windows_avg_dt$generations)
+  gg_test_fit <- gg_test_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
 }
 print(gg_test_fit)
 dev.off()
@@ -130,8 +142,8 @@ gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_be
   theme_minimal() +
   theme(strip.text = element_text(size=12))
 if(has_windows){
-  gg_fit <- gg_fit + geom_vline(xintercept=windows_gen_splits, linetype=3) +
-    scale_x_continuous(breaks=windows_avg_dt$generations)
+  gg_fit <- gg_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
 }
 print(gg_fit)
 dev.off()
@@ -143,28 +155,24 @@ gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   labs(x="Generation", y="Connections", col='') + 
   theme_minimal()
 if(has_windows){
-  gg_connections_gen <- gg_connections_gen + geom_vline(xintercept=windows_gen_splits, linetype=3) +
-    scale_x_continuous(breaks=windows_avg_dt$generations)
+  gg_connections_gen <- gg_connections_gen + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
 }
 print(gg_connections_gen)
 dev.off() 
 
-# EA vs eval time
-png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
-ggplot(window_times, aes(x=generations, y=time, fill=state)) +
-  geom_area(position='stack') +
-  labs(x='Generation', y='Time', fill='State') + 
-  scale_fill_brewer(palette = 'Oranges') +
-  theme_minimal()
-dev.off()
-
-# Times over generations
+# Eval times over generations
 png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
-ggplot(eval_times, aes(x=generation, y=time, color=state)) +
+gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
   geom_smooth(fill=gsmooth_fill) +
   labs(x='Generation', y='Time (μs)', color='Times') + 
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Set2') + 
   theme_minimal()
+if(has_windows){
+  gg_eval_times <- gg_eval_times + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_eval_times)
 dev.off()
 
 # Deviation | Fitness,connections,eval_time
@@ -175,8 +183,8 @@ gg_devs <- ggplot(evals_dev, aes(x=generation)) +
   labs(x='Generation', y='Deviation from mean', col='') +
   theme_minimal()
 if(has_windows){
-  gg_devs <- gg_devs + geom_vline(xintercept=windows_gen_splits, linetype=3) +
-    scale_x_continuous(breaks=windows_avg_dt$generations)
+  gg_devs <- gg_devs + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
 }
 print(gg_devs)
 dev.off()
