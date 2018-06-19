@@ -132,7 +132,7 @@ print(gg_test_fit)
 dev.off()
 
 # Max and mean train and test fitness over gens
-png(filename = paste(OUT_DIR, 'fits_per_gen.png', sep=''), width = 900, height = 500)
+png(filename = paste(OUT_DIR, 'fits_per_gen.png', sep=''), width = 900, height = 500, res=100)
 gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_best)) + 
   geom_smooth(fill=gsmooth_fill) + 
   facet_wrap(~train_or_test) +
