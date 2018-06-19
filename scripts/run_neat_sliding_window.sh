@@ -8,7 +8,7 @@ parallel=8
 for i in $(seq 1 $runs)
 do
 	echo "Run $i..."
-	( $evolver $args $options -s 100 --id="windows(${i})" ) &
+	( $evolver $args $options --id="windows(${i})" ) &
 	if (( $i % $parallel == 0 )); then wait; fi
 done
 wait

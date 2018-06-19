@@ -1,9 +1,9 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best.csv"
-options="-P ../params/irace2.txt -o ../results/2weeks/ -m neat -g750 -s1000 -p20 -W120 -w24 -S24 --test-fitness --quiet"
-runs=4
-parallel=2
+options="-P ../params/irace2_balanced.txt -o ../results/2weeks_balanced/ -m neat -g750 -s1000 -p13 -W120 -w24 -S24 --test-fitness"
+runs=8
+parallel=4
 
 for i in $(seq 1 $runs)
 do
