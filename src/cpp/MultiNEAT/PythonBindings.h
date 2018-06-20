@@ -152,6 +152,9 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
             .def("GetTotalConnectionLength", &NeuralNetwork::GetTotalConnectionLength)
 
+            .def("GetConnectionsQty", &NeuralNetwork::GetConnectionsQty)
+            .def("GetNeuronsQty", &NeuralNetwork::GetNeuronsQty)
+
 
             .def_readwrite("neurons", &NeuralNetwork::m_neurons)
             .def_readwrite("connections", &NeuralNetwork::m_connections)
