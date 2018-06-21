@@ -7,11 +7,11 @@ library(RColorBrewer)
 library(GGally)
 
 # --- CONFIG
-RUNS <- 2
+RUNS <- 8
 WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_temp/'
+RESULTS_DIR <- '../results/2weeks_balanced/'
 RUN_PREFIX <- 'neat_windows'
-OUT_DIR <- 'out/2weeks/'
+OUT_DIR <- 'out/2weeks_balanced/'
 FITNESS_FUNC <- 'AUC'
 DIGITS <- 5
 
@@ -32,7 +32,8 @@ read_windows_or_summaries()
 
 # Evaluations at the end of each window
 if(has_windows){
-  final_evals_dt <- evals_dt[generation %in% windows_avg_dt$generations]
+  final_evals_dt <- evals_dt[(generation+1) %in% windows_avg_dt$generations]
+  final_evals_dt$generation <- final_evals_dt$generation+1
   final0_evals_dt <- rbind(evals_dt[generation==0], final_evals_dt)
   final_evals_dt$generation_factor <- factor(final_evals_dt$generation, ordered = TRUE)
   final0_evals_dt$generation_factor <- factor(final0_evals_dt$generation, ordered = TRUE)
