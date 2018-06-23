@@ -14,6 +14,7 @@ from functools import partial
 import params
 import evaluator
 import util
+import bloat
 from util import avg
 import substrate as subst
 from data import Data, SlidingWindow
@@ -72,6 +73,8 @@ def parse_args():
                         help='Test sliding window width in hours')
     parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
                         help='Sliding window shift in hours')
+    parser.add_argument('-b,' '--bloat', dest='bloat_file', metavar='FILE', default=None,
+                        help='configuration file for limiting the effects of bloat')
 
     options = parser.parse_args()
 
@@ -128,6 +131,10 @@ class Evolver:
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
             if self.is_online else None
 
+        # Bloat options
+        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
+            if self.options.bloat_file is not None else None
+
         # Data
         if self.is_online:  # Set the first window
             assert self.slider.has_next(), 'The specified window width (-W) is too large for the available data'
@@ -148,12 +155,15 @@ class Evolver:
             raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
                              format(self.options.substrate, len(subst.substrates) - 1)) from None
 
-        self.initial_time = None         # When the run started
+        self.initial_time = None  # When the run started
         self.window_initial_time = None  # When the current window started
-        self.eval_time = None            # Time spent in evaluations
-        self.window_eval_time = None     # Time spent in evaluations during the current window
-        self.ea_time = None              # Time spent in the EA
-        self.window_ea_time = None       # Time spent in the EA during the current window
+        self.eval_time = None  # Time spent in evaluations
+        self.window_eval_time = None  # Time spent in evaluations during the current window
+        self.gen_eval_time = None  # Time spent in evaluations during the current generation
+        self.ea_time = None  # Time spent in the EA
+        self.window_ea_time = None  # Time spent in the EA during the current window
+        self.gen_ea_time = None  # Time spent in the EA during the current generation
+        self.gen_connections = None  # List of the number of connections of all individuals in the current generation
 
         self.run_i = None  # Current run, in case of multiple runs
 
@@ -165,10 +175,19 @@ class Evolver:
         self.best_set = set()  # Set of IDs of the individuals in best_list
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
 
+        # Bloat
+        self.bloat_controller = bloat.BloatController(self.params, self.bloat_options.mutation_options) \
+            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
+
     def clear(self):
         self.initial_time = None
-        self.eval_time = datetime.timedelta()
-        self.ea_time = datetime.timedelta()
+        self.window_initial_time = None
+        self.eval_time = None
+        self.window_eval_time = None
+        self.gen_eval_time = None
+        self.ea_time = None
+        self.window_ea_time = None
+        self.gen_ea_time = None
         if self.is_online:
             self.slider.reset()
             self.train_data, test = next(self.slider)
@@ -180,6 +199,8 @@ class Evolver:
         self.best_list.clear()
         self.best_set.clear()
         self.best_test = None
+        if self.bloat_controller is not None:
+            self.bloat_controller.reset()
 
     def init_population(self):
         if self.options.pop_file is not None:
@@ -383,8 +404,8 @@ class Evolver:
 
     def _evaluate(self, genome, data):
         return evaluator.evaluate(genome, self.fitness_func, data, method=self.options.method, substrate=self.substrate,
-                                     generation=self.generation, window=self.get_current_window(),
-                                     initial_time=self.initial_time)
+                                  generation=self.generation, window=self.get_current_window(),
+                                  initial_time=self.initial_time)
 
     def evaluate_pop(self):
         pre_eval_time = datetime.datetime.now()
@@ -392,7 +413,9 @@ class Evolver:
         time_diff = datetime.datetime.now() - pre_eval_time
         self.eval_time += time_diff
         self.window_eval_time += time_diff
+        self.gen_eval_time = time_diff
 
+        self.gen_connections = [e.connections for e in evaluation_list]
         self.save_evaluations(evaluation_list)
         self.update_best_list(evaluation_list)
 
@@ -402,6 +425,7 @@ class Evolver:
         time_diff = datetime.datetime.now() - pre_ea_time
         self.ea_time += time_diff
         self.window_ea_time += time_diff
+        self.gen_ea_time = time_diff
         self.generation += 1
 
     def print_best(self):
@@ -454,16 +478,29 @@ class Evolver:
     def get_current_window(self):
         return self.slider.get_current_window_index() if self.slider is not None else 0
 
+    def bloat_adjust(self):
+        if self.bloat_controller is not None:
+            if self.bloat_options.mutation_options.limit_by is bloat.LimitBy.CONNECTIONS:
+                bloat_state = avg(self.gen_connections)
+            else:
+                bloat_state = (self.gen_ea_time + self.gen_eval_time).total_seconds()
+            self.bloat_controller.adjust(self.params, bloat_state, generation=self.generation + 1)
+
     def init_timers(self):
         self.initial_time = datetime.datetime.now()
         self.ea_time = datetime.timedelta()
         self.eval_time = datetime.timedelta()
         self.reset_window_timers()
+        self.reset_generation_timers()
 
     def reset_window_timers(self):
         self.window_initial_time = datetime.datetime.now()
         self.window_ea_time = datetime.timedelta()
         self.window_eval_time = datetime.timedelta()
+
+    def reset_generation_timers(self):
+        self.gen_ea_time = datetime.timedelta()
+        self.gen_eval_time = datetime.timedelta()
 
     def _run(self):
         self.init_timers()
@@ -475,6 +512,8 @@ class Evolver:
             self.print("\n{}Generation {} ({})".format(window_info, self.generation, self.elapsed_time()))
             self.evaluate_pop()
             self.epoch()
+
+            self.bloat_adjust()
 
             if self.should_shift():
                 self.shift_window()

@@ -13,12 +13,12 @@ def get_network_neurons(network):
     return [Neuron(i, str(n.activation_function_type), n.a, n.b, n.bias) for i, n in enumerate(network.neurons)]
 
 
-def get_network_neurons_qty(network):
-    return network.GetNeuronsQty()
-
-
 def get_network_connections(network):
     return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
+
+
+def get_current_datetime_string():
+    return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.datetime.now())
 
 
 def build_network(genome, method='neat', substrate=None, **kwargs):
