@@ -71,8 +71,8 @@ def predict(net, inputs):
     return predictions
 
 
-def _evaluate_auc(net, data, predictions):
-    fpr, tpr, thresholds = roc_curve(data.targets, predictions)
+def _evaluate_auc(targets, predictions):
+    fpr, tpr, thresholds = roc_curve(targets, predictions)
     roc_auc = auc(fpr, tpr)
     return roc_auc
 
@@ -96,10 +96,10 @@ def evaluate(genome, fitfunc, data=None, test_data=None, **kwargs):
 
     pred_time, predictions = util.time(lambda: predict(net, data.inputs), as_microseconds=True)
     pred_avg_time = pred_time / len(data)
-    fit_time, fitness = util.time(lambda: evaluator(net, data, predictions), as_microseconds=True)
+    fit_time, fitness = util.time(lambda: evaluator(data.targets, predictions), as_microseconds=True)
 
     predictions_test = predict(net, test_data.inputs) if test_data is not None else None
-    fitness_test = evaluator(net, data, predictions_test) if test_data is not None else None
+    fitness_test = evaluator(test_data.targets, predictions_test) if test_data is not None else None
 
     return _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test,
                                      build_time=build_time, pred_time=pred_time,
@@ -137,8 +137,8 @@ def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1,
         evaluation_list = [evaluator(genome) for genome in genome_list]
     else:
         with multiprocessing.Pool(processes=processes) as pool:
-            evaluation_list = pool.map(evaluator, genome_list, chunksize=len(genome_list) // processes)
-        pass
+            evaluation_list = pool.map(evaluator, genome_list, chunksize=max(len(genome_list) // processes, 1))
+
         for genome, eval in zip(genome_list, evaluation_list):
             genome.SetFitness(eval.fitness)
             genome.SetEvaluated()
