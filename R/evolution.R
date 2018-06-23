@@ -7,11 +7,11 @@ library(RColorBrewer)
 library(GGally)
 
 # --- CONFIG
-RUNS <- 8
-WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_balanced/'
-RUN_PREFIX <- 'neat_windows'
-OUT_DIR <- 'out/2weeks_balanced/'
+RUNS <- 1
+WINDOWS <- 0
+RESULTS_DIR <- '../results/bloat/'
+RUN_PREFIX <- 'neat_TEST'
+OUT_DIR <- 'out/bloat/'
 FITNESS_FUNC <- 'AUC'
 DIGITS <- 5
 
@@ -23,21 +23,22 @@ setup()
 evals_dt <- read_evaluations(evals_file_names)
 evals_avg_dt <- group_evals(evals_dt)
 evals_sample_dt <- get_evals_sample(evals_dt)
-evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness_test'), with=FALSE]
-setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness_test'))
+evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness'), with=FALSE]
+setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness'))
 
 
 # Read windows
 read_windows_or_summaries()
 
-# Evaluations at the end of each window
+# All evaluations of some generations
 if(has_windows){
-  final_evals_dt <- evals_dt[(generation+1) %in% windows_avg_dt$generations]
-  final_evals_dt$generation <- final_evals_dt$generation+1
-  final0_evals_dt <- rbind(evals_dt[generation==0], final_evals_dt)
-  final_evals_dt$generation_factor <- factor(final_evals_dt$generation, ordered = TRUE)
-  final0_evals_dt$generation_factor <- factor(final0_evals_dt$generation, ordered = TRUE)
+  disc_evals_dt <- evals_dt[ generation==0 | (generation+1) %in% windows_avg_dt$generations]
+} else{
+  gens = max(evals_dt$generation)+1
+  disc_evals_dt <- evals_dt[ generation==0 | (generation+1) %in% seq(gens%/%10, gens, gens%/%10)]
 }
+disc_evals_dt$generation <- disc_evals_dt$generation+1
+disc_evals_dt$generation_factor <- factor(disc_evals_dt$generation, ordered = TRUE)
 
 # -- WIDE TO LONG CONVERSIONS -- 
 if(has_windows){
@@ -53,11 +54,11 @@ levels(eval_times$state) <- c('Total', 'Predictions', FITNESS_FUNC, 'Build')
 melt_fitness()
 
 # Connection, eval_time and fitness deviation
-evals_dev <- evals_avg_dt[, c('window','generation', 'connections_mean', 'fitness_test_mean', 'eval_time')]
-for(col in c('connections_mean', 'fitness_test_mean', 'eval_time')){
+evals_dev <- evals_avg_dt[, c('window','generation', 'connections_mean', 'fitness_mean', 'eval_time')]
+for(col in c('connections_mean', 'fitness_mean', 'eval_time')){
   evals_dev[[col]] <- deviation(evals_dev[[col]])
 }
-evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fitness_test_mean'))
+evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fitness_mean'))
 levels(evals_dev$variable) <- c('Connections', 'Eval time', 'Fitness')
 
 # ---- OUTPUTS ----
@@ -76,16 +77,7 @@ if(has_windows){
     labs(x="Window", y=fit_label) +
     theme_minimal()
   print(gg_windows)
-  dev.off()
-  
-  # Boxplot average prediction time by discrete generations
-  png(filename = paste(OUT_DIR, 'avg_pred_time_by_disc_gen.png', sep=''))
-  gg_pred_times <- ggplot(final0_evals_dt, aes(x=generation_factor, y=pred_avg_time)) +
-    geom_boxplot() + 
-    labs(x='Generation', y='Prediction time (μs)') +
-    theme_minimal()
-  print(gg_pred_times)
-  dev.off()
+  dev.off
   
   # EA vs eval time
   png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
@@ -100,12 +92,21 @@ if(has_windows){
   dev.off()
 }
 
+# Boxplot average prediction time by discrete generations
+png(filename = paste(OUT_DIR, 'avg_pred_time_by_disc_gen.png', sep=''))
+gg_pred_times <- ggplot(disc_evals_dt, aes(x=generation_factor, y=pred_avg_time)) +
+  geom_boxplot() + 
+  labs(x='Generation', y='Prediction time (μs)') +
+  theme_minimal()
+print(gg_pred_times)
+dev.off()
+
 # TODO Fitness scatter plot
 
 # Max and mean train fitness over gens
 png(filename = paste(OUT_DIR, 'train_fit_per_gen.png', sep=''))
 gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) + 
-  geom_smooth(fill=gsmooth_fill) + 
+  geom_smooth(fill=gsmooth_fill) +
   labs(x="Generation", y=fit_label, col='') + 
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
@@ -116,6 +117,8 @@ if(has_windows){
 }
 print(gg_train_fit)
 dev.off()
+
+evals_fit$fitness_train[evals_fit$mean_or_best=='Best']
 
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))

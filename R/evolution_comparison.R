@@ -7,7 +7,6 @@ library(hash)
 library(ggplot2)
 library(ggpubr)
 library(data.table)
-library(rjson)
 library(chron)
 
 # ---- CONFIGURATION ----

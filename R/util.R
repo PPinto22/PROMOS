@@ -1,4 +1,6 @@
 library(data.table)
+library(RJSONIO)
+library(chron)
 
 setup <- function(multi_types=FALSE){
   fit_label <<- paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')
@@ -96,7 +98,7 @@ read_summaries <- function(summs_file_names){
     return(data.table())
   
   run_summaries = lapply(1:length(summs_file_names), function(i){
-    summary_json = fromJSON(file=summs_file_names[i])
+    summary_json = fromJSON(summs_file_names[i], nullValue = -1)
     summary_dt = data.table(run=i, time_ea=chron(time=summary_json$ea_time), time_eval=chron(time=summary_json$eval_time),
                             time_total=chron(time=summary_json$run_time), generations=summary_json$generations, train_fit=summary_json$best$fitness,
                             test_fit=summary_json$best$fitness_test, neurons=summary_json$best$neurons_qty, connections=summary_json$best$connections_qty)
