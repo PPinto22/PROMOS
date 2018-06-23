@@ -508,6 +508,14 @@ namespace NEAT {
         }
     }
 
+    int NeuralNetwork::GetConnectionsQty(){
+        return m_connections.size();
+    }
+
+    int NeuralNetwork::GetNeuronsQty(){
+        return m_neurons.size();
+    }
+
 #ifdef USE_BOOST_PYTHON
 
     void NeuralNetwork::Input_python_list(const py::list &a_Inputs) {

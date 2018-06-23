@@ -5,19 +5,20 @@ from collections import namedtuple
 
 import numpy as np
 
+Neuron = namedtuple('Neuron', 'index activation_function a b bias')
+Connection = namedtuple('Connection', 'source target weight')
+
 
 def get_network_neurons(network):
-    Neuron = namedtuple('Neuron', 'index activation_function a b bias')
     return [Neuron(i, str(n.activation_function_type), n.a, n.b, n.bias) for i, n in enumerate(network.neurons)]
 
 
+def get_network_neurons_qty(network):
+    return network.GetNeuronsQty()
+
+
 def get_network_connections(network):
-    Connection = namedtuple('Connection', 'source target weight')
     return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
-
-
-def get_current_datetime_string():
-    return '{date:%Y-%m-%d_%H:%M:%S}'.format(date=datetime.datetime.now())
 
 
 def build_network(genome, method='neat', substrate=None, **kwargs):
@@ -40,7 +41,7 @@ def time(f, as_microseconds=False):
     f_out = f()
     elapsed_time = datetime.datetime.now() - pre
     if as_microseconds:
-        elapsed_time = (elapsed_time.days * 86400 + elapsed_time.seconds) * 10**6 + elapsed_time.microseconds
+        elapsed_time = (elapsed_time.days * 86400 + elapsed_time.seconds) * 10 ** 6 + elapsed_time.microseconds
     return elapsed_time, f_out
 
 

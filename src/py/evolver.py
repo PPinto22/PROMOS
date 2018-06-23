@@ -34,9 +34,8 @@ def parse_args():
     parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
                         type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
-    evaluation_functions = ['auc']
-    parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluation_functions, default='auc',
-                        help='evaluation function: ' + ', '.join(evaluation_functions), metavar='E')
+    parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluator.FitFunction.list(), default='auc',
+                        help='evaluation function: ' + ', '.join(evaluator.FitFunction.list()), metavar='E')
     parser.add_argument('-g', '--generations', dest='generations', type=util.uint, metavar='G', default=None,
                         help='number of generations per run or, if the option -W is specified, per sliding window')
     parser.add_argument('-T', '--time', dest='time_limit', type=util.uint, metavar='MIN', default=None,
@@ -116,10 +115,7 @@ class Evolver:
             assert self.options.width is not None, 'The test width option (-w) requires the window width option (-W)'
 
         # Evaluation function
-        if self.options.evaluator == 'auc':
-            self.genome_evaluator = evaluator.evaluate_auc
-        else:
-            raise ValueError('Invalid genome evaluator: {}'.format(self.options.evaluator))
+        self.fitness_func = evaluator.FitFunction(self.options.evaluator)
 
         # MultiNEAT parameters
         self.params = params.get_params(self.options.params)
@@ -261,6 +257,7 @@ class Evolver:
             # Other info
             params=params.ParametersWrapper(self.params), generations=self.generation,
             run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
+
             ea_time=self.ea_time, processes=self.options.processes,
             sample_size=self.options.sample_size if self.options.sample_size is not None else len(self.train_data),
             window=self.get_current_window() if self.is_online else None,
@@ -371,10 +368,11 @@ class Evolver:
         sample_size = sample_size if sample_size is not None else self.options.sample_size
         test_data = self.test_data if self.options.test_fitness and not self.options.no_statistics else None
         return evaluator.evaluate_genome_list(
-            genome_list,
-            partial(self.genome_evaluator, method=self.options.method, substrate=self.substrate,
-                    generation=self.generation, window=self.get_current_window(), initial_time=self.initial_time),
-            data=self.train_data, sample_size=sample_size, processes=self.options.processes, test_data=test_data
+            genome_list, self.fitness_func, data=self.train_data,
+            sample_size=sample_size, processes=self.options.processes, test_data=test_data,
+            # Extra **kwargs
+            method=self.options.method, substrate=self.substrate,
+            generation=self.generation, window=self.get_current_window(), initial_time=self.initial_time
         )
 
     def evaluate(self, genome):
@@ -384,7 +382,7 @@ class Evolver:
         return self._evaluate(genome, self.test_data)
 
     def _evaluate(self, genome, data):
-        return self.genome_evaluator(genome, data, method=self.options.method, substrate=self.substrate,
+        return evaluator.evaluate(genome, self.fitness_func, data, method=self.options.method, substrate=self.substrate,
                                      generation=self.generation, window=self.get_current_window(),
                                      initial_time=self.initial_time)
 

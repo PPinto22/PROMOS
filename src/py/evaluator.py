@@ -3,6 +3,7 @@ import argparse
 import datetime
 import multiprocessing
 import random
+from enum import Enum
 from functools import partial
 
 import numpy as np
@@ -43,6 +44,21 @@ class GenomeEvaluation:
         self.genome = neat.Genome(self.genome)
 
 
+class FitFunction(Enum):
+    AUC = 'auc'
+    RANDOM = 'random'
+
+    def get_evaluator(self):
+        if self is FitFunction.AUC:
+            return _evaluate_auc
+        elif self is FitFunction.RANDOM:
+            return _evaluate_random
+
+    @staticmethod
+    def list():
+        return list(map(lambda c: c.value, FitFunction))
+
+
 def predict(net, inputs):
     predictions = np.zeros(len(inputs))
     for i, row in enumerate(inputs):
@@ -55,14 +71,20 @@ def predict(net, inputs):
     return predictions
 
 
-def _evaluate_auc(net, data, predictions=None):
-    predictions = predictions if predictions is not None else predict(net, data.inputs)
+def _evaluate_auc(net, data, predictions):
     fpr, tpr, thresholds = roc_curve(data.targets, predictions)
     roc_auc = auc(fpr, tpr)
     return roc_auc
 
 
-def evaluate_auc(genome, data=None, test_data=None, **kwargs):
+def _evaluate_random(*args):
+    fitness = np.random.normal(0.5, 0.1)
+    fitness = min(fitness, 1.0)  # Maximum of 1
+    fitness = max(fitness, 0.0)  # Minimum of 0
+    return fitness
+
+
+def evaluate(genome, fitfunc, data=None, test_data=None, **kwargs):
     build_time, net = util.time(lambda: util.build_network(genome, **kwargs), as_microseconds=True)
 
     if data is None:
@@ -70,26 +92,22 @@ def evaluate_auc(genome, data=None, test_data=None, **kwargs):
     if test_data is None:
         test_data = global_test_data
 
+    evaluator = fitfunc.get_evaluator()
+
     pred_time, predictions = util.time(lambda: predict(net, data.inputs), as_microseconds=True)
     pred_avg_time = pred_time / len(data)
-    fit_time, fitness = util.time(lambda: _evaluate_auc(net, data, predictions=predictions), as_microseconds=True)
-    fitness_test = _evaluate_auc(net, test_data) if test_data is not None else None
+    fit_time, fitness = util.time(lambda: evaluator(net, data, predictions), as_microseconds=True)
+
+    predictions_test = predict(net, test_data.inputs) if test_data is not None else None
+    fitness_test = evaluator(net, data, predictions_test) if test_data is not None else None
 
     return _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test,
                                      build_time=build_time, pred_time=pred_time,
                                      pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
 
 
-def evaluate_error(genome, data, **kwargs):
-    net = util.build_network(genome, **kwargs)
-
-    predictions = predict(net, data.inputs)
-    fitness = 1 / sum((abs(pred - target) for pred, target in zip(data.targets, predictions)))
-
-    return _create_genome_evaluation(genome, fitness, net, **kwargs)
-
-
-def _create_genome_evaluation(genome, fitness, net, fitness_test=None, window=None, generation=None, initial_time=None,
+def _create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
+                              initial_time=None,
                               build_time=None, pred_time=None, pred_avg_time=None, fit_time=None, **kwargs):
     genome.SetFitness(fitness)
     genome.SetEvaluated()
@@ -97,13 +115,13 @@ def _create_genome_evaluation(genome, fitness, net, fitness_test=None, window=No
     global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
     return GenomeEvaluation(genome=genome, fitness=fitness, fitness_test=fitness_test,
-                            neurons=len(util.get_network_neurons(net)),
-                            connections=len(util.get_network_connections(net)),
+                            neurons=net.GetNeuronsQty() if net is not None else None,
+                            connections=net.GetConnectionsQty() if net is not None else None,
                             generation=generation, window=window, global_time=global_time, build_time=build_time,
                             pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
 
 
-def evaluate_genome_list(genome_list, evaluator, data, sample_size=0, processes=1, sort=True, test_data=None):
+def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1, sort=True, test_data=None, **kwargs):
     if sample_size != 0:
         data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
         if test_data is not None:
@@ -114,6 +132,7 @@ def evaluate_genome_list(genome_list, evaluator, data, sample_size=0, processes=
     global_data = data
     global_test_data = test_data
 
+    evaluator = partial(evaluate, fitfunc=fitfunc, **kwargs)
     if processes == 1:
         evaluation_list = [evaluator(genome) for genome in genome_list]
     else:
