@@ -1,0 +1,207 @@
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+library(ggplot2)
+library(ggpubr)
+library(data.table)
+library(RColorBrewer)
+library(GGally)
+
+# --- CONFIG
+RUNS <- 1
+WINDOWS <- 10
+RESULTS_DIR <- '../results/TEMP/'
+RUN_PREFIX <- 'neat_TEST'
+OUT_DIR <- 'out/TEMP/'
+FITNESS_FUNC <- 'AUC'
+DIGITS <- 5
+
+# -- SETUP
+source('util.R')
+setup()
+
+# Read evaluations
+evals_dt <- read_evaluations(evals_file_names)
+evals_avg_dt <- group_evals(evals_dt)
+evals_sample_dt <- get_evals_sample(evals_dt)
+evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness'), with=FALSE]
+setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness'))
+
+
+# Read windows
+read_windows_or_summaries()
+
+# All evaluations of some generations
+if(has_windows){
+  disc_evals_dt <- evals_dt[ generation==0 | (generation+1) %in% windows_avg_dt$generations]
+} else{
+  gens = max(evals_dt$generation)+1
+  disc_evals_dt <- evals_dt[ generation==0 | (generation+1) %in% seq(gens%/%10, gens, gens%/%10)]
+}
+disc_evals_dt$generation <- disc_evals_dt$generation+1
+disc_evals_dt$generation_factor <- factor(disc_evals_dt$generation, ordered = TRUE)
+
+# -- WIDE TO LONG CONVERSIONS -- 
+if(has_windows){
+  # Eval and EA time per window
+  window_times <- melt(windows_avg_dt, id.vars = c('window', 'generations'), measure.vars = c('eval_time', 'ea_time'), variable.name = 'state', value.name = 'time')
+  levels(window_times$state) <- c('Evaluation', 'Evolution')
+}
+
+# Eval times
+eval_times <- melt(evals_avg_dt, id.vars=c('generation'), measure.vars=c('eval_time','pred_time','fit_time','build_time'), variable.name='state', value.name='time')
+levels(eval_times$state) <- c('Total', 'Predictions', FITNESS_FUNC, 'Build')
+
+melt_fitness()
+
+# Connection, eval_time and fitness deviation
+evals_dev <- evals_avg_dt[, c('window','generation', 'connections_mean', 'fitness_mean', 'eval_time')]
+for(col in c('connections_mean', 'fitness_mean', 'eval_time')){
+  evals_dev[[col]] <- deviation(evals_dev[[col]])
+}
+evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fitness_mean'))
+levels(evals_dev$variable) <- c('Connections', 'Eval time', 'Fitness')
+
+# ---- OUTPUTS ----
+# Create OUT_DIR
+dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
+
+# -- Summary table --
+write_summary_table()
+
+# -- Graphs --
+if(has_windows){
+  # Boxplot of each window's best test result
+  png(filename = paste(OUT_DIR, 'window_best_bps.png', sep=''))
+  gg_windows = ggplot(data=windows_dt, aes(x=window_factor, y=test_fitness)) +
+    geom_boxplot() +
+    labs(x="Window", y=fit_label) +
+    theme_minimal()
+  print(gg_windows)
+  dev.off
+  
+  # EA vs eval time
+  png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
+  gg_ea_eval <- ggplot(window_times, aes(x=generations, y=time, fill=state)) +
+    geom_area(position='stack') +
+    labs(x='Generation', y='Time (minutes)', fill='State') + 
+    scale_fill_brewer(palette = 'Oranges') +
+    geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL) +
+    theme_minimal()
+  print(gg_ea_eval)
+  dev.off()
+}
+
+# Boxplot average prediction time by discrete generations
+png(filename = paste(OUT_DIR, 'avg_pred_time_by_disc_gen.png', sep=''))
+gg_pred_times <- ggplot(disc_evals_dt, aes(x=generation_factor, y=pred_avg_time)) +
+  geom_boxplot() + 
+  labs(x='Generation', y='Prediction time (μs)') +
+  theme_minimal()
+print(gg_pred_times)
+dev.off()
+
+# Boxplot connections by discrete generations
+png(filename = paste(OUT_DIR, 'connections_by_disc_gen.png', sep=''))
+gg_disc_connections <- ggplot(disc_evals_dt, aes(x=generation_factor, y=connections)) +
+  geom_boxplot() + 
+  labs(x='Generation', y='Connections') +
+  theme_minimal()
+print(gg_disc_connections)
+dev.off()
+
+# TODO Fitness scatter plot
+
+# Max and mean train fitness over gens
+png(filename = paste(OUT_DIR, 'train_fit_per_gen.png', sep=''))
+gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) + 
+  geom_smooth(fill=gsmooth_fill) +
+  labs(x="Generation", y=fit_label, col='') + 
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  theme_minimal()
+if(has_windows){
+  gg_train_fit <- gg_train_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_train_fit)
+dev.off()
+
+# Max and mean test fitness over gens
+png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
+gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) + 
+  geom_smooth(fill=gsmooth_fill) + 
+  labs(x="Generation", y=fit_label, col='') + 
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  theme_minimal()
+if(has_windows){
+  gg_test_fit <- gg_test_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_test_fit)
+dev.off()
+
+# Max and mean train and test fitness over gens
+png(filename = paste(OUT_DIR, 'fits_per_gen.png', sep=''), width = 900, height = 500, res=100)
+gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_best)) + 
+  geom_smooth(fill=gsmooth_fill) + 
+  facet_wrap(~train_or_test) +
+  labs(x="Generation", y=fit_label, col='') + 
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  theme_minimal() +
+  theme(strip.text = element_text(size=12))
+if(has_windows){
+  gg_fit <- gg_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_fit)
+dev.off()
+
+# Network connections over generations
+png(filename = paste(OUT_DIR, 'connections_by_gen.png', sep=''))
+gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  geom_smooth(aes(y=connections_mean)) +
+  labs(x="Generation", y="Connections", col='') + 
+  theme_minimal()
+if(has_windows){
+  gg_connections_gen <- gg_connections_gen + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_connections_gen)
+dev.off() 
+
+# Eval times over generations
+png(filename = paste(OUT_DIR, 'times_by_genq.png', sep=''))
+gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
+  geom_smooth(fill=gsmooth_fill) +
+  labs(x='Generation', y='Time (μs)', color='Times') + 
+  scale_color_brewer(palette = 'Set2') + 
+  theme_minimal()
+if(has_windows){
+  gg_eval_times <- gg_eval_times + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_eval_times)
+dev.off()
+
+# Deviation | Fitness,connections,eval_time
+png(filename = paste(OUT_DIR, 'fit_con_time_deviation.png', sep=''))
+gg_devs <- ggplot(evals_dev, aes(x=generation)) + 
+  geom_smooth(aes(y=value, col=variable), fill=gsmooth_fill) + 
+  scale_color_brewer(palette = "Set2", direction=-1) +
+  labs(x='Generation', y='Deviation from mean', col='') +
+  theme_minimal()
+if(has_windows){
+  gg_devs <- gg_devs + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+}
+print(gg_devs)
+dev.off()
+
+# Pairs | Fitness,connections,eval_time
+png(filename = paste(OUT_DIR, 'fit_con_time_pairs.png', sep=''))
+ggpairs(evals_pairs, lower = list(continuous = wrap("points", alpha = 0.2, size=0.2)))
+dev.off()
+

@@ -423,7 +423,7 @@ class Evolver:
 
     def epoch(self):
         pre_ea_time = datetime.datetime.now()
-        self.pop.Epoch()
+        # self.pop.Epoch()
         time_diff = datetime.datetime.now() - pre_ea_time
         self.ea_time += time_diff
         self.window_ea_time += time_diff
