@@ -18,8 +18,9 @@ global_test_data = None
 
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, fitness_test=None, neurons=None, connections=None, generation=None,
-                 window=None, global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None):
+    def __init__(self, genome, fitness, fitness_adj=None, fitness_test=None,
+                 neurons=None, connections=None, generation=None, window=None,
+                 global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None):
         """
         :type connections: int
         :type neurons: int
@@ -28,6 +29,7 @@ class GenomeEvaluation:
         self.genome = genome
         self.genome_id = genome.GetID()
         self.fitness = fitness
+        self.fitness_adj = fitness if fitness_adj is None else fitness_adj
         self.fitness_test = fitness_test
         self.neurons = neurons
         self.connections = connections
@@ -84,7 +86,7 @@ def _evaluate_random(*args):
     return fitness
 
 
-def evaluate(genome, fitfunc, data=None, test_data=None, **kwargs):
+def evaluate(genome, fitfunc, data=None, test_data=None, adjuster=None, **kwargs):
     build_time, net = util.time(lambda: util.build_network(genome, **kwargs), as_microseconds=True)
 
     if data is None:
@@ -101,17 +103,21 @@ def evaluate(genome, fitfunc, data=None, test_data=None, **kwargs):
     predictions_test = predict(net, test_data.inputs) if test_data is not None else None
     fitness_test = evaluator(test_data.targets, predictions_test) if test_data is not None else None
 
-    return _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test,
-                                     build_time=build_time, pred_time=pred_time,
-                                     pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
+    evaluation = _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test,
+                                           build_time=build_time, pred_time=pred_time,
+                                           pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
+    if adjuster is not None:
+        evaluation.fitness_adj = adjuster.get_adjusted_fitness(evaluation)
+
+    genome.SetFitness(evaluation.fitness_adj)
+    genome.SetEvaluated()
+
+    return evaluation
 
 
 def _create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
-                              initial_time=None,
-                              build_time=None, pred_time=None, pred_avg_time=None, fit_time=None, **kwargs):
-    genome.SetFitness(fitness)
-    genome.SetEvaluated()
-
+                              initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
+                              **kwargs):
     global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
     return GenomeEvaluation(genome=genome, fitness=fitness, fitness_test=fitness_test,
@@ -121,7 +127,8 @@ def _create_genome_evaluation(genome, fitness, net=None, fitness_test=None, wind
                             pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
 
 
-def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1, sort=True, test_data=None, **kwargs):
+def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1, sort=True, test_data=None,
+                         adjuster=None, **kwargs):
     if sample_size != 0:
         data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
         if test_data is not None:
@@ -132,7 +139,7 @@ def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1,
     global_data = data
     global_test_data = test_data
 
-    evaluator = partial(evaluate, fitfunc=fitfunc, **kwargs)
+    evaluator = partial(evaluate, fitfunc=fitfunc, adjuster=adjuster, **kwargs)
     if processes == 1:
         evaluation_list = [evaluator(genome) for genome in genome_list]
     else:
@@ -140,7 +147,7 @@ def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1,
             evaluation_list = pool.map(evaluator, genome_list, chunksize=max(len(genome_list) // processes, 1))
 
         for genome, eval in zip(genome_list, evaluation_list):
-            genome.SetFitness(eval.fitness)
+            genome.SetFitness(eval.fitness_adj)
             genome.SetEvaluated()
 
     if sort:
@@ -172,5 +179,5 @@ if __name__ == '__main__':
     data = Data(args.data_file)
     subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
 
-    evaluation = evaluate_auc(genome, data)
+    evaluation = evaluate(genome, FitFunction.AUC, data)
     print(evaluation.fitness)

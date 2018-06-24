@@ -123,6 +123,14 @@ class Evolver:
         # MultiNEAT parameters
         self.params = params.get_params(self.options.params)
 
+        # Bloat options
+        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
+            if self.options.bloat_file is not None else None
+        self.mutation_rate_controller = bloat.MutationRateController(self.params, self.bloat_options.mutation_options) \
+            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
+        self.fitness_adjuster = bloat.FitnessAdjuster(self.bloat_options.fitness_options) \
+            if bloat.BloatOptions.has_fitness_options(self.bloat_options) else None
+
         # Sliding window
         self.width = self.options.width if self.options.width is not None else 0
         self.test_width = self.options.test_width if self.options.test_width is not None else 0
@@ -130,10 +138,6 @@ class Evolver:
         self.is_online = self.options.width is not None  # Is sliding window being used
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
             if self.is_online else None
-
-        # Bloat options
-        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
-            if self.options.bloat_file is not None else None
 
         # Data
         if self.is_online:  # Set the first window
@@ -169,15 +173,13 @@ class Evolver:
 
         self.pop = self.init_population()  # C++ Population
         self.params = self.pop.Parameters  # Needed in case pop is loaded from file
+        if self.mutation_rate_controller is not None:
+            self.mutation_rate_controller.set_params(self.params)
         self.generation = 0  # Current generation
         # All time best evaluations, ordered from best to worst fitness
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
         self.best_set = set()  # Set of IDs of the individuals in best_list
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
-
-        # Bloat
-        self.bloat_controller = bloat.BloatController(self.params, self.bloat_options.mutation_options) \
-            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
 
     def clear(self):
         self.initial_time = None
@@ -199,8 +201,8 @@ class Evolver:
         self.best_list.clear()
         self.best_set.clear()
         self.best_test = None
-        if self.bloat_controller is not None:
-            self.bloat_controller.reset()
+        if self.mutation_rate_controller is not None:
+            self.mutation_rate_controller.reset()
 
     def init_population(self):
         if self.options.pop_file is not None:
@@ -385,12 +387,12 @@ class Evolver:
         for e in evaluation_list:
             self.best_list.add(e)
 
-    def evaluate_list(self, genome_list, sample_size=None):
+    def evaluate_list(self, genome_list, sample_size=None, adjuster=None):
         sample_size = sample_size if sample_size is not None else self.options.sample_size
         test_data = self.test_data if self.options.test_fitness and not self.options.no_statistics else None
         return evaluator.evaluate_genome_list(
-            genome_list, self.fitness_func, data=self.train_data,
-            sample_size=sample_size, processes=self.options.processes, test_data=test_data,
+            genome_list, self.fitness_func, data=self.train_data, sample_size=sample_size,
+            processes=self.options.processes, test_data=test_data, adjuster=adjuster,
             # Extra **kwargs
             method=self.options.method, substrate=self.substrate,
             generation=self.generation, window=self.get_current_window(), initial_time=self.initial_time
@@ -409,7 +411,7 @@ class Evolver:
 
     def evaluate_pop(self):
         pre_eval_time = datetime.datetime.now()
-        evaluation_list = self.evaluate_list(self.get_genome_list())
+        evaluation_list = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster)
         time_diff = datetime.datetime.now() - pre_eval_time
         self.eval_time += time_diff
         self.window_eval_time += time_diff
@@ -478,13 +480,13 @@ class Evolver:
     def get_current_window(self):
         return self.slider.get_current_window_index() if self.slider is not None else 0
 
-    def bloat_adjust(self):
-        if self.bloat_controller is not None:
-            if self.bloat_options.mutation_options.limit_by is bloat.LimitBy.CONNECTIONS:
+    def adjust_mutation_rates(self):
+        if self.mutation_rate_controller is not None:
+            if self.bloat_options.mutation_options.bloat_type is bloat.BloatType.CONNECTIONS:
                 bloat_state = avg(self.gen_connections)
             else:
                 bloat_state = (self.gen_ea_time + self.gen_eval_time).total_seconds()
-            self.bloat_controller.adjust(self.params, bloat_state, generation=self.generation + 1)
+            self.mutation_rate_controller.adjust(bloat_state, generation=self.generation + 1)
 
     def init_timers(self):
         self.initial_time = datetime.datetime.now()
@@ -513,7 +515,7 @@ class Evolver:
             self.evaluate_pop()
             self.epoch()
 
-            self.bloat_adjust()
+            self.adjust_mutation_rates()
 
             if self.should_shift():
                 self.shift_window()

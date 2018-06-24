@@ -7,11 +7,11 @@ library(RColorBrewer)
 library(GGally)
 
 # --- CONFIG
-RUNS <- 1
-WINDOWS <- 0
-RESULTS_DIR <- '../results/bloat/'
-RUN_PREFIX <- 'neat_TEST'
-OUT_DIR <- 'out/bloat/'
+RUNS <- 4
+WINDOWS <- 10
+RESULTS_DIR <- '../results/2weeks_bloat_mut/'
+RUN_PREFIX <- 'neat_bloat_mut'
+OUT_DIR <- 'out/bloat_mut/'
 FITNESS_FUNC <- 'AUC'
 DIGITS <- 5
 
@@ -101,6 +101,15 @@ gg_pred_times <- ggplot(disc_evals_dt, aes(x=generation_factor, y=pred_avg_time)
 print(gg_pred_times)
 dev.off()
 
+# Boxplot connections by discrete generations
+png(filename = paste(OUT_DIR, 'connections_by_disc_gen.png', sep=''))
+gg_disc_connections <- ggplot(disc_evals_dt, aes(x=generation_factor, y=connections)) +
+  geom_boxplot() + 
+  labs(x='Generation', y='Connections') +
+  theme_minimal()
+print(gg_disc_connections)
+dev.off()
+
 # TODO Fitness scatter plot
 
 # Max and mean train fitness over gens
@@ -117,8 +126,6 @@ if(has_windows){
 }
 print(gg_train_fit)
 dev.off()
-
-evals_fit$fitness_train[evals_fit$mean_or_best=='Best']
 
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
@@ -153,9 +160,9 @@ print(gg_fit)
 dev.off()
 
 # Network connections over generations
-png(filename = paste(OUT_DIR, 'window_connections.png', sep=''))
+png(filename = paste(OUT_DIR, 'connections_by_gen.png', sep=''))
 gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
-  geom_smooth(aes(y=connections_mean), method='loess') +
+  geom_smooth(aes(y=connections_mean)) +
   labs(x="Generation", y="Connections", col='') + 
   theme_minimal()
 if(has_windows){
@@ -166,7 +173,7 @@ print(gg_connections_gen)
 dev.off() 
 
 # Eval times over generations
-png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
+png(filename = paste(OUT_DIR, 'times_by_genq.png', sep=''))
 gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
   geom_smooth(fill=gsmooth_fill) +
   labs(x='Generation', y='Time (μs)', color='Times') + 
