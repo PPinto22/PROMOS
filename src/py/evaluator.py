@@ -1,7 +1,9 @@
 import MultiNEAT as neat
 import argparse
+import ctypes
 import datetime
-import multiprocessing
+import multiprocessing as mp
+import multiprocessing.sharedctypes
 import random
 from enum import Enum
 from functools import partial
@@ -13,21 +15,13 @@ import substrate
 import util
 from data import Data
 
-global_data = None
-global_test_data = None
-
 
 class GenomeEvaluation:
-    def __init__(self, genome, fitness, fitness_adj=None, fitness_test=None,
+    def __init__(self, fitness, genome=None, fitness_adj=None, fitness_test=None,
                  neurons=None, connections=None, generation=None, window=None,
                  global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None):
-        """
-        :type connections: int
-        :type neurons: int
-        ;type global_time: datetime.timedelta
-        """
         self.genome = genome
-        self.genome_id = genome.GetID()
+        self.genome_id = genome.GetID() if genome is not None else -1
         self.fitness = fitness
         self.fitness_adj = fitness if fitness_adj is None else fitness_adj
         self.fitness_test = fitness_test
@@ -42,8 +36,13 @@ class GenomeEvaluation:
         self.fit_time = fit_time
         self.eval_time = sum(x for x in (build_time, pred_time, fit_time) if x is not None)
 
+    def set_genome(self, genome):
+        self.genome = genome
+        self.genome_id = genome.GetID()
+
     def save_genome_copy(self):
-        self.genome = neat.Genome(self.genome)
+        if self.genome is not None:
+            self.genome = neat.Genome(self.genome)
 
 
 class FitFunction(Enum):
@@ -52,111 +51,161 @@ class FitFunction(Enum):
 
     def get_evaluator(self):
         if self is FitFunction.AUC:
-            return _evaluate_auc
+            return Evaluator._evaluate_auc
         elif self is FitFunction.RANDOM:
-            return _evaluate_random
+            return Evaluator._evaluate_random
 
     @staticmethod
     def list():
         return list(map(lambda c: c.value, FitFunction))
 
 
-def predict(net, inputs):
-    predictions = np.zeros(len(inputs))
-    for i, row in enumerate(inputs):
-        net.Flush()
-        net.Input(row)
-        net.FeedForward()
-        output = net.Output()
-        predictions[i] = output[0]
-    net.Flush()
-    return predictions
+class Evaluator:
+    _inputs, _targets, _test_inputs, _test_targets = [None] * 4
+    _pool = None
+    multiprocessing = False
+
+    @staticmethod
+    def setup(max_size, max_test_size=None, processes=1):
+        Evaluator.close()
+        Evaluator._inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_size))
+        Evaluator._targets = mp.sharedctypes.RawArray(ctypes.c_double, max_size[0])
+        Evaluator._test_inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_test_size)) \
+            if max_test_size is not None else None
+        Evaluator._test_targets = mp.sharedctypes.RawArray(ctypes.c_double, max_test_size[0]) \
+            if max_test_size is not None else None
+        Evaluator.multiprocessing = processes > 1
+        Evaluator._pool = mp.Pool(processes=processes) if Evaluator.multiprocessing else None
+
+    def __init__(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def close():
+        if Evaluator._pool is not None:
+            Evaluator._pool.close()
+            Evaluator._pool.join()
+        Evaluator._multiprocessing = False
+        Evaluator._inputs, Evaluator._targets, Evaluator._test_inputs, Evaluator._test_targets = [None] * 4
+
+    @staticmethod
+    def _create_genome_evaluation(fitness, genome=None, net=None, fitness_test=None, window=None, generation=None,
+                                  initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
+                                  **kwargs):
+        global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
+
+        return GenomeEvaluation(fitness=fitness, genome=genome, fitness_test=fitness_test,
+                                neurons=net.GetNeuronsQty() if net is not None else None,
+                                connections=net.GetConnectionsQty() if net is not None else None,
+                                generation=generation, window=window, global_time=global_time, build_time=build_time,
+                                pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
 
 
-def _evaluate_auc(targets, predictions):
-    fpr, tpr, thresholds = roc_curve(targets, predictions)
-    roc_auc = auc(fpr, tpr)
-    return roc_auc
+    @staticmethod
+    def predict(net, inputs, length, width):
+        predictions = np.zeros(length)
+        for i in range(length):
+            j = i * width
+            net.Flush()
+            net.Input(inputs[j:j + width])
+            net.FeedForward()
+            output = net.Output()
+            predictions[i] = output[0]
+        return predictions
 
+    @staticmethod
+    def _evaluate_auc(targets, predictions, length=None):
+        if length is not None:
+            targets = targets[:length]
 
-def _evaluate_random(*args):
-    fitness = np.random.normal(0.5, 0.1)
-    fitness = min(fitness, 1.0)  # Maximum of 1
-    fitness = max(fitness, 0.0)  # Minimum of 0
-    return fitness
+        fpr, tpr, thresholds = roc_curve(targets, predictions)
+        roc_auc = auc(fpr, tpr)
+        return roc_auc
 
+    @staticmethod
+    def _evaluate_random(*args):
+        fitness = np.random.normal(0.5, 0.1)
+        fitness = min(fitness, 1.0)  # Maximum of 1
+        fitness = max(fitness, 0.0)  # Minimum of 0
+        return fitness
 
-def evaluate(genome, fitfunc, data=None, test_data=None, adjuster=None, **kwargs):
-    build_time, net = util.time(lambda: util.build_network(genome, **kwargs), as_microseconds=True)
+    @staticmethod
+    def _evaluate(genome, fitfunc, size, test_size=None, adjuster=None, **kwargs):
+        build_time, net = util.time(lambda: util.build_network(genome, **kwargs), as_microseconds=True)
 
-    if data is None:
-        data = global_data
-    if test_data is None:
-        test_data = global_test_data
+        evaluator = fitfunc.get_evaluator()
 
-    evaluator = fitfunc.get_evaluator()
+        pred_time, predictions = util.time(lambda: Evaluator.predict(net, Evaluator._inputs, size[0], size[1]),
+                                           as_microseconds=True)
+        pred_avg_time = pred_time / size[0]
+        fit_time, fitness = util.time(lambda: evaluator(Evaluator._targets, predictions, size[0]),
+                                      as_microseconds=True)
 
-    pred_time, predictions = util.time(lambda: predict(net, data.inputs), as_microseconds=True)
-    pred_avg_time = pred_time / len(data)
-    fit_time, fitness = util.time(lambda: evaluator(data.targets, predictions), as_microseconds=True)
+        predictions_test = Evaluator.predict(net, Evaluator._test_inputs, test_size[0], test_size[1]) \
+            if test_size is not None else None
+        fitness_test = evaluator(Evaluator._test_targets, predictions_test, test_size[0]) \
+            if test_size is not None else None
 
-    predictions_test = predict(net, test_data.inputs) if test_data is not None else None
-    fitness_test = evaluator(test_data.targets, predictions_test) if test_data is not None else None
+        evaluation = Evaluator._create_genome_evaluation(fitness, genome=None, net=net, fitness_test=fitness_test,
+                                                         build_time=build_time, pred_time=pred_time,
+                                                         pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
+        if adjuster is not None:
+            evaluation.fitness_adj = adjuster.get_adjusted_fitness(evaluation)
 
-    evaluation = _create_genome_evaluation(genome, fitness, net, fitness_test=fitness_test,
-                                           build_time=build_time, pred_time=pred_time,
-                                           pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
-    if adjuster is not None:
-        evaluation.fitness_adj = adjuster.get_adjusted_fitness(evaluation)
+        return evaluation
 
-    genome.SetFitness(evaluation.fitness_adj)
-    genome.SetEvaluated()
+    @staticmethod
+    def evaluate(genome, fitfunc, data, test_data=None, **kwargs):
+        size, test_size = Evaluator.set_data(data, test_data)
+        evaluation = Evaluator._evaluate(genome, fitfunc, size, test_size, **kwargs)
+        genome.SetFitness(evaluation.fitness_adj)
+        genome.SetEvaluated()
+        evaluation.set_genome(genome)
+        return evaluation
 
-    return evaluation
+    @staticmethod
+    def set_data(data, test_data):
+        size = data.size()
+        flat_len = util.mult(size)
+        assert flat_len <= len(Evaluator._inputs) and size[0] <= len(Evaluator._targets)
+        Evaluator._inputs[:flat_len] = data.inputs.ravel()[:flat_len]
+        Evaluator._targets[:size[0]] = data.targets[:size[0]]
 
+        test_size = test_data.size() if test_data is not None else None
+        if test_size is not None:
+            test_flat_len = util.mult(test_size)
+            assert test_flat_len <= len(Evaluator._test_inputs) and test_size[0] <= len(Evaluator._test_targets)
+            Evaluator._test_inputs[:test_flat_len] = test_data.inputs.ravel()[:test_flat_len]
+            Evaluator._test_targets[:test_size[0]] = test_data.targets[:test_size[0]]
 
-def _create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
-                              initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
-                              **kwargs):
-    global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
+        return size, test_size
 
-    return GenomeEvaluation(genome=genome, fitness=fitness, fitness_test=fitness_test,
-                            neurons=net.GetNeuronsQty() if net is not None else None,
-                            connections=net.GetConnectionsQty() if net is not None else None,
-                            generation=generation, window=window, global_time=global_time, build_time=build_time,
-                            pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
+    @staticmethod
+    def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, sort=True, test_data=None, **kwargs):
+        if sample_size != 0:
+            data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
+            if test_data is not None:
+                test_data = test_data.get_sample(sample_size, seed=random.randint(0, 2147483647))
 
+        size, test_size = Evaluator.set_data(data, test_data)
+        evaluator = partial(Evaluator._evaluate, fitfunc=fitfunc, size=size, test_size=test_size, **kwargs)
 
-def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, processes=1, sort=True, test_data=None,
-                         adjuster=None, **kwargs):
-    if sample_size != 0:
-        data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
-        if test_data is not None:
-            test_data = test_data.get_sample(sample_size, seed=random.randint(0, 2147483647))
+        if not Evaluator.multiprocessing:
+            evaluation_list = [evaluator(genome) for genome in genome_list]
+        else:
+            assert Evaluator._pool is not None
 
-    # Set data as a global variables to avoid copies for every process
-    global global_data, global_test_data
-    global_data = data
-    global_test_data = test_data
-
-    evaluator = partial(evaluate, fitfunc=fitfunc, adjuster=adjuster, **kwargs)
-    if processes == 1:
-        evaluation_list = [evaluator(genome) for genome in genome_list]
-    else:
-        with multiprocessing.Pool(processes=processes) as pool:
-            evaluation_list = pool.map(evaluator, genome_list, chunksize=max(len(genome_list) // processes, 1))
+            evaluation_list = Evaluator._pool.map(evaluator, genome_list)
 
         for genome, eval in zip(genome_list, evaluation_list):
             genome.SetFitness(eval.fitness_adj)
             genome.SetEvaluated()
+            eval.set_genome(genome)
 
-    if sort:
-        evaluation_list.sort(key=lambda e: e.fitness, reverse=True)
+        if sort:
+            evaluation_list.sort(key=lambda e: e.fitness, reverse=True)
 
-    global_data = None
-    global_test_data = None
-
-    return evaluation_list
+        return evaluation_list
 
 
 def parse_args():
@@ -179,5 +228,6 @@ if __name__ == '__main__':
     data = Data(args.data_file)
     subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
 
-    evaluation = evaluate(genome, FitFunction.AUC, data)
+    Evaluator.setup(data.size())
+    evaluation = Evaluator.evaluate(genome, FitFunction.AUC, data)
     print(evaluation.fitness)

@@ -36,6 +36,13 @@ def avg(l):
     return sum(l) / len(l)
 
 
+def mult(l):
+    m = 1
+    for v in l:
+        m *= v
+    return m
+
+
 def time(f, as_microseconds=False):
     pre = datetime.datetime.now()
     f_out = f()

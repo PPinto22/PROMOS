@@ -7,11 +7,11 @@ library(RColorBrewer)
 library(GGally)
 
 # --- CONFIG
-RUNS <- 1
+RUNS <- 4
 WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_1000/'
-RUN_PREFIX <- 'neat_windows(1)'
-OUT_DIR <- 'out/2weeks_1000/'
+RESULTS_DIR <- '../results/2weeks_bloat_mut/'
+RUN_PREFIX <- 'neat_bloat_mut'
+OUT_DIR <- 'out/bloat_mut/'
 FITNESS_FUNC <- 'AUC'
 DIGITS <- 5
 
@@ -25,7 +25,6 @@ evals_avg_dt <- group_evals(evals_dt)
 evals_sample_dt <- get_evals_sample(evals_dt)
 evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness'), with=FALSE]
 setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness'))
-
 
 # Read windows
 read_windows_or_summaries()
@@ -67,18 +66,6 @@ dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
 # -- Summary table --
 write_summary_table()
-
-# FIXME
-evals_avg_dt$eval_time_gen <- evals_avg_dt$eval_time * 121 / 1000000
-evals_avg_dt$run_time_gen
-ggplot(evals_avg_dt, aes(x=generation)) +
-         geom_line(aes(y=2*eval_time_gen, col='eval time')) +
-         geom_line(aes(y=run_time_gen, col='run time')) +
-         scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-
-ggplot(evals_avg_dt) + 
-  geom_line(aes(x=connections_max, y=eval_time_gen, col='eval time')) + 
-  geom_line(aes(x=connections_max, y=run_time_gen, col='run time'))
 
 # -- Graphs --
 if(has_windows){
