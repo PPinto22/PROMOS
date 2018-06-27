@@ -77,7 +77,7 @@ group_evals <- function(evals_dt){
   # Crop outlier generations that appear in less than 80% of runs
   evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
   
-  # Then return the average of every run's average
+  # Get the average of every run's average
   evals_avg = evals_run_avg[ , .(window=round(median(window)), fitness_mean = mean(fitness_mean), fitness_best = mean(fitness_best),
                                  fitness_test_mean = mean(fitness_test_mean), fitness_test_best = mean(fitness_test_best),
                                  neurons_mean = mean(neurons_mean), neurons_max = mean(neurons_max), neurons_best = mean(neurons_best),
@@ -85,6 +85,12 @@ group_evals <- function(evals_dt){
                                  build_time=mean(build_time), pred_time=mean(pred_time), pred_avg_time=mean(pred_avg_time), 
                                  fit_time=mean(fit_time), eval_time=mean(build_time+pred_time+fit_time),
                                  run_time = mean(run_time)), by = generation]
+  
+  # Add column: run_time by generaiton
+  run_time_gen = (tail(evals_avg$run_time, -1) - head(evals_avg$run_time, -1))*60
+  evals_avg$run_time_gen = c(run_time_gen, tail(run_time_gen, 1))
+  
+  return(evals_avg)
 }
 
 get_evals_sample <- function(evals_dt){

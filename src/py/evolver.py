@@ -12,7 +12,7 @@ from sortedcontainers import SortedListWithKey
 from functools import partial
 
 import params
-import evaluator
+from evaluator import Evaluator, FitFunction, GenomeEvaluation
 import util
 import bloat
 from util import avg
@@ -35,8 +35,8 @@ def parse_args():
     parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
                         type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
-    parser.add_argument('-e', '--evaluator', dest='evaluator', choices=evaluator.FitFunction.list(), default='auc',
-                        help='evaluation function: ' + ', '.join(evaluator.FitFunction.list()), metavar='E')
+    parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
+                        help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
     parser.add_argument('-g', '--generations', dest='generations', type=util.uint, metavar='G', default=None,
                         help='number of generations per run or, if the option -W is specified, per sliding window')
     parser.add_argument('-T', '--time', dest='time_limit', type=util.uint, metavar='MIN', default=None,
@@ -118,7 +118,7 @@ class Evolver:
             assert self.options.width is not None, 'The test width option (-w) requires the window width option (-W)'
 
         # Evaluation function
-        self.fitness_func = evaluator.FitFunction(self.options.evaluator)
+        self.fitness_func = FitFunction(self.options.evaluator)
 
         # MultiNEAT parameters
         self.params = params.get_params(self.options.params)
@@ -147,6 +147,7 @@ class Evolver:
         else:  # Use static data
             self.train_data = Data(self.options.data_file)
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+        self.setup_evaluator()
 
         # Substrate for HyperNEAT and ES-HyperNEAT
         try:
@@ -180,6 +181,11 @@ class Evolver:
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
         self.best_set = set()  # Set of IDs of the individuals in best_list
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
+
+    def setup_evaluator(self):
+        Evaluator.setup(self.train_data.size(),
+                        self.test_data.size() if self.test_data is not None else None,
+                        self.options.processes)
 
     def clear(self):
         self.initial_time = None
@@ -344,7 +350,7 @@ class Evolver:
                 fitness_test = e.fitness_test if e.fitness_test is not None else -1
                 writer.writerow([e.window, e.generation, e.genome_id, e.fitness, fitness_test, e.neurons, e.connections,
                                  e.build_time, e.pred_time, e.pred_avg_time, e.fit_time,
-                                 e.global_time.total_seconds() / 60.0])
+                                 e.global_time.total_seconds() / 60.0 if e.global_time is not None else None])
 
     def get_best(self):
         return self.best_list[0]
@@ -390,11 +396,9 @@ class Evolver:
     def evaluate_list(self, genome_list, sample_size=None, adjuster=None):
         sample_size = sample_size if sample_size is not None else self.options.sample_size
         test_data = self.test_data if self.options.test_fitness and not self.options.no_statistics else None
-        return evaluator.evaluate_genome_list(
+        return Evaluator.evaluate_genome_list(
             genome_list, self.fitness_func, data=self.train_data, sample_size=sample_size,
-            processes=self.options.processes, test_data=test_data, adjuster=adjuster,
-            # Extra **kwargs
-            method=self.options.method, substrate=self.substrate,
+            test_data=test_data, adjuster=adjuster, method=self.options.method, substrate=self.substrate,
             generation=self.generation, window=self.get_current_window(), initial_time=self.initial_time
         )
 
@@ -405,9 +409,9 @@ class Evolver:
         return self._evaluate(genome, self.test_data)
 
     def _evaluate(self, genome, data):
-        return evaluator.evaluate(genome, self.fitness_func, data, method=self.options.method, substrate=self.substrate,
-                                  generation=self.generation, window=self.get_current_window(),
-                                  initial_time=self.initial_time)
+        return Evaluator.evaluate(genome, self.fitness_func, data, method=self.options.method,
+                                  substrate=self.substrate, generation=self.generation,
+                                  window=self.get_current_window(), initial_time=self.initial_time)
 
     def evaluate_pop(self):
         pre_eval_time = datetime.datetime.now()
@@ -440,6 +444,7 @@ class Evolver:
     def evaluate_best_test(self):
         best = self.get_best()
         if self.test_data is not None:
+            # FIXME This won't work if the test data is larger than the train data
             self.best_test = self.evaluate_test(best.genome)
 
     def termination_sequence(self):
@@ -463,6 +468,7 @@ class Evolver:
         self.train_data, test = next(self.slider)
         if test is not None:
             self.test_data = test
+        self.setup_evaluator()
 
     def should_shift(self):
         if not self.is_online or not self.slider.has_next():

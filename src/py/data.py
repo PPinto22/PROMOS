@@ -1,5 +1,4 @@
 import csv
-import random
 from datetime import datetime, timedelta
 import numpy as np
 
@@ -147,6 +146,9 @@ class Data:
 
     def __getitem__(self, item):
         return self.inputs[item], self.targets[item]
+
+    def size(self):
+        return len(self.inputs), self.n_inputs
 
     def is_balanced(self):
         return abs(len(self.positives) - len(self.negatives)) <= 1

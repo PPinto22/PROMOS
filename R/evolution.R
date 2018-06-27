@@ -26,7 +26,6 @@ evals_sample_dt <- get_evals_sample(evals_dt)
 evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness'), with=FALSE]
 setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness'))
 
-
 # Read windows
 read_windows_or_summaries()
 
