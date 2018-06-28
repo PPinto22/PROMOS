@@ -8,7 +8,7 @@ clean_up() {
 
 trap clean_up SIGHUP SIGINT SIGTERM
 
-python ../src/py/evolver.py ../data/2weeks/best.csv -P ../params/irace2.txt -o ../results/psrecord/ -m neat -g100 -s100 -p4 -W120 -w24 -S24 --test-fitness --id="psrecord" > ../logs/evolver.txt &
+python ../src/py/evolver.py ../data/2weeks/best.csv -P ../params/irace2.txt -o ../results/psrecord/ -m neat -g750 -s1000 -p4 -W120 -w24 -S24 --test-fitness --id="psrecord" &
 EVOLVER_PID=$!
 
 psrecord $! --interval 1 --log ../logs/psrecord.txt --plot ../logs/psrecord.png &

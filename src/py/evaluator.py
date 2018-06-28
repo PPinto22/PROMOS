@@ -66,7 +66,7 @@ class Evaluator:
     multiprocessing = False
 
     @staticmethod
-    def setup(max_size, max_test_size=None, processes=1):
+    def setup(max_size, max_test_size=None, processes=1, maxtasksperchild=500):
         Evaluator.close()
         Evaluator._inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_size))
         Evaluator._targets = mp.sharedctypes.RawArray(ctypes.c_double, max_size[0])
@@ -75,7 +75,8 @@ class Evaluator:
         Evaluator._test_targets = mp.sharedctypes.RawArray(ctypes.c_double, max_test_size[0]) \
             if max_test_size is not None else None
         Evaluator.multiprocessing = processes > 1
-        Evaluator._pool = mp.Pool(processes=processes) if Evaluator.multiprocessing else None
+        Evaluator._pool = mp.Pool(processes=processes, maxtasksperchild=maxtasksperchild) \
+            if Evaluator.multiprocessing else None
 
     def __init__(self):
         raise NotImplementedError
@@ -99,7 +100,6 @@ class Evaluator:
                                 connections=net.GetConnectionsQty() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
-
 
     @staticmethod
     def predict(net, inputs, length, width):
@@ -194,7 +194,6 @@ class Evaluator:
             evaluation_list = [evaluator(genome) for genome in genome_list]
         else:
             assert Evaluator._pool is not None
-
             evaluation_list = Evaluator._pool.map(evaluator, genome_list)
 
         for genome, eval in zip(genome_list, evaluation_list):
