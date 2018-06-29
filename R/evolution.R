@@ -9,9 +9,9 @@ library(GGally)
 # --- CONFIG
 RUNS <- 1
 WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_1000_fix/'
-RUN_PREFIX <- 'neat_windows(1)'
-OUT_DIR <- 'out/2weeks_1000_fix/'
+RESULTS_DIR <- '../results/2weeks_bloat_mut_con/'
+RUN_PREFIX <- 'neat_bloat_mut_con(1)'
+OUT_DIR <- 'out/2weeks_bloat_mut_con/'
 FITNESS_FUNC <- 'AUC'
 DIGITS <- 5
 
@@ -89,7 +89,7 @@ add_window_vlines <- function(gg){
 if(has_windows){
   # Boxplot of each window's best test result
   png(filename = paste(OUT_DIR, 'window_best_bps.png', sep=''))
-  gg_windows <- ggplot(data=windows_dt, aes(x=window_factor, y=test_fitness)) +
+  gg_windows = ggplot(data=windows_dt, aes(x=window_factor, y=test_fitness)) +
     geom_boxplot() +
     labs(x="Window", y=fit_label) +
     theme_minimal()
@@ -170,7 +170,7 @@ dev.off()
 # Network connections over generations
 png(filename = paste(OUT_DIR, 'connections_by_gen.png', sep=''))
 gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
-  geom_smooth(aes(y=connections_mean)) +
+  geom_line(aes(y=connections_mean)) +
   labs(x="Generation", y="Connections", col='') + 
   theme_minimal()
 gg_connections_gen <- add_window_vlines(gg_connections_gen)
@@ -178,17 +178,17 @@ print(gg_connections_gen)
 dev.off() 
 
 # Mutation probs over generations
-png(filename = paste(OUT_DIR, 'mutation_probs_over_gens.png', sep=''))
 if(exists("mutations")){
+  png(filename = paste(OUT_DIR, 'mutation_probs_over_gens.png', sep=''))
   gg_muts <- ggplot(data=mutations, aes(x=generation, y=prob, col=mutation)) +
-    geom_line() +
+    geom_line(size=.8) +
     scale_color_brewer(palette = 'Set2') +
     labs(x='Generation', y='Probability (%)', col='Mutation') +
     theme_minimal()
   gg_muts <- add_window_vlines(gg_muts)
   print(gg_muts)
+  dev.off()
 }
-dev.off()
 
 # Eval times over generations
 png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))

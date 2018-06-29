@@ -13,6 +13,7 @@ from sklearn.metrics import roc_curve, auc
 
 import substrate
 import util
+from bloat import FitnessAdjuster
 from data import Data
 
 
@@ -181,7 +182,8 @@ class Evaluator:
         return size, test_size
 
     @staticmethod
-    def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, sort=True, test_data=None, **kwargs):
+    def evaluate_genome_list(genome_list, fitfunc, data, sample_size=0, sort=True, test_data=None, adjuster=None,
+                             **kwargs):
         if sample_size != 0:
             data = data.get_sample(sample_size, seed=random.randint(0, 2147483647))
             if test_data is not None:
@@ -196,9 +198,11 @@ class Evaluator:
             assert Evaluator._pool is not None
             evaluation_list = Evaluator._pool.map(evaluator, genome_list)
 
-        for genome, eval in zip(genome_list, evaluation_list):
+        for genome, eval, fitness_adj in zip(genome_list, evaluation_list,
+                                             FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list)):
             genome.SetFitness(eval.fitness_adj)
             genome.SetEvaluated()
+            eval.fitness_adj = fitness_adj
             eval.set_genome(genome)
 
         if sort:

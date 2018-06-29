@@ -9,7 +9,7 @@ class BloatType(Enum):
 
 class PenaltyFunction(Enum):
     STEP = 'step'
-    # TODO: Linear, ...
+    TEMPNAME = 'tempname'
 
 
 class FitnessOptions:
@@ -21,6 +21,8 @@ class FitnessOptions:
             self.step_width = float(config['step_width'])
             self.step_penalty_increase = float(config['step_penalty_increase'])
             assert self.step_width > 0 and self.step_penalty_increase > 0
+        elif self.penalty_function is PenaltyFunction.TEMPNAME:
+            self.TEMPALPHA = float(config.get('tempalpha', 1))
 
 
 class MutationOptions:
@@ -59,7 +61,9 @@ class FitnessAdjuster:
         assert isinstance(fitness_options, FitnessOptions)
         self.options = fitness_options
 
-    def _step(self, state, evaluation):
+    def _step(self, evaluation):
+        state = self.get_bloat_state(evaluation)
+
         if state < self.options.lower_limit:
             return evaluation.fitness  # Do not penalize
 
@@ -67,6 +71,9 @@ class FitnessAdjuster:
         steps = (distance // self.options.step_width) + 1
         penalty = 1 + (steps * self.options.step_penalty_increase)
         return evaluation.fitness / penalty
+
+    def _tempname(self, evaluation, pop_max):
+        return evaluation.fitness * ((evaluation.connections / pop_max) ** self.options.TEMPALPHA)
 
     def get_bloat_state(self, evaluation):
         if self.options.bloat_type is BloatType.CONNECTIONS:
@@ -76,14 +83,30 @@ class FitnessAdjuster:
         else:
             raise AttributeError("Invalid bloat type: {}".format(self.options.bloat_type))
 
-    def get_adjusted_fitness(self, evaluation):
-        bloat_state = self.get_bloat_state(evaluation)
-        if self.options.penalty_function is PenaltyFunction.STEP:
-            fitness_adj = self._step(bloat_state, evaluation)
+    def get_adjusted_fitness(self, evaluation, pop_max=None):
+        f = self.options.penalty_function
+        if f is PenaltyFunction.STEP:
+            fitness_adj = self._step(evaluation)
+        elif f is PenaltyFunction.TEMPNAME:
+            assert pop_max is not None
+            fitness_adj = self._tempname(evaluation, pop_max)
         else:
             raise NotImplementedError(
                 "Penalty function {} is not implemented".format(self.options.penalty_function))
         return fitness_adj
+
+    def get_pop_adjusted_fitness(self, evaluation_list):
+        f = self.options.penalty_function
+        pop_max = max(e.connections for e in evaluation_list) if f is PenaltyFunction.TEMPNAME else None
+
+        return [self.get_adjusted_fitness(e, pop_max) for e in evaluation_list]
+
+    @classmethod
+    def maybe_get_pop_adjusted_fitness(cls, adjuster, evaluation_list):
+        if adjuster is None:
+            return [e.fitness for e in evaluation_list]
+        else:
+            return adjuster.get_pop_adjusted_fitness(evaluation_list)
 
 
 class MutationRateController:
