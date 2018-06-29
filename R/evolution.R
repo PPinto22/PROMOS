@@ -191,7 +191,7 @@ if(exists("mutations")){
 dev.off()
 
 # Eval times over generations
-png(filename = paste(OUT_DIR, 'times_by_genq.png', sep=''))
+png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
 gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
   geom_smooth(fill=gsmooth_fill) +
   labs(x='Generation', y='Time (μs)', color='Times') + 
