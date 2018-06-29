@@ -7,13 +7,13 @@ library(RColorBrewer)
 library(GGally)
 
 # --- CONFIG
-# RUNS <- 2
-# WINDOWS <- 0
-# RESULTS_DIR <- '../results/TEMP/'
-# RUN_PREFIX <- 'neat_TEMP'
-# OUT_DIR <- 'out/TEMP/'
-# FITNESS_FUNC <- 'AUC'
-# DIGITS <- 5
+RUNS <- 1
+WINDOWS <- 10
+RESULTS_DIR <- '../results/2weeks_1000_fix/'
+RUN_PREFIX <- 'neat_windows(1)'
+OUT_DIR <- 'out/2weeks_1000_fix/'
+FITNESS_FUNC <- 'AUC'
+DIGITS <- 5
 
 # -- SETUP
 source('util.R')
@@ -89,12 +89,12 @@ add_window_vlines <- function(gg){
 if(has_windows){
   # Boxplot of each window's best test result
   png(filename = paste(OUT_DIR, 'window_best_bps.png', sep=''))
-  gg_windows = ggplot(data=windows_dt, aes(x=window_factor, y=test_fitness)) +
+  gg_windows <- ggplot(data=windows_dt, aes(x=window_factor, y=test_fitness)) +
     geom_boxplot() +
     labs(x="Window", y=fit_label) +
     theme_minimal()
   print(gg_windows)
-  dev.off
+  dev.off()
   
   # EA vs eval time
   png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
