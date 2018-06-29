@@ -14,6 +14,7 @@ setup <- function(multi_types=FALSE){
     evals_file_names <<- hash()
     summs_file_names <<- hash()
     windows_file_names <<- hash()
+    gens_file_names <<- hash()
     for(type in RUN_TYPES){
       prefix = paste(RESULTS_DIR, type, sep='')
       if(RUNS > 1){
@@ -21,6 +22,7 @@ setup <- function(multi_types=FALSE){
       }
       
       evals_file_names[type] <- paste(prefix, '_evaluations.csv', sep='')
+      gens_file_names[type] <- paste(prefix, '_generations.csv', sep='')
       if(has_windows){
         prefix_w_window = CJ(prefix, 0:(WINDOWS-1), sorted = FALSE)[, paste(V1, '(', V2, ')', sep ="")]
         summs_file_names[type] <- paste(prefix_w_window, '_summary.json', sep='')
@@ -34,6 +36,7 @@ setup <- function(multi_types=FALSE){
     prefix = paste(RESULTS_DIR, RUN_PREFIX, sep='')
     if(RUNS > 1){prefix = paste(prefix, '(', 1:RUNS, ')', sep='')}
     evals_file_names <<- paste(prefix, '_evaluations.csv', sep='')
+    gens_file_names <<- paste(prefix, '_generations.csv', sep='')
     windows_file_names <<- paste(prefix, '_windows.csv', sep='')
     if(has_windows){
       prefix_w_window = CJ(prefix, 0:(WINDOWS-1), sorted = FALSE)[, paste(V1, '(', V2, ')', sep ="")]
@@ -60,6 +63,29 @@ read_evaluations <- function(evals_file_names){
     run_dt$run = rep(i, nrow(run_dt))
     run_dt
   }))
+}
+
+read_generations <- function(gens_file_names){
+  gens_dt = tryCatch(
+    rbindlist(lapply(1:length(gens_file_names), function(i){
+      run_dt = data.table(read.csv(file=gens_file_names[i], header=TRUE, sep=','))
+      run_dt$run = rep(i, nrow(run_dt))
+      run_dt
+    })),
+    error=function(e) NULL
+  )
+}
+
+group_gens <- function(gens_dt){
+  if( is.null(gens_dt) ) return(NULL)
+  
+  # Count how many times each generation occurs
+  generation_count = table(gens_dt$generation)
+  # Crop outlier generations that appear in less than 80% of runs
+  gens_dt = gens_dt[gens_dt$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
+  
+  gens_dt[ , .(eval_time=mean(eval_time), ea_time=mean(ea_time), run_time=mean(run_time), 
+               add_neuron=mean(add_neuron), rem_neuron=mean(rem_neuron), add_link=mean(add_link), rem_link=mean(rem_link)), by=generation]
 }
 
 group_evals <- function(evals_dt){

@@ -162,6 +162,7 @@ class Evolver:
 
         self.initial_time = None  # When the run started
         self.window_initial_time = None  # When the current window started
+        self.gen_initial_time = None  # When the current generation started
         self.eval_time = None  # Time spent in evaluations
         self.window_eval_time = None  # Time spent in evaluations during the current window
         self.gen_eval_time = None  # Time spent in evaluations during the current generation
@@ -238,6 +239,9 @@ class Evolver:
 
     def window_elapsed_time(self):
         return datetime.datetime.now() - self.window_initial_time
+
+    def generation_elapsed_time(self):
+        return datetime.datetime.now() - self.gen_initial_time
 
     def is_finished(self):
         if not self.is_online:
@@ -352,6 +356,25 @@ class Evolver:
                                  e.build_time, e.pred_time, e.pred_avg_time, e.fit_time,
                                  e.global_time.total_seconds() / 60.0 if e.global_time is not None else None])
 
+    def save_generation(self):
+        if self.options.no_statistics or self.options.out_dir is None:
+            return
+
+        self.make_out_dir()
+        file_path = self.get_out_file_path('generations.csv', include_window=False)
+        if self.generation == 0:
+            with open(file_path, 'w') as file:
+                writer = csv.writer(file, delimiter=',')
+                header = ['generation', 'eval_time', 'ea_time', 'run_time',
+                          'add_neuron', 'rem_neuron', 'add_link', 'rem_link']
+                writer.writerow(header)
+        with open(file_path, 'a') as file:
+            writer = csv.writer(file, delimiter=',')
+            writer.writerow([self.generation, self.gen_eval_time.total_seconds(), self.gen_ea_time.total_seconds(),
+                             self.generation_elapsed_time().total_seconds(),
+                             self.params.MutateAddNeuronProb, self.params.MutateRemSimpleNeuronProb,
+                             self.params.MutateAddLinkProb, self.params.MutateRemLinkProb])
+
     def get_best(self):
         return self.best_list[0]
 
@@ -414,9 +437,9 @@ class Evolver:
                                   window=self.get_current_window(), initial_time=self.initial_time)
 
     def evaluate_pop(self):
-        pre_eval_time = datetime.datetime.now()
-        evaluation_list = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster)
-        time_diff = datetime.datetime.now() - pre_eval_time
+        time_diff, evaluation_list = util.time(
+            lambda: self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster))
+
         self.eval_time += time_diff
         self.window_eval_time += time_diff
         self.gen_eval_time = time_diff
@@ -426,12 +449,13 @@ class Evolver:
         self.update_best_list(evaluation_list)
 
     def epoch(self):
-        pre_ea_time = datetime.datetime.now()
-        self.pop.Epoch()
-        time_diff = datetime.datetime.now() - pre_ea_time
+        time_diff, _ = util.time(self.pop.Epoch)
+
         self.ea_time += time_diff
         self.window_ea_time += time_diff
         self.gen_ea_time = time_diff
+
+        self.save_generation()
         self.generation += 1
 
     def print_best(self):
@@ -509,6 +533,7 @@ class Evolver:
     def reset_generation_timers(self):
         self.gen_ea_time = datetime.timedelta()
         self.gen_eval_time = datetime.timedelta()
+        self.gen_initial_time = datetime.datetime.now()
 
     def _run(self):
         self.init_timers()
@@ -518,6 +543,8 @@ class Evolver:
             window_info = '[Window {}/{}] '.format(self.get_current_window() + 1,
                                                    self.slider.n_windows) if self.is_online else ''
             self.print("\n{}Generation {} ({})".format(window_info, self.generation, self.elapsed_time()))
+            self.reset_generation_timers()
+
             self.evaluate_pop()
             self.epoch()
 

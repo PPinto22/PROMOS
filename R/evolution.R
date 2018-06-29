@@ -7,17 +7,21 @@ library(RColorBrewer)
 library(GGally)
 
 # --- CONFIG
-RUNS <- 4
-WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_bloat_mut/'
-RUN_PREFIX <- 'neat_bloat_mut'
-OUT_DIR <- 'out/bloat_mut/'
-FITNESS_FUNC <- 'AUC'
-DIGITS <- 5
+# RUNS <- 2
+# WINDOWS <- 0
+# RESULTS_DIR <- '../results/TEMP/'
+# RUN_PREFIX <- 'neat_TEMP'
+# OUT_DIR <- 'out/TEMP/'
+# FITNESS_FUNC <- 'AUC'
+# DIGITS <- 5
 
 # -- SETUP
 source('util.R')
 setup()
+
+# Read generations
+gens_dt <- read_generations(gens_file_names)
+gens_avg_dt <- group_gens(gens_dt)
 
 # Read evaluations
 evals_dt <- read_evaluations(evals_file_names)
@@ -60,6 +64,12 @@ for(col in c('connections_mean', 'fitness_mean', 'eval_time')){
 evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fitness_mean'))
 levels(evals_dev$variable) <- c('Connections', 'Eval time', 'Fitness')
 
+# Mutation probabilities 
+if(!is.null(gens_avg_dt)){
+  mutations <- melt(gens_avg_dt, measure.vars=c('add_neuron', 'rem_neuron', 'add_link', 'rem_link'), variable.name='mutation', value.name='prob')
+  levels(mutations$mutation) <- c('Add neuron', 'Rem neuron', 'Add link', 'Rem link')
+}
+
 # ---- OUTPUTS ----
 # Create OUT_DIR
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
@@ -68,6 +78,14 @@ dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 write_summary_table()
 
 # -- Graphs --
+add_window_vlines <- function(gg){
+  if(has_windows){
+    gg <- gg + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+      scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+  }
+  gg
+}
+
 if(has_windows){
   # Boxplot of each window's best test result
   png(filename = paste(OUT_DIR, 'window_best_bps.png', sep=''))
@@ -119,10 +137,7 @@ gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mea
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
-if(has_windows){
-  gg_train_fit <- gg_train_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-}
+gg_train_fit <- add_window_vlines(gg_train_fit)
 print(gg_train_fit)
 dev.off()
 
@@ -134,10 +149,7 @@ gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
-if(has_windows){
-  gg_test_fit <- gg_test_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-}
+gg_test_fit <- add_window_vlines(gg_test_fit)
 print(gg_test_fit)
 dev.off()
 
@@ -151,10 +163,7 @@ gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_be
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal() +
   theme(strip.text = element_text(size=12))
-if(has_windows){
-  gg_fit <- gg_fit + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-}
+gg_fit <- add_window_vlines(gg_fit)
 print(gg_fit)
 dev.off()
 
@@ -164,12 +173,22 @@ gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_smooth(aes(y=connections_mean)) +
   labs(x="Generation", y="Connections", col='') + 
   theme_minimal()
-if(has_windows){
-  gg_connections_gen <- gg_connections_gen + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-}
+gg_connections_gen <- add_window_vlines(gg_connections_gen)
 print(gg_connections_gen)
 dev.off() 
+
+# Mutation probs over generations
+png(filename = paste(OUT_DIR, 'mutation_probs_over_gens.png', sep=''))
+if(exists("mutations")){
+  gg_muts <- ggplot(data=mutations, aes(x=generation, y=prob, col=mutation)) +
+    geom_line() +
+    scale_color_brewer(palette = 'Set2') +
+    labs(x='Generation', y='Probability (%)', col='Mutation') +
+    theme_minimal()
+  gg_muts <- add_window_vlines(gg_muts)
+  print(gg_muts)
+}
+dev.off()
 
 # Eval times over generations
 png(filename = paste(OUT_DIR, 'times_by_genq.png', sep=''))
@@ -178,10 +197,7 @@ gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
   labs(x='Generation', y='Time (μs)', color='Times') + 
   scale_color_brewer(palette = 'Set2') + 
   theme_minimal()
-if(has_windows){
-  gg_eval_times <- gg_eval_times + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-}
+gg_eval_times <- add_window_vlines(gg_eval_times)
 print(gg_eval_times)
 dev.off()
 
@@ -192,10 +208,7 @@ gg_devs <- ggplot(evals_dev, aes(x=generation)) +
   scale_color_brewer(palette = "Set2", direction=-1) +
   labs(x='Generation', y='Deviation from mean', col='') +
   theme_minimal()
-if(has_windows){
-  gg_devs <- gg_devs + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-    scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
-}
+gg_devs <- add_window_vlines(gg_devs)
 print(gg_devs)
 dev.off()
 
