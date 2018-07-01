@@ -29,7 +29,7 @@ R/img/
 R/out/
 R/*.png
 R/*.pdf
-
+R/config.R
 
 # Distribution / packaging
 .Python
