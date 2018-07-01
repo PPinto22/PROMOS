@@ -1,6 +1,6 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-load('irace.Rdata')
+load('arena/irace.Rdata')
 
 results <- iraceResults$testing$experiments
 results <- results[, seq(1, 4)]
