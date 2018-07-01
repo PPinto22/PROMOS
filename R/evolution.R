@@ -6,16 +6,8 @@ library(data.table)
 library(RColorBrewer)
 library(GGally)
 
-# --- CONFIG
-RUNS <- 1
-WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_bloat_mut_con/'
-RUN_PREFIX <- 'neat_bloat_mut_con(1)'
-OUT_DIR <- 'out/2weeks_bloat_mut_con/'
-FITNESS_FUNC <- 'AUC'
-DIGITS <- 5
-
 # -- SETUP
+source('config.R')
 source('util.R')
 setup()
 

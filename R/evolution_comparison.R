@@ -9,20 +9,9 @@ library(ggpubr)
 library(data.table)
 library(chron)
 
-# ---- CONFIGURATION ----
-RUNS <- 2
-WINDOWS <- 10
-RESULTS_DIR <- '../results/2weeks_temp/' # These are the prefixes of the result files
-RUN_TYPES <- c('neat_windows')
-RUN_TYPE_LABEL <- hash(keys=RUN_TYPES, values=c('Sliding window'))
-SERIES_LABEL <- 'Run'
-OUT_DIR <- 'out/2weeks/'
-
-FITNESS_FUNC <- 'AUC'
-DIGITS <- 5
-
-# if(length(RUN_TYPES) <= 1){stop("Multiple run types are required for a comparison")}
 # ---- SETUP ----
+source('config.R')
+# if(length(RUN_TYPES) <= 1){stop("Multiple run types are required for a comparison")}
 source('util.R')
 setup(multi_types=TRUE)
 
