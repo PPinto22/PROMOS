@@ -1,0 +1,1 @@
+train1 ../../data/week1_best/train.csv ../../data/week1_best/test1.csv ../../params/irace2.txt
