@@ -1,0 +1,263 @@
+*******************************************************************************
+* irace: An implementation in R of Iterated Race
+* Version: 2.4.1844
+* Copyright (C) 2010-2017
+* Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+* Jeremie Dubois-Lacoste  
+* Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+*
+* This is free software, and you are welcome to redistribute it under certain
+* conditions.  See the GNU General Public License for details. There is NO
+* WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*
+* irace builds upon previous code from the race package:
+*
+* race: Racing methods for the selection of the best
+* Copyright (C) 2003 Mauro Birattari
+*******************************************************************************
+# installed at: /home/ppinto/R/x86_64-redhat-linux-gnu-library/3.4/irace
+# called with: 
+Warning: A default scenario file './scenario.txt' has been found and will be read
+## irace scenario:
+scenarioFile = "./scenario.txt" 
+parameterFile = "/home/ppinto/PROMOS/irace/samplesize/parameters.txt" 
+execDir = "/home/ppinto/PROMOS/irace/arena" 
+logFile = "/home/ppinto/PROMOS/irace/arena/irace.Rdata" 
+recoveryFile = NULL 
+instances = "train1 ../../data/week1_best/train.csv ../../data/week1_best/test1.csv ../../params/irace2.txt"
+trainInstancesDir = "" 
+trainInstancesFile = "/home/ppinto/PROMOS/irace/samplesize/train_instances.txt" 
+configurationsFile = "/home/ppinto/PROMOS/irace/samplesize/initial_config.txt" 
+forbiddenExps = NULL 
+forbiddenFile = "" 
+targetRunner = "/home/ppinto/PROMOS/irace/samplesize/target-runner.sh" 
+targetRunnerRetries = 0 
+targetRunnerData = "" 
+targetRunnerParallel = NULL 
+targetEvaluator = NULL 
+maxExperiments = 500 
+maxTime = 0 
+budgetEstimation = 0.02 
+digits = 3 
+debugLevel = 1 
+nbIterations = 0 
+nbExperimentsPerIteration = 0 
+sampleInstances = TRUE 
+testType = "friedman" 
+firstTest = 5 
+eachTest = 1 
+minNbSurvival = 0 
+nbConfigurations = 0 
+mu = 5 
+confidence = 0.9 
+deterministic = FALSE 
+seed = NA_character_ 
+parallel = 8 
+loadBalancing = TRUE 
+mpi = FALSE 
+batchmode = 0 
+softRestart = TRUE 
+softRestartThreshold = 0.001 
+testInstancesDir = "" 
+testInstancesFile = "/home/ppinto/PROMOS/irace/samplesize/test_instances.txt" 
+testInstances = "test1.0    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.1    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.2    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.4    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.5    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.6    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.7    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.8    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.9    ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.10   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.11   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.12   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.13   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.14   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.15   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.16   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.17   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.18   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt, test1.19   ../../data/week1_best/train.csv  ../../data/week1_best/test2.csv ../../params/irace2.txt"
+testNbElites = 5 
+testIterationElites = FALSE 
+elitist = TRUE 
+elitistNewInstances = 1 
+elitistLimit = 2 
+repairConfiguration = NULL 
+## end of irace scenario
+# --- Hierarchy vector ---
+# Param : Level
+sample : 1
+# ------------------------
+# Adding 1 initial configuration(s) from file '/home/ppinto/PROMOS/irace/samplesize/initial_config.txt' 
+# 2018-07-01 15:02:57 WEST: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 2
+# minNbSurvival: 2
+# nbParameters: 1
+# seed: 949874957
+# confidence level: 0.9
+# budget: 500
+# mu: 5
+# deterministic: FALSE
+
+# 2018-07-01 15:02:57 WEST: Iteration 1 of 2
+# experimentsUsedSoFar: 0
+# remainingBudget: 500
+# currentBudget: 250
+# nbConfigurations: 41
+# 2018-07-01 15:02:57 WEST: Sample 40 configurations from uniform distribution
+# 2018-07-01 15:02:57 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|          1|         41|         33|  -0.7440890000|         41|01:03:11|   NA|  NA|    NA|
+|x|          2|         41|         21|  -0.7355600000|         82|01:03:12|+0.64|0.82|0.4243|
+|x|          3|         41|         33|  -0.7403616667|        123|01:03:16|+0.55|0.70|0.3947|
+|x|          4|         41|         21|  -0.7318300000|        164|01:03:17|+0.62|0.72|0.3772|
+|-|          5|          7|         21|  -0.7313760000|        205|01:03:17|+0.15|0.32|0.8029|
+|-|          6|          4|         33|  -0.7376321667|        212|00:10:32|-0.03|0.14|0.7733|
+|=|          7|          4|         33|  -0.7397831429|        216|00:10:25|+0.09|0.22|0.6874|
+|-|          8|          3|         33|  -0.7393210000|        220|00:10:27|+0.07|0.19|0.5890|
+|=|          9|          3|         33|  -0.7381551111|        223|00:10:24|-0.03|0.09|0.6519|
+|=|         10|          3|         33|  -0.7400374000|        226|00:10:27|+0.02|0.12|0.6214|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because tests without elimination (2) >= elitistLimit (2)
+Best configuration:          33    mean value:   -0.7400374000
+Description of the best configuration:
+   .ID. sample .PARENT.
+33   33   2574       NA
+
+# 2018-07-01 21:11:29 WEST: Extracting elites
+# 2018-07-01 21:11:29 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. sample .PARENT. .ALIVE. .RANK.  .WEIGHT.
+33   33   2574       NA    TRUE     16 0.6666667
+9     9   6248       NA    TRUE     22 0.3333333
+# 2018-07-01 21:11:29 WEST: Initialise model
+# 2018-07-01 21:11:29 WEST: End of iteration 1
+# 2018-07-01 21:11:29 WEST: Iteration 2 of 2
+# experimentsUsedSoFar: 226
+# remainingBudget: 274
+# currentBudget: 274
+# nbConfigurations: 26
+# 2018-07-01 21:11:29 WEST: Update model
+# 2018-07-01 21:11:29 WEST: Sample 24 configurations from model
+# Computing similarity of configurations .......................... DONE
+# 2018-07-01 21:11:29 WEST: Soft restart: 33 42 50 55 61 64 !
+# 2018-07-01 21:11:29 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         11|         26|         60|  -0.7468760000|         26|00:42:02|   NA|  NA|    NA|
+|x|          4|         26|         60|  -0.7441845000|         50|00:31:44|-0.01|0.50|0.9034|
+|x|          6|         26|         60|  -0.7422380000|         74|00:31:44|+0.04|0.36|0.9495|
+|x|         10|         26|         60|  -0.7424160000|         98|00:31:42|+0.05|0.29|0.9187|
+|=|          5|         26|         42|  -0.7377552000|        122|00:31:43|+0.06|0.25|0.8982|
+|!|          1|         16|         60|  -0.7396713333|        146|00:31:45|-0.04|0.13|0.9683|
+|=|          9|         16|         60|  -0.7377571429|        160|00:21:04|-0.07|0.09|0.9924|
+|=|          7|         16|         60|  -0.7381680000|        174|00:21:03|-0.05|0.09|0.9640|
+|=|          2|         16|         60|  -0.7386416667|        188|00:21:05|-0.03|0.09|0.9407|
+|=|          8|         16|         60|  -0.7377205000|        202|00:21:06|-0.02|0.09|0.9291|
+|=|          3|         16|         33|  -0.7393986364|        216|00:21:05|-0.01|0.08|0.9230|
+|=|         12|         16|         33|  -0.7395912500|        232|00:21:09|-0.02|0.07|0.9339|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because tests without elimination (2) >= elitistLimit (2)
+Best configuration:          33    mean value:   -0.7395912500
+Description of the best configuration:
+   .ID. sample .PARENT.
+33   33   2574       NA
+
+# 2018-07-02 02:38:47 WEST: Extracting elites
+# 2018-07-02 02:38:47 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. sample .PARENT. .ALIVE. .RANK.  .WEIGHT.
+33   33   2574       NA    TRUE     76 0.6666667
+57   57   3414       33    TRUE     85 0.3333333
+# 2018-07-02 02:38:47 WEST: End of iteration 2
+# 2018-07-02 02:38:47 WEST: Iteration 3 of 3
+# experimentsUsedSoFar: 458
+# remainingBudget: 42
+# currentBudget: 42
+# nbConfigurations: 5
+# 2018-07-02 02:38:47 WEST: Update model
+# 2018-07-02 02:38:47 WEST: Sample 3 configurations from model
+# Computing similarity of configurations ..... DONE
+# 2018-07-02 02:38:47 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         13|          5|         66|  -0.7367560000|          5|00:10:28|   NA|  NA|    NA|
+|x|          2|          5|         66|  -0.7422390000|          8|00:10:24|+0.20|0.60|0.2086|
+|x|          3|          5|         66|  -0.7393260000|         11|00:10:25|+0.07|0.38|0.7285|
+|x|         12|          5|         33|  -0.7381445000|         14|00:10:24|-0.05|0.21|0.8641|
+|=|          1|          5|         33|  -0.7393334000|         17|00:10:25|-0.02|0.18|0.8429|
+|=|         10|          5|         33|  -0.7422741667|         20|00:10:24|+0.10|0.25|0.7443|
+|=|          7|          5|         33|  -0.7437620000|         23|00:10:24|+0.11|0.24|0.7482|
+|=|          6|          5|         33|  -0.7436151250|         26|00:10:24|+0.05|0.17|0.7503|
+|=|          9|          5|         33|  -0.7419721111|         29|00:10:25|-0.01|0.11|0.8193|
+|=|          8|          5|         33|  -0.7413835000|         32|00:10:26|-0.02|0.09|0.8203|
+|=|         11|          5|         33|  -0.7406223636|         35|00:10:25|+0.01|0.10|0.8001|
+|=|          5|          5|         33|  -0.7405859167|         38|00:10:24|-0.02|0.07|0.8138|
+|=|          4|          5|         33|  -0.7391513077|         41|00:10:24|-0.05|0.03|0.8421|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because experiments for next test (46) > max experiments (42)
+Best configuration:          33    mean value:   -0.7391513077
+Description of the best configuration:
+   .ID. sample .PARENT.
+33   33   2574       NA
+
+# 2018-07-02 04:54:17 WEST: Extracting elites
+# 2018-07-02 04:54:17 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. sample .PARENT. .ALIVE. .RANK.  .WEIGHT.
+33   33   2574       NA    TRUE     35 0.6666667
+67   67   2718       33    TRUE     37 0.3333333
+# 2018-07-02 04:54:17 WEST: End of iteration 3
+# 2018-07-02 04:54:17 WEST: Stopped because there is not enough budget left to race more than the minimum (2)
+# You may either increase the budget or set 'minNbSurvival' to a lower value
+# Iteration: 4
+# nbIterations: 4
+# experimentsUsedSoFar: 499
+# timeUsed: 0
+# remainingBudget: 1
+# currentBudget: 1
+# number of elites: 2
+# nbConfigurations: 1
+# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   sample
+33   2574
+67   2718
+# Best configurations as commandlines (first number is the configuration ID; same order as above):
+33  --sample=2574
+67  --sample=2718
+ 
+
+# 2018-07-02 04:54:17 WEST: Testing configurations (in no particular order): 33 67
+   sample
+33   2574
+67   2718
+# Testing of elite configurations: 5 
+# Testing iteration configurations: FALSE 
+# 2018-07-02 05:47:05 WEST: Testing results (column number is configuration ID in no particular order):
+           33        67
+1t  -0.728155 -0.743443
+2t  -0.734774 -0.727107
+3t  -0.723985 -0.732120
+4t  -0.724518 -0.750399
+5t  -0.732365 -0.743711
+6t  -0.736185 -0.725572
+7t  -0.733742 -0.729466
+8t  -0.732417 -0.730750
+9t  -0.723753 -0.733821
+10t -0.729309 -0.731069
+11t -0.730402 -0.739914
+12t -0.738919 -0.726931
+13t -0.738058 -0.729050
+14t -0.747255 -0.736413
+15t -0.730231 -0.730433
+16t -0.737359 -0.728282
+17t -0.728219 -0.739161
+18t -0.739431 -0.737515
+19t -0.722114 -0.730907
+# 2018-07-02 05:47:05 WEST: Finished testing
