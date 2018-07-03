@@ -30,8 +30,8 @@ class MutationOptions:
         self.bloat_type = BloatType(config['bloat_type'])
         self.upper_limit = float(config['upper_limit'])
         self.lower_limit = float(config.get('lower_limit', self.upper_limit))
-        self.mut_neurons_delta = float(config['mut_neurons_delta'])
-        self.mut_connections_delta = float(config['mut_connections_delta'])
+        self.mut_neurons_delta = float(config['mut_neurons_delta'])  # percentage
+        self.mut_connections_delta = float(config['mut_connections_delta'])  # percentage
         self.frequency = int(config['frequency'])
 
         assert self.upper_limit >= self.lower_limit
@@ -127,6 +127,9 @@ class MutationRateController:
         assert isinstance(mutation_options, MutationOptions)
         self.options = mutation_options
 
+        self.mut_neurons_delta = self.options.mut_neurons_delta/100*self.base_mut_neuron
+        self.mut_connections_delta = self.options.mut_connections_delta / 100 * self.base_mut_link
+
         self.phase = MutationRateController.Phase.DEFAULT
 
     def set_params(self, params, set_base_probs=True):
@@ -143,8 +146,8 @@ class MutationRateController:
         self.phase = MutationRateController.Phase.DEFAULT
 
     def simplify(self):
-        neuron_delta = min(self.params.MutateAddNeuronProb, self.options.mut_neurons_delta)
-        link_delta = min(self.params.MutateAddLinkProb, self.options.mut_connections_delta)
+        neuron_delta = min(self.params.MutateAddNeuronProb, self.mut_neurons_delta)
+        link_delta = min(self.params.MutateAddLinkProb, self.mut_connections_delta)
 
         self.params.MutateAddNeuronProb -= neuron_delta
         self.params.MutateRemSimpleNeuronProb += neuron_delta
