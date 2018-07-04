@@ -1,11 +1,5 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-library(ggplot2)
-library(ggpubr)
-library(data.table)
-library(RColorBrewer)
-library(GGally)
-
 # -- SETUP
 source('config.R')
 source('util.R')
@@ -35,7 +29,7 @@ if(has_windows){
 disc_evals_dt$generation <- disc_evals_dt$generation+1
 disc_evals_dt$generation_factor <- factor(disc_evals_dt$generation, ordered = TRUE)
 
-# -- WIDE TO LONG CONVERSIONS -- 
+# -- WIDE TO LONG CONVERSIONS --
 if(has_windows){
   # Eval and EA time per window
   window_times <- melt(windows_avg_dt, id.vars = c('window', 'generations'), measure.vars = c('eval_time', 'ea_time'), variable.name = 'state', value.name = 'time')
@@ -56,7 +50,7 @@ for(col in c('connections_mean', 'fitness_mean', 'eval_time')){
 evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fitness_mean'))
 levels(evals_dev$variable) <- c('Connections', 'Eval time', 'Fitness')
 
-# Mutation probabilities 
+# Mutation probabilities
 if(!is.null(gens_avg_dt)){
   mutations <- melt(gens_avg_dt, measure.vars=c('add_neuron', 'rem_neuron', 'add_link', 'rem_link'), variable.name='mutation', value.name='prob')
   levels(mutations$mutation) <- c('Add neuron', 'Rem neuron', 'Add link', 'Rem link')
@@ -79,12 +73,12 @@ if(has_windows){
     theme_minimal()
   print(gg_windows)
   dev.off()
-  
+
   # EA vs eval time
   png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
   gg_ea_eval <- ggplot(window_times, aes(x=generations, y=time, fill=state)) +
     geom_area(position='stack') +
-    labs(x='Generation', y='Time', fill='State') + 
+    labs(x='Generation', y='Time', fill='State') +
     scale_fill_brewer(palette = 'Oranges') +
     geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
     scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL) +
@@ -96,7 +90,7 @@ if(has_windows){
 # Boxplot average prediction time by discrete generations
 png(filename = paste(OUT_DIR, 'avg_pred_time_by_disc_gen.png', sep=''))
 gg_pred_times <- ggplot(disc_evals_dt, aes(x=generation_factor, y=pred_avg_time)) +
-  geom_boxplot() + 
+  geom_boxplot() +
   labs(x='Generation', y='Prediction time (μs)') +
   theme_minimal()
 print(gg_pred_times)
@@ -105,21 +99,19 @@ dev.off()
 # Boxplot connections by discrete generations
 png(filename = paste(OUT_DIR, 'connections_by_disc_gen.png', sep=''))
 gg_disc_connections <- ggplot(disc_evals_dt, aes(x=generation_factor, y=connections)) +
-  geom_boxplot() + 
+  geom_boxplot() +
   labs(x='Generation', y='Connections') +
   theme_minimal()
 print(gg_disc_connections)
 dev.off()
 
-# TODO Fitness scatter plot
-
 # Max and mean train fitness over gens
 png(filename = paste(OUT_DIR, 'train_fit_per_gen.png', sep=''))
-gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) + 
+gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) +
   geom_smooth(fill=gsmooth_fill) +
-  labs(x="Generation", y=fit_label, col='') + 
+  labs(x="Generation", y=fit_label, col='') +
   scale_color_brewer(palette = 'Set2') +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
 gg_train_fit <- add_window_vlines(gg_train_fit)
 print(gg_train_fit)
@@ -127,11 +119,11 @@ dev.off()
 
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
-gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) + 
-  geom_smooth(fill=gsmooth_fill) + 
-  labs(x="Generation", y=fit_label, col='') + 
+gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
+  geom_smooth(fill=gsmooth_fill) +
+  labs(x="Generation", y=fit_label, col='') +
   scale_color_brewer(palette = 'Set2') +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
 gg_test_fit <- add_window_vlines(gg_test_fit)
 print(gg_test_fit)
@@ -139,12 +131,12 @@ dev.off()
 
 # Max and mean train and test fitness over gens
 png(filename = paste(OUT_DIR, 'fits_per_gen.png', sep=''), width = 900, height = 500, res=100)
-gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_best)) + 
-  geom_smooth(fill=gsmooth_fill) + 
+gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_best)) +
+  geom_smooth(fill=gsmooth_fill) +
   facet_wrap(~train_or_test) +
-  labs(x="Generation", y=fit_label, col='') + 
+  labs(x="Generation", y=fit_label, col='') +
   scale_color_brewer(palette = 'Set2') +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal() +
   theme(strip.text = element_text(size=12))
 gg_fit <- add_window_vlines(gg_fit)
@@ -153,13 +145,13 @@ dev.off()
 
 # Network connections over generations
 png(filename = paste(OUT_DIR, 'connections_by_gen.png', sep=''))
-gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
+gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_line(aes(y=connections_mean)) +
-  labs(x="Generation", y="Connections", col='') + 
+  labs(x="Generation", y="Connections", col='') +
   theme_minimal()
 gg_connections_gen <- add_window_vlines(gg_connections_gen)
 print(gg_connections_gen)
-dev.off() 
+dev.off()
 
 # Mutation probs over generations
 if(exists("mutations")){
@@ -178,8 +170,8 @@ if(exists("mutations")){
 png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
 gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
   geom_smooth(fill=gsmooth_fill) +
-  labs(x='Generation', y='Time (μs)', color='Times') + 
-  scale_color_brewer(palette = 'Set2') + 
+  labs(x='Generation', y='Time (μs)', color='Times') +
+  scale_color_brewer(palette = 'Set2') +
   theme_minimal()
 gg_eval_times <- add_window_vlines(gg_eval_times)
 print(gg_eval_times)
@@ -187,8 +179,8 @@ dev.off()
 
 # Deviation | Fitness,connections,eval_time
 png(filename = paste(OUT_DIR, 'fit_con_time_deviation.png', sep=''))
-gg_devs <- ggplot(evals_dev, aes(x=generation)) + 
-  geom_smooth(aes(y=value, col=variable), fill=gsmooth_fill) + 
+gg_devs <- ggplot(evals_dev, aes(x=generation)) +
+  geom_smooth(aes(y=value, col=variable), fill=gsmooth_fill) +
   scale_color_brewer(palette = "Set2", direction=-1) +
   labs(x='Generation', y='Deviation from mean', col='') +
   theme_minimal()
@@ -200,5 +192,3 @@ dev.off()
 png(filename = paste(OUT_DIR, 'fit_con_time_pairs.png', sep=''))
 ggpairs(evals_pairs, lower = list(continuous = wrap("points", alpha = 0.2, size=0.2)))
 dev.off()
-
-        

@@ -3,22 +3,15 @@
 # This script reads result files from multiple executions named as, e.g., 'neat_1K(N)_evaluations.csv', where 
 # neat_1K is a prefix that identifies the run type, and 'N' is an integer ranging from 1 to the number of runs
 
-library(hash)
-library(ggplot2)
-library(ggpubr)
-library(data.table)
-library(chron)
-
 # ---- SETUP ----
 source('config.R')
-# if(length(RUN_TYPES) <= 1){stop("Multiple run types are required for a comparison")}
 source('util.R')
 setup(multi_types=TRUE)
 
 # Read evaluations
-evals_avg_dt <- rbindlist(lapply(RUN_TYPES, function(type){
-  run_type_dt = group_evals(read_evaluations(evals_file_names[[type]]))  # Read all evals; average each run individually; then average the average of every run
-  run_type_dt$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(run_type_dt))  # Add "run_type" column
+evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
+  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]]))  # Read all evals; average each run individually; then average the average of every run
+  run_type_dt$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_dt))   # Add "run_type" column
   return(run_type_dt)
 }))
 
@@ -40,6 +33,8 @@ if(!has_windows){
   sink(paste(OUT_DIR, 'ttest.txt', sep = ''))
   pairwise.t.test(summaries_dt$train_fit, summaries_dt$run_type,  paired=TRUE)
   sink()
+} else{
+  # TODO: Compare by last window
 }
 
 # -- Graphs --
@@ -73,71 +68,45 @@ if(!has_windows){
   dev.off()
 }
 
-# TODO:
-# Fitness plot - best test fitness; color(run_tyoe)
-# Fitness plot - color(train best/mean), split(run_type)
-
-# Plot mean fitness over time
-png(filename = paste(OUT_DIR, 'fitness_mean.png', sep=''))
-gg_meanfit <- ggplot(data=evals_dt, aes(run_time)) + 
-  geom_smooth(aes(y=fitness_mean, col=run_type), fill=gsmooth_fill) +
+# best train fitness over time
+png(filename = paste(OUT_DIR, 'best_train_fit_by_time.png', sep=''))
+gg_best_train_fit_time <- ggplot(data=evals_avg_dt, aes(run_time)) + 
+  geom_smooth(aes(y=fitness_best, col=run_type), fill=gsmooth_fill) +
   labs(x="Run time (min)", y=fit_label, col=SERIES_LABEL) +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
-  theme_minimal()
-gg_meanfit
-dev.off()
-
-# Plot max fitness over time
-png(filename = paste(OUT_DIR, 'fitness_best.png', sep=''))
-gg_maxfit <- ggplot(data=evals_dt, aes(run_time)) + 
-  geom_smooth(aes(y=fitness_best, col=run_type)) +
-  labs(x="Run time (min)", y=fit_label, col="Sample size") +
+  scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
-gg_maxfit
+print(gg_best_train_fit_time)
 dev.off()
 
-# Plot generations over time
-png(filename = paste(OUT_DIR, 'generations.png', sep=''))
-gg_generations <- ggplot(data=evals_dt, aes(run_time)) + 
+# best fitness over gens
+png(filename = paste(OUT_DIR, 'best_train_fit_by_gens.png', sep=''))
+gg_best_train_fit_gens <- ggplot(data=evals_avg_dt, aes(run_time)) + 
+  geom_smooth(aes(y=fitness_best, col=run_type), fill=gsmooth_fill) +
+  labs(x="Run time (min)", y=fit_label, col=SERIES_LABEL) +
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  theme_minimal()
+print(gg_best_train_fit_gens)
+dev.off()
+
+# generations over time
+png(filename = paste(OUT_DIR, 'generations_by_time.png', sep=''))
+gg_generations_time <- ggplot(data=evals_avg_dt, aes(run_time)) + 
   geom_smooth(aes(y=generation, col=run_type), fill=gsmooth_fill) +
   labs(x="Run time (min)", y="Generations", col=SERIES_LABEL) + 
+  scale_color_brewer(palette = 'Set2') +
   theme_minimal()
-gg_generations
+print(gg_generations_time)
 dev.off()
 
-# Plot mean complexity (connections) over time
-png(filename = paste(OUT_DIR, 'connections_mean.png', sep=''))
-gg_connections <- ggplot(data=evals_dt, aes(run_time)) + 
-  geom_line(aes(y=connections_mean, col=run_type)) +
-  labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
-  theme_minimal()
-gg_connections
-dev.off()
-
-# Plot complexity (connections) of the best individual over time
-png(filename = paste(OUT_DIR, 'connections_best.png', sep=''))
-gg_connections <- ggplot(data=evals_dt, aes(run_time)) + 
-  geom_line(aes(y=connections_best, col=run_type)) +
-  labs(x="Run time (min)", y="Connections", col=SERIES_LABEL) + 
-  theme_minimal()
-gg_connections
-dev.off()
-
-# Plot mean complexity (connections) over generations
+# mean complexity (connections) over generations
 png(filename = paste(OUT_DIR, 'connections_mean_by_gens.png', sep=''))
-gg_mean_connections_gen <- ggplot(data=evals_dt, aes(generation)) + 
+gg_mean_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
   geom_line(aes(y=connections_mean, col=run_type)) +
   labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
+  scale_color_brewer(palette = 'Set2') +
   theme_minimal()
-gg_mean_connections_gen
-dev.off()
-
-# Plot complexity (connections) of the best individual over generations
-png(filename = paste(OUT_DIR, 'connections_best_by_gens.png', sep=''))
-gg_best_connections_gen <- ggplot(data=evals_dt, aes(generation)) + 
-  geom_line(aes(y=connections_best, col=run_type)) +
-  labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
-  theme_minimal()
-gg_best_connections_gen
+gg_mean_connections_gen <- add_window_vlines(gg_mean_connections_gen)
+print(gg_mean_connections_gen)
 dev.off()

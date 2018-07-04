@@ -1,34 +1,46 @@
 library(data.table)
 library(RJSONIO)
 library(chron)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+library(GGally)
 
 setup <- function(multi_types=FALSE){
   fit_label <<- paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')
-  has_windows <<- exists("WINDOWS") && WINDOWS > 1
   multi_types <<- multi_types
+  if(multi_types){
+    has_windows <<- exists("WINDOWS") && all(as.list(WINDOWS) > 1)
+    n_run_types <<- length(RUN_TYPES)
+    RESULTS_DIR <<- sapply(RESULTS_DIR, add_trailing_slash)
+  } else{
+    has_windows <<- exists("WINDOWS") && WINDOWS > 1
+    RESULTS_DIR <<- add_trailing_slash(RESULTS_DIR)
+  }
+  OUT_DIR <<- add_trailing_slash(OUT_DIR)
   options(digits=DIGITS)
   gsmooth_fill <<- '#D0D0D0'
   
   if(multi_types){
-    labels_ord <<- sapply(RUN_TYPES, function(x){RUN_TYPE_LABEL[[x]]})
-    evals_file_names <<- hash()
-    summs_file_names <<- hash()
-    windows_file_names <<- hash()
-    gens_file_names <<- hash()
-    for(type in RUN_TYPES){
-      prefix = paste(RESULTS_DIR, type, sep='')
-      if(RUNS > 1){
-        prefix = paste(prefix, '(', 1:RUNS, ')', sep='')
+    evals_file_names <<- list()
+    summs_file_names <<- list()
+    windows_file_names <<- list()
+    gens_file_names <<- list()
+    for(i in 1:n_run_types){
+      type = RUN_TYPES[i]
+      prefix = paste(RESULTS_DIR[i], type, sep='')
+      if(RUNS[i] > 1){
+        prefix = paste(prefix, '(', 1:RUNS[i], ')', sep='')
       }
       
-      evals_file_names[type] <- paste(prefix, '_evaluations.csv', sep='')
-      gens_file_names[type] <- paste(prefix, '_generations.csv', sep='')
+      evals_file_names[[i]] <<- paste(prefix, '_evaluations.csv', sep='')
+      gens_file_names[[i]] <<- paste(prefix, '_generations.csv', sep='')
       if(has_windows){
-        prefix_w_window = CJ(prefix, 0:(WINDOWS-1), sorted = FALSE)[, paste(V1, '(', V2, ')', sep ="")]
-        summs_file_names[type] <- paste(prefix_w_window, '_summary.json', sep='')
-        windows_file_names[type] <- paste(prefix, '_windows.csv', sep='') 
+        prefix_w_window = CJ(prefix, 0:(WINDOWS[i]-1), sorted = FALSE)[, paste(V1, '(', V2, ')', sep ="")]
+        summs_file_names[[i]] <<- paste(prefix_w_window, '_summary.json', sep='')
+        windows_file_names[[i]] <<- paste(prefix, '_windows.csv', sep='') 
       }else{
-        summs_file_names[type] <- paste(prefix, '_summary.json', sep='')
+        summs_file_names[[i]] <<- paste(prefix, '_summary.json', sep='')
       }
     }
   }
@@ -46,6 +58,13 @@ setup <- function(multi_types=FALSE){
       summs_file_names <<- paste(prefix, '_summary.json', sep='')
     }
   }
+}
+
+add_trailing_slash <- function(s){
+  if(!endsWith(s, '/')){
+    s = paste(s, '/', sep='')
+  }
+  s
 }
 
 add_window_vlines <- function(gg){
@@ -172,21 +191,21 @@ group_windows <- function(windows_dt, group_by="window"){
 read_windows_or_summaries <- function(){
   if(multi_types){
     if(!has_windows){
-      summaries_dt <<- rbindlist(lapply(RUN_TYPES, function(type){
-        run_type_summaries = read_summaries(summs_file_names[[type]])
-        run_type_summaries$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(run_type_summaries))
+      summaries_dt <<- rbindlist(lapply(1:n_run_types, function(i){
+        run_type_summaries = read_summaries(summs_file_names[[i]])
+        run_type_summaries$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_summaries))
         run_type_summaries
       }))
-      summaries_dt$run_type <<- factor(summaries_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+      summaries_dt$run_type <<- factor(summaries_dt$run_type)
       setcolorder(summaries_dt, "run_type")
       summaries_avg_dt <<- group_summaries(summaries_dt, group_by = 'run_type')
     } else {
-      windows_dt <<- rbindlist(lapply(RUN_TYPES, function(type){
-        run_type_windows = read_windows(windows_file_names[[type]])
-        run_type_windows$run_type = rep(RUN_TYPE_LABEL[[type]], nrow(run_type_windows))
+      windows_dt <<- rbindlist(lapply(1:n_run_types, function(i){
+        run_type_windows = read_windows(windows_file_names[[i]])
+        run_type_windows$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_windows))
         run_type_windows
       }))
-      windows_dt$run_type <<- factor(windows_dt$run_type, levels=rev(labels_ord), ordered = TRUE)
+      windows_dt$run_type <<- factor(windows_dt$run_type)
       setcolorder(windows_dt, "run_type")
       windows_avg_dt <<- group_windows(windows_dt, group_by = c("run_type", "window"))
       windows_gen_splits <<- windows_avg_dt$generations[1:(length(windows_avg_dt$generations)-1)]
@@ -221,14 +240,14 @@ melt_fitness <- function(evals_dt){
 }
 
 write_summary_table <- function(){
-  if(multi_types){run_type_label=c(SERIES_LABEL)} else{run_type_label=c()}
+  if(multi_types){RUN_TYPE_LABEL=c(SERIES_LABEL)} else{RUN_TYPE_LABEL=c()}
   
   if(!has_windows){
     write.table(summaries_avg_dt, file=paste(OUT_DIR, 'summary.csv', sep=''), row.names = FALSE, sep=',', 
-                col.names = c(run_type_label, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
+                col.names = c(RUN_TYPE_LABEL, 'Time (EA)', 'Time (Evaluation)', 'Time (Total)', 'Generations', 'Fitness (Train)', 'Fitness (Test)', 'Neurons', 'Connections'))
   } else{
     write.table(windows_avg_dt[, !"window_factor"], file=paste(OUT_DIR, 'windows.csv', sep=''), row.names = FALSE, sep=',', 
-                col.names = c(run_type_label, 'Window', 'Window Begin', 'Window End', 'Generations', 'Run Time', 'Eval Time', 'EA Time', 'Train Size', 'Train Pos', 'Train Neg',
+                col.names = c(RUN_TYPE_LABEL, 'Window', 'Window Begin', 'Window End', 'Generations', 'Run Time', 'Eval Time', 'EA Time', 'Train Size', 'Train Pos', 'Train Neg',
                               'Test Size', 'Test Pos', 'Test Neg', 'Train Fitness', 'Test Fitness', 'Neurons', 'Connections'))
   }
 }
