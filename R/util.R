@@ -48,6 +48,14 @@ setup <- function(multi_types=FALSE){
   }
 }
 
+add_window_vlines <- function(gg){
+  if(has_windows){
+    gg <- gg + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
+      scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL)
+  }
+  gg
+}
+
 deviation <- function(vec){
   s = sd(vec)
   m = mean(vec)
