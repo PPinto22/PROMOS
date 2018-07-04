@@ -19,6 +19,7 @@ from data import Data
 
 class GenomeEvaluation:
     def __init__(self, fitness, genome=None, fitness_adj=None, fitness_test=None,
+                 genome_neurons=None, genome_connections=None,
                  neurons=None, connections=None, generation=None, window=None,
                  global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None):
         self.genome = genome
@@ -26,6 +27,8 @@ class GenomeEvaluation:
         self.fitness = fitness
         self.fitness_adj = fitness if fitness_adj is None else fitness_adj
         self.fitness_test = fitness_test
+        self.genome_neurons = genome_neurons
+        self.genome_connections = genome_connections
         self.neurons = neurons
         self.connections = connections
         self.generation = generation
@@ -91,12 +94,14 @@ class Evaluator:
         Evaluator._inputs, Evaluator._targets, Evaluator._test_inputs, Evaluator._test_targets = [None] * 4
 
     @staticmethod
-    def _create_genome_evaluation(fitness, genome=None, net=None, fitness_test=None, window=None, generation=None,
+    def _create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
                                   initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
-                                  **kwargs):
+                                  include_genome=False, **kwargs):
         global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
-        return GenomeEvaluation(fitness=fitness, genome=genome, fitness_test=fitness_test,
+        return GenomeEvaluation(genome=genome if not include_genome else None,
+                                fitness=fitness, fitness_test=fitness_test,
+                                genome_neurons = genome.NumNeurons(), genome_connections = genome.NumLinks(),
                                 neurons=net.GetNeuronsQty() if net is not None else None,
                                 connections=net.GetConnectionsQty() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
@@ -147,7 +152,7 @@ class Evaluator:
         fitness_test = evaluator(Evaluator._test_targets, predictions_test, test_size[0]) \
             if test_size is not None else None
 
-        evaluation = Evaluator._create_genome_evaluation(fitness, genome=None, net=net, fitness_test=fitness_test,
+        evaluation = Evaluator._create_genome_evaluation(genome, fitness, net=net, fitness_test=fitness_test,
                                                          build_time=build_time, pred_time=pred_time,
                                                          pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
         if adjuster is not None:

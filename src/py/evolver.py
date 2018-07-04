@@ -346,7 +346,7 @@ class Evolver:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['window', 'generation', 'genome_id', 'fitness', 'fitness_test', 'fitness_adj',
-                          'neurons', 'connections',
+                          'genome_neurons', 'genome_connections', 'neurons', 'connections',
                           'build_time', 'pred_time', 'pred_avg_time', 'fit_time', 'run_time']
                 writer.writerow(header)
         with open(file_path, 'a') as file:
@@ -354,7 +354,7 @@ class Evolver:
             for e in evaluations:
                 fitness_test = e.fitness_test if e.fitness_test is not None else -1
                 writer.writerow([e.window, e.generation, e.genome_id, e.fitness, fitness_test, e.fitness_adj,
-                                 e.neurons, e.connections,
+                                 e.genome_neurons, e.genome_connections, e.neurons, e.connections,
                                  e.build_time, e.pred_time, e.pred_avg_time, e.fit_time,
                                  e.global_time.total_seconds() / 60.0 if e.global_time is not None else None])
 
@@ -446,7 +446,7 @@ class Evolver:
         self.window_eval_time += time_diff
         self.gen_eval_time = time_diff
 
-        self.gen_connections = [e.connections for e in evaluation_list]
+        self.gen_connections = [e.genome_connections for e in evaluation_list]
         self.save_evaluations(evaluation_list)
         self.update_best_list(evaluation_list)
 
