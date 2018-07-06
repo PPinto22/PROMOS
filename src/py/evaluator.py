@@ -89,7 +89,6 @@ class Evaluator:
     def close():
         if Evaluator._pool is not None:
             Evaluator._pool.terminate()
-            Evaluator._pool.join()
         Evaluator._multiprocessing = False
         Evaluator._inputs, Evaluator._targets, Evaluator._test_inputs, Evaluator._test_targets = [None] * 4
 
