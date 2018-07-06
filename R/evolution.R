@@ -98,11 +98,11 @@ dev.off()
 
 # Boxplot connections by discrete generations
 png(filename = paste(OUT_DIR, 'connections_by_disc_gen.png', sep=''))
-gg_disc_connections <- ggplot(disc_evals_dt, aes(x=generation_factor, y=connections)) +
-  geom_boxplot() +
-  labs(x='Generation', y='Connections') +
-  theme_minimal()
-print(gg_disc_connections)
+  gg_disc_connections <- ggplot(disc_evals_dt, aes(x=generation_factor, y=connections)) +
+    geom_boxplot() +
+    labs(x='Generation', y='Connections') +
+    theme_minimal()
+  print(gg_disc_connections)
 dev.off()
 
 # Max and mean train fitness over gens
@@ -117,6 +117,18 @@ gg_train_fit <- add_window_vlines(gg_train_fit)
 print(gg_train_fit)
 dev.off()
 
+# Max and mean train fitness over gens (line)
+png(filename = paste(OUT_DIR, 'train_fit_line_per_gen.png', sep=''))
+gg_train_fit_line <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) +
+  geom_line() +
+  labs(x="Generation", y=fit_label, col='') +
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  theme_minimal()
+gg_train_fit_line <- add_window_vlines(gg_train_fit_line)
+print(gg_train_fit_line)
+dev.off()
+
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
 gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
@@ -127,6 +139,18 @@ gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_
   theme_minimal()
 gg_test_fit <- add_window_vlines(gg_test_fit)
 print(gg_test_fit)
+dev.off()
+
+# Max and mean test fitness over gens (line)
+png(filename = paste(OUT_DIR, 'test_fit_line_per_gen.png', sep=''))
+gg_test_fit_line <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
+  geom_line() +
+  labs(x="Generation", y=fit_label, col='') +
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  theme_minimal()
+gg_test_fit_line <- add_window_vlines(gg_test_fit_line)
+print(gg_test_fit_line)
 dev.off()
 
 # Max and mean train and test fitness over gens
