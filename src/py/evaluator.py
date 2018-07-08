@@ -205,7 +205,7 @@ class Evaluator:
 
         for genome, eval, fitness_adj in zip(genome_list, evaluation_list,
                                              FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list)):
-            genome.SetFitness(eval.fitness_adj)
+            genome.SetFitness(fitness_adj)
             genome.SetEvaluated()
             eval.fitness_adj = fitness_adj
             eval.set_genome(genome)
