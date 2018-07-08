@@ -89,7 +89,6 @@ class Evaluator:
     def close():
         if Evaluator._pool is not None:
             Evaluator._pool.terminate()
-            Evaluator._pool.join()
         Evaluator._multiprocessing = False
         Evaluator._inputs, Evaluator._targets, Evaluator._test_inputs, Evaluator._test_targets = [None] * 4
 
@@ -99,9 +98,10 @@ class Evaluator:
                                   include_genome=False, **kwargs):
         global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
-        return GenomeEvaluation(genome=genome if not include_genome else None,
+        return GenomeEvaluation(genome=genome if include_genome else None,
                                 fitness=fitness, fitness_test=fitness_test,
-                                genome_neurons = genome.NumNeurons(), genome_connections = genome.NumLinks(),
+                                genome_neurons = genome.NumNeurons() if genome is not None else None,
+                                genome_connections = genome.NumLinks() if genome is not None else None,
                                 neurons=net.GetNeuronsQty() if net is not None else None,
                                 connections=net.GetConnectionsQty() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
@@ -205,7 +205,7 @@ class Evaluator:
 
         for genome, eval, fitness_adj in zip(genome_list, evaluation_list,
                                              FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list)):
-            genome.SetFitness(eval.fitness_adj)
+            genome.SetFitness(fitness_adj)
             genome.SetEvaluated()
             eval.fitness_adj = fitness_adj
             eval.set_genome(genome)
