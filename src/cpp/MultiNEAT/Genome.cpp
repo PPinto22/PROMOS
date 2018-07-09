@@ -2170,8 +2170,12 @@ namespace NEAT {
 
     // Changes the activation function type for a random neuron
     bool Genome::Mutate_NeuronActivation_Type(const Parameters &a_Parameters, RNG &a_RNG) {
-        // the first non-input neuron
-        int t_first_idx = NumInputs();
+        // the first non-input or output neuron
+        int t_first_idx = NumInputs() + NumOutputs();
+
+        // No hidden nodes; return
+        if (t_first_idx == m_NeuronGenes.size()) return false;
+
         int t_choice = a_RNG.RandInt(t_first_idx, m_NeuronGenes.size() - 1);
 
         int cur = m_NeuronGenes[t_choice].m_ActFunction;
