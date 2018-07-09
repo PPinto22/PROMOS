@@ -537,23 +537,26 @@ class Evolver:
         self.gen_eval_time = datetime.timedelta()
         self.gen_initial_time = datetime.datetime.now()
 
+    def _gen_start(self):
+        window_info = '[Window {}/{}] '.format(self.get_current_window() + 1,
+                                               self.slider.n_windows) if self.is_online else ''
+        self.print("\n{}Generation {} ({})".format(window_info, self.generation, self.elapsed_time()))
+        self.reset_generation_timers()
+
+    def _gen_end(self):
+        self.adjust_mutation_rates()
+        if self.should_shift():
+            self.shift_window()
+
     def _run(self):
         self.init_timers()
 
         # Run the EA
         while not self.is_finished():
-            window_info = '[Window {}/{}] '.format(self.get_current_window() + 1,
-                                                   self.slider.n_windows) if self.is_online else ''
-            self.print("\n{}Generation {} ({})".format(window_info, self.generation, self.elapsed_time()))
-            self.reset_generation_timers()
-
+            self._gen_start()
             self.evaluate_pop()
             self.epoch()
-
-            self.adjust_mutation_rates()
-
-            if self.should_shift():
-                self.shift_window()
+            self._gen_end()
 
         self.termination_sequence()
 

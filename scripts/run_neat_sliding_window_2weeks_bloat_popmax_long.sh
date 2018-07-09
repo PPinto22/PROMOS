@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/2weeks/best.csv"
+args="../data/2weeks_idf/best.csv"
 id="bloat_popmax_long"
 options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g1500 -s2500 -p10 -W120 -w24 -S24 --test-fitness -b ../params/bloat_fit_popmax.cfg"
 runs=4

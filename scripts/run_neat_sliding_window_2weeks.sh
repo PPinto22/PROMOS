@@ -1,7 +1,7 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/2weeks/best.csv"
-id="2weeks"
+args="../data/2weeks_idf/best.csv"
+id="2weeks_idf"
 options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness"
 runs=2
 parallel=2
