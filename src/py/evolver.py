@@ -27,7 +27,7 @@ def parse_args():
                         help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
                         help='directory where to save results. If NULL, do not save results.', metavar='DIR')
-    methods = ['neat', 'hyperneat', 'eshyperneat']
+    methods = ['neat', 'hyperneat']
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
     parser.add_argument('-P', '--params', dest='params', metavar='FILE', default=None,
@@ -184,9 +184,7 @@ class Evolver:
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
 
     def setup_evaluator(self):
-        Evaluator.setup(self.train_data.size(),
-                        self.test_data.size() if self.test_data is not None else None,
-                        self.options.processes)
+        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes, maxtasksperchild=500)
 
     def clear(self):
         self.initial_time = None

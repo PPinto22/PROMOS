@@ -70,8 +70,10 @@ class Evaluator:
     multiprocessing = False
 
     @staticmethod
-    def setup(max_size, max_test_size=None, processes=1, maxtasksperchild=500):
+    def setup(data, test_data=None, processes=1, maxtasksperchild=500):
         Evaluator.close()
+        max_size = data.size()
+        max_test_size = test_data.size() if test_data is not None else None
         Evaluator._inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_size))
         Evaluator._targets = mp.sharedctypes.RawArray(ctypes.c_double, max_size[0])
         Evaluator._test_inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_test_size)) \
@@ -93,22 +95,34 @@ class Evaluator:
         Evaluator._inputs, Evaluator._targets, Evaluator._test_inputs, Evaluator._test_targets = [None] * 4
 
     @staticmethod
-    def _create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
-                                  initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
-                                  include_genome=False, **kwargs):
+    def create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
+                                 initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
+                                 include_genome=False, **kwargs):
         global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
         return GenomeEvaluation(genome=genome if include_genome else None,
                                 fitness=fitness, fitness_test=fitness_test,
-                                genome_neurons = genome.NumNeurons() if genome is not None else None,
-                                genome_connections = genome.NumLinks() if genome is not None else None,
+                                genome_neurons=genome.NumNeurons() if genome is not None else None,
+                                genome_connections=genome.NumLinks() if genome is not None else None,
                                 neurons=net.GetNeuronsQty() if net is not None else None,
                                 connections=net.GetConnectionsQty() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
 
     @staticmethod
-    def predict(net, inputs, length, width):
+    def predict(net, inputs):
+        predictions = np.zeros(len(inputs))
+        for i, row in enumerate(inputs):
+            net.Flush()
+            net.Input(row)
+            net.FeedForward()
+            output = net.Output()
+            predictions[i] = output[0]
+        net.Flush()
+        return predictions
+
+    @staticmethod
+    def _predict(net, inputs, length, width):
         predictions = np.zeros(length)
         for i in range(length):
             j = i * width
@@ -117,6 +131,7 @@ class Evaluator:
             net.FeedForward()
             output = net.Output()
             predictions[i] = output[0]
+        net.Flush()
         return predictions
 
     @staticmethod
@@ -141,20 +156,20 @@ class Evaluator:
 
         evaluator = fitfunc.get_evaluator()
 
-        pred_time, predictions = util.time(lambda: Evaluator.predict(net, Evaluator._inputs, size[0], size[1]),
+        pred_time, predictions = util.time(lambda: Evaluator._predict(net, Evaluator._inputs, size[0], size[1]),
                                            as_microseconds=True)
         pred_avg_time = pred_time / size[0]
         fit_time, fitness = util.time(lambda: evaluator(Evaluator._targets, predictions, size[0]),
                                       as_microseconds=True)
 
-        predictions_test = Evaluator.predict(net, Evaluator._test_inputs, test_size[0], test_size[1]) \
+        predictions_test = Evaluator._predict(net, Evaluator._test_inputs, test_size[0], test_size[1]) \
             if test_size is not None else None
         fitness_test = evaluator(Evaluator._test_targets, predictions_test, test_size[0]) \
             if test_size is not None else None
 
-        evaluation = Evaluator._create_genome_evaluation(genome, fitness, net=net, fitness_test=fitness_test,
-                                                         build_time=build_time, pred_time=pred_time,
-                                                         pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
+        evaluation = Evaluator.create_genome_evaluation(genome, fitness, net=net, fitness_test=fitness_test,
+                                                        build_time=build_time, pred_time=pred_time,
+                                                        pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
         if adjuster is not None:
             evaluation.fitness_adj = adjuster.get_adjusted_fitness(evaluation)
 
@@ -162,7 +177,7 @@ class Evaluator:
 
     @staticmethod
     def evaluate(genome, fitfunc, data, test_data=None, **kwargs):
-        size, test_size = Evaluator.set_data(data, test_data)
+        size, test_size = Evaluator._set_data(data, test_data)
         evaluation = Evaluator._evaluate(genome, fitfunc, size, test_size, **kwargs)
         genome.SetFitness(evaluation.fitness_adj)
         genome.SetEvaluated()
@@ -170,7 +185,7 @@ class Evaluator:
         return evaluation
 
     @staticmethod
-    def set_data(data, test_data):
+    def _set_data(data, test_data):
         size = data.size()
         flat_len = util.mult(size)
         assert flat_len <= len(Evaluator._inputs) and size[0] <= len(Evaluator._targets)
@@ -194,7 +209,7 @@ class Evaluator:
             if test_data is not None:
                 test_data = test_data.get_sample(sample_size, seed=random.randint(0, 2147483647))
 
-        size, test_size = Evaluator.set_data(data, test_data)
+        size, test_size = Evaluator._set_data(data, test_data)
         evaluator = partial(Evaluator._evaluate, fitfunc=fitfunc, size=size, test_size=test_size, **kwargs)
 
         if not Evaluator.multiprocessing:
