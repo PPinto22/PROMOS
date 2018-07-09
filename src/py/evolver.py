@@ -545,7 +545,6 @@ class Evolver:
 
     def _gen_end(self):
         self.adjust_mutation_rates()
-        
         if self.should_shift():
             self.shift_window()
 
