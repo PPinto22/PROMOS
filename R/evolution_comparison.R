@@ -79,7 +79,7 @@ gg_best_train_fit_time <- ggplot(data=evals_avg_dt, aes(run_time)) +
 print(gg_best_train_fit_time)
 dev.off()
 
-# best fitness over gens
+# best train fitness over gens
 png(filename = paste(OUT_DIR, 'best_train_fit_by_gens.png', sep=''))
 gg_best_train_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) + 
   geom_smooth(aes(y=fitness_best, col=run_type), fill=gsmooth_fill) +
@@ -89,6 +89,18 @@ gg_best_train_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   theme_minimal()
 print(gg_best_train_fit_gens)
 dev.off()
+
+# best test fitness over gens
+png(filename = paste(OUT_DIR, 'best_test_fit_by_gens.png', sep=''))
+gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill) +
+  labs(x="Generation", y=fit_label, col=SERIES_LABEL) +
+  scale_color_brewer(palette = 'Set2') +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  theme_minimal()
+print(gg_best_test_fit_gens)
+dev.off()
+
 
 # generations over time
 png(filename = paste(OUT_DIR, 'generations_by_time.png', sep=''))

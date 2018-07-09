@@ -117,7 +117,7 @@ group_gens <- function(gens_dt){
 
 group_evals <- function(evals_dt){
   # First average each run
-  evals_run_avg = evals_dt[ , .(window=round(median(window)), fitness_mean = mean(fitness), fitness_best = max(fitness),
+  evals_run_avg = evals_dt[ , .(window=round(median(window)), fitness_mean = mean(fitness), fitness_best = max(fitness), fitness_adj = mean(fitness_adj),
                                 fitness_test_mean = mean(fitness_test), fitness_test_best = fitness_test[which.max(fitness)],
                                 neurons_mean = mean(neurons), neurons_max = max(neurons), neurons_best = neurons[which.max(fitness)],
                                 connections_mean = mean(connections), connections_max = max(connections), connections_best = connections[which.max(fitness)],
@@ -131,7 +131,7 @@ group_evals <- function(evals_dt){
   evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
   
   # Get the average of every run's average
-  evals_avg = evals_run_avg[ , .(window=round(median(window)), fitness_mean = mean(fitness_mean), fitness_best = mean(fitness_best),
+  evals_avg = evals_run_avg[ , .(window=round(median(window)), fitness_mean = mean(fitness_mean), fitness_best = mean(fitness_best), fitness_adj = mean(fitness_adj),
                                  fitness_test_mean = mean(fitness_test_mean), fitness_test_best = mean(fitness_test_best),
                                  neurons_mean = mean(neurons_mean), neurons_max = mean(neurons_max), neurons_best = mean(neurons_best),
                                  connections_mean = mean(connections_mean), connections_max = mean(connections_max), connections_best = mean(connections_best),
