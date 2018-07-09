@@ -162,6 +162,7 @@ gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_be
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   theme(strip.text = element_text(size=12))
 gg_fit <- add_window_vlines(gg_fit)
 print(gg_fit)
