@@ -29,13 +29,13 @@ dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 write_summary_table()
 
 # -- Statistical tests --
+sink(paste(OUT_DIR, 'ttest.txt', sep = ''))
 if(!has_windows){
-  sink(paste(OUT_DIR, 'ttest.txt', sep = ''))
-  pairwise.t.test(summaries_dt$train_fit, summaries_dt$run_type,  paired=TRUE)
-  sink()
+  pairwise.t.test(summaries_dt$test_fit, summaries_dt$run_type)
 } else{
-  # TODO: Compare by last window
+  pairwise.t.test(windows_dt$test_fitness, windows_dt$run_type, paired=TRUE)
 }
+sink()
 
 # -- Graphs --
 if(!has_windows){
@@ -81,9 +81,9 @@ dev.off()
 
 # best fitness over gens
 png(filename = paste(OUT_DIR, 'best_train_fit_by_gens.png', sep=''))
-gg_best_train_fit_gens <- ggplot(data=evals_avg_dt, aes(run_time)) + 
+gg_best_train_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) + 
   geom_smooth(aes(y=fitness_best, col=run_type), fill=gsmooth_fill) +
-  labs(x="Run time (min)", y=fit_label, col=SERIES_LABEL) +
+  labs(x="Generation", y=fit_label, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
