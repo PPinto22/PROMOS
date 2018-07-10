@@ -19,6 +19,7 @@ class Data:
         self.timestamp_label = timestamp_label  # Label of the timestamp column
         self.positive_class = positive_class  # Which target value is to be considered positive
         self.n_inputs = 0  # Number of input columns
+        self.n_outputs = 1  # Number of outputs -- static, always 1
         self.has_timestamps = False  # Does the data contain timestamps
         self.is_sorted = is_sorted  # Is the data sorted by time
         self.date_format = date_format  # Date format to use with datetime.strptime

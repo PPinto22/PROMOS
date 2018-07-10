@@ -170,6 +170,7 @@ class Evolver:
         self.window_ea_time = None  # Time spent in the EA during the current window
         self.gen_ea_time = None  # Time spent in the EA during the current generation
         self.gen_connections = None  # List of the number of connections of all individuals in the current generation
+        self.gen_neurons = None  # List of the number of hidden neurons of all individuals in the current generation
 
         self.run_i = None  # Current run, in case of multiple runs
 
@@ -445,6 +446,8 @@ class Evolver:
         self.gen_eval_time = time_diff
 
         self.gen_connections = [e.genome_connections for e in evaluation_list]
+        self.gen_neurons = [e.genome_neurons - self.train_data.n_inputs - self.train_data.n_outputs
+                            for e in evaluation_list]
         self.save_evaluations(evaluation_list)
         self.update_best_list(evaluation_list)
 
@@ -512,11 +515,16 @@ class Evolver:
 
     def adjust_mutation_rates(self):
         if self.mutation_rate_controller is not None:
-            if self.bloat_options.mutation_options.bloat_type is bloat.BloatType.CONNECTIONS:
-                bloat_state = avg(self.gen_connections)
+            complex_type = self.bloat_options.mutation_options.complexity_type
+            if complex_type is bloat.ComplexityType.CONNECTIONS:
+                complexity = avg(self.gen_connections)
+            elif complex_type is bloat.ComplexityType.NEURONS:
+                complexity = avg(self.gen_neurons)
+            elif complex_type is bloat.ComplexityType.TIME:
+                complexity = (self.gen_ea_time + self.gen_eval_time).total_seconds()
             else:
-                bloat_state = (self.gen_ea_time + self.gen_eval_time).total_seconds()
-            self.mutation_rate_controller.adjust(bloat_state, generation=self.generation + 1)
+                raise NotImplementedError
+            self.mutation_rate_controller.adjust(complexity, generation=self.generation)
 
     def init_timers(self):
         self.initial_time = datetime.datetime.now()
