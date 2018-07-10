@@ -115,7 +115,7 @@ group_gens <- function(gens_dt){
                add_neuron=mean(add_neuron), rem_neuron=mean(rem_neuron), add_link=mean(add_link), rem_link=mean(rem_link)), by=generation]
 }
 
-group_evals <- function(evals_dt){
+group_evals <- function(evals_dt, crop=TRUE){
   # First average each run
   evals_run_avg = evals_dt[ , .(window=round(median(window)), fitness_mean = mean(fitness), fitness_best = max(fitness), fitness_adj = mean(fitness_adj),
                                 fitness_test_mean = mean(fitness_test), fitness_test_best = fitness_test[which.max(fitness)],
@@ -125,10 +125,12 @@ group_evals <- function(evals_dt){
                                 fit_time=mean(fit_time), eval_time=mean(build_time+pred_time+fit_time),
                                 run_time = mean(run_time)), by = list(run, generation)]
   
-  # Count how many times each generation occurs
-  generation_count = table(evals_run_avg$generation)
-  # Crop outlier generations that appear in less than 80% of runs
-  evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
+  if(crop){
+    # Count how many times each generation occurs
+    generation_count = table(evals_run_avg$generation)
+    # Crop outlier generations that appear in less than 80% of runs
+    evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
+  }
   
   # Get the average of every run's average
   evals_avg = evals_run_avg[ , .(window=round(median(window)), fitness_mean = mean(fitness_mean), fitness_best = mean(fitness_best), fitness_adj = mean(fitness_adj),
@@ -139,7 +141,7 @@ group_evals <- function(evals_dt){
                                  fit_time=mean(fit_time), eval_time=mean(build_time+pred_time+fit_time),
                                  run_time = mean(run_time)), by = generation]
   
-  # Add column: run_time by generaiton
+  # Add column: run_time by generation
   run_time_gen = (tail(evals_avg$run_time, -1) - head(evals_avg$run_time, -1))*60
   evals_avg$run_time_gen = c(run_time_gen, tail(run_time_gen, 1))
   

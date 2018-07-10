@@ -8,10 +8,12 @@ setup()
 # Read generations
 gens_dt <- read_generations(gens_file_names)
 gens_avg_dt <- group_gens(gens_dt)
+gens_single_dt <- gens_dt[run==1]
 
 # Read evaluations
 evals_dt <- read_evaluations(evals_file_names)
 evals_avg_dt <- group_evals(evals_dt)
+evals_single_dt <- group_evals(evals_dt[run==1], crop=FALSE)
 evals_sample_dt <- get_evals_sample(evals_dt)
 evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness'), with=FALSE]
 setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness'))
@@ -51,8 +53,8 @@ evals_dev <- melt(evals_dev, measure.vars=c('connections_mean', 'eval_time', 'fi
 levels(evals_dev$variable) <- c('Connections', 'Eval time', 'Fitness')
 
 # Mutation probabilities
-if(!is.null(gens_avg_dt)){
-  mutations <- melt(gens_avg_dt, measure.vars=c('add_neuron', 'rem_neuron', 'add_link', 'rem_link'), variable.name='mutation', value.name='prob')
+if(!is.null(gens_single_dt)){
+  mutations <- melt(gens_single_dt, measure.vars=c('add_neuron', 'rem_neuron', 'add_link', 'rem_link'), variable.name='mutation', value.name='prob')
   levels(mutations$mutation) <- c('Add neuron', 'Rem neuron', 'Add link', 'Rem link')
 }
 
@@ -178,7 +180,17 @@ gg_connections_gen <- add_window_vlines(gg_connections_gen)
 print(gg_connections_gen)
 dev.off()
 
-# Mutation probs over generations
+# Network connections over generations (first run)
+png(filename = paste(OUT_DIR, 'connections_by_gen_single.png', sep=''))
+gg_connections_gen_single <- ggplot(data=evals_single_dt, aes(generation)) +
+  geom_line(aes(y=connections_mean)) +
+  labs(x="Generation", y="Connections", col='') +
+  theme_minimal()
+gg_connections_gen_single <- add_window_vlines(gg_connections_gen_single)
+print(gg_connections_gen_single)
+dev.off()
+
+# Mutation probs over generations (first run)
 if(exists("mutations")){
   png(filename = paste(OUT_DIR, 'mutation_probs_over_gens.png', sep=''))
   gg_muts <- ggplot(data=mutations, aes(x=generation, y=prob, col=mutation)) +
