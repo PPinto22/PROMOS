@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/2weeks_idf/best.csv"
+args="../data/2weeks/best_idf.csv"
 id="2weeks_idf_flat"
 options="-P ../params/flat.txt -o ../results/${id}/ -m neat -g750 -s2500 -p10 -W120 -w24 -S24 --test-fitness"
 runs=4

@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/2weeks_idf/best.csv"
+args="../data/2weeks/best_idf.csv"
 id="bloat_fit_step_long"
 options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g1500 -s2500 -p13 -W120 -w24 -S24 --test-fitness -b ../params/bloat_fit_step.cfg"
 runs=4
