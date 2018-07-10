@@ -53,7 +53,7 @@ def parse_args():
                         help='Do not print any messages to stdout, except for the result')
     parser.add_argument('--id', dest='id', metavar='ID', default=None,
                         help='run identifier. This ID will be used to name all output files '
-                             '(e.g., neat_ID_summary.txt). '
+                             '(e.g., ID_summary.txt). '
                              'If unspecified, the ID will be the datetime of when the run was started.')
     parser.add_argument('--seed', dest='seed', metavar='S', type=util.uint, default=None,
                         help='specify an RNG integer seed')
@@ -266,9 +266,9 @@ class Evolver:
         run = '({})'.format(self.run_i) if self.run_i is not None else ''
         window = '({})'.format(self.get_current_window()) if include_window and self.is_online else ''
 
-        # Format: '<OUTDIR>/<METHOD>_<ID><(RUN_INDEX)><(WINDOW_INDEX)>_<SUFFIX>
-        # Example: 'results/neat_sample1K(0)(0)_summary.json'
-        return '{}/{}_{}{}{}_{}'.format(self.options.out_dir, self.options.method, self.options.id, run, window, suffix)
+        # Format: '<OUTDIR>/<ID><(RUN_INDEX)><(WINDOW_INDEX)>_<SUFFIX>
+        # Example: 'results/sample1K(0)(0)_summary.json'
+        return '{}/{}{}{}_{}'.format(self.options.out_dir, self.options.id, run, window, suffix)
 
     def write_results(self):
         if self.options.out_dir is not None:
