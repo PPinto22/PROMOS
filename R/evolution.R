@@ -212,6 +212,16 @@ gg_connections_gen_single <- add_window_vlines(gg_connections_gen_single)
 print(gg_connections_gen_single)
 dev.off()
 
+# Network neurons over generations (first run)
+png(filename = paste(OUT_DIR, 'neurons_by_gen_single.png', sep=''))
+gg_neurons_gen_single <- ggplot(data=evals_single_dt, aes(generation)) +
+  geom_line(aes(y=neurons_mean)) +
+  labs(x="Generation", y="Neurons", col='') +
+  theme_minimal()
+gg_neurons_gen_single <- add_window_vlines(gg_neurons_gen_single)
+print(gg_neurons_gen_single)
+dev.off()
+
 # Mutation probs over generations (first)
 if(exists("mutations")){
   png(filename = paste(OUT_DIR, 'mutation_probs_over_gens.png', sep=''))
