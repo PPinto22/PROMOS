@@ -378,16 +378,17 @@ else:
 
 
 # More general one that returns a NumPy image
-def Draw(x, size=(300, 300)):
+def Draw(x, size=(500, 500), padding=0):
     img = np.zeros((size[0], size[1], 3), dtype=np.uint8)
-    img += 10
 
+    p0x, p0y = padding, padding
+    p1x, p1y = size[0] - 2 * padding, size[1] - 2 * padding
     if isinstance(x, NeuralNetwork):
-        DrawPhenotype(img, (0, 0, 250, 250), x)
+        DrawPhenotype(img, (p0x, p0y, p1x, p1y), x)
     else:
         nn = NeuralNetwork()
         x.BuildPhenotype(nn)
-        DrawPhenotype(img, (0, 0, 250, 250), nn)
+        DrawPhenotype(img, (p0x, p0y, p1x, p1y), nn)
 
     return img
 
@@ -402,6 +403,12 @@ def parse_args():
                         help='path to a substrate; required if method is hyperneat or eshyperneat')
     parser.add_argument('-o', '--output', dest='out_file', metavar='FILE', default=None,
                         help='save image to FILE')
+    parser.add_argument('-W', '--width', dest='width', metavar='PX', type=int, default=500,
+                        help='image width in pixels')
+    parser.add_argument('-H', '--height', dest='height', metavar='PX', type=int, default=500,
+                        help='image height in pixels')
+    # parser.add_argument('-P', '--padding', dest='padding', metavar='PX', type=int, default=20,
+    #                     help='image padding in pixels')
 
     args = parser.parse_args()
     return args
@@ -409,13 +416,14 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+    size = (args.width, args.height)
     genome = Genome(args.genome_file)
     subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
 
     network = util.build_network(genome, args.method, substrate)
-    network_image = Draw(network)
+    network_image = Draw(network, size=size)
     if args.out_file is None:
-        cv2.namedWindow('Network visualization', cv2.WINDOW_GUI_NORMAL)
+        cv2.namedWindow('Network visualization', cv2.WINDOW_AUTOSIZE)
         cv2.imshow("Network visualization", network_image)
         cv2.waitKey(0)
     else:
