@@ -132,9 +132,11 @@ namespace NEAT {
 
         void Input(std::vector<double> &a_Inputs);
 
-        int GetConnectionsQty();
+        int NumConnections();
 
-        int GetNeuronsQty();
+        int NumNeurons();
+
+        int NumHiddenNeurons();
 
 #ifdef USE_BOOST_PYTHON
 

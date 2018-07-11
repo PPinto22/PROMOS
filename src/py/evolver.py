@@ -446,8 +446,7 @@ class Evolver:
         self.gen_eval_time = time_diff
 
         self.gen_connections = [e.genome_connections for e in evaluation_list]
-        self.gen_neurons = [e.genome_neurons - self.train_data.n_inputs - self.train_data.n_outputs
-                            for e in evaluation_list]
+        self.gen_neurons = [e.genome_neurons for e in evaluation_list]
         self.save_evaluations(evaluation_list)
         self.update_best_list(evaluation_list)
 

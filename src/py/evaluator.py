@@ -102,10 +102,10 @@ class Evaluator:
 
         return GenomeEvaluation(genome=genome if include_genome else None,
                                 fitness=fitness, fitness_test=fitness_test,
-                                genome_neurons=genome.NumNeurons() if genome is not None else None,
+                                genome_neurons=genome.NumHiddenNeurons() if genome is not None else None,
                                 genome_connections=genome.NumLinks() if genome is not None else None,
-                                neurons=net.GetNeuronsQty() if net is not None else None,
-                                connections=net.GetConnectionsQty() if net is not None else None,
+                                neurons=net.NumHiddenNeurons() if net is not None else None,
+                                connections=net.NumConnections() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
 

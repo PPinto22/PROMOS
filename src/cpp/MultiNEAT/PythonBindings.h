@@ -145,15 +145,16 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
             .def("Input", &NeuralNetwork::Input)
             .def("Output", &NeuralNetwork::Output)
-            
+
             .def("AddNeuron", &NeuralNetwork::AddNeuron)
             .def("AddConnection", &NeuralNetwork::AddConnection)
             .def("SetInputOutputDimentions", &NeuralNetwork::SetInputOutputDimentions)
 
             .def("GetTotalConnectionLength", &NeuralNetwork::GetTotalConnectionLength)
 
-            .def("GetConnectionsQty", &NeuralNetwork::GetConnectionsQty)
-            .def("GetNeuronsQty", &NeuralNetwork::GetNeuronsQty)
+            .def("NumConnections", &NeuralNetwork::NumConnections)
+            .def("NumNeurons", &NeuralNetwork::NumNeurons)
+            .def("NumHiddenNeurons", &NeuralNetwork::NumHiddenNeurons)
 
 
             .def_readwrite("neurons", &NeuralNetwork::m_neurons)
@@ -167,7 +168,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 ///////////////////////////////////////////////////////////////////
 
     //def("GetRandomActivation", &GetRandomActivation);
-    
+
     class_<LinkGene>("LinkGene", init<>())
             .def_readwrite("FromNeuronID", &LinkGene::m_FromNeuronID)
             .def_readwrite("ToNeuronID", &LinkGene::m_ToNeuronID)
@@ -194,6 +195,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def(init<const Genome&>())
 
             .def("NumNeurons", &Genome::NumNeurons)
+            .def("NumHiddenNeurons", &Genome::NumHiddenNeurons)
             .def("NumLinks", &Genome::NumLinks)
             .def("NumInputs", &Genome::NumInputs)
             .def("NumOutputs", &Genome::NumOutputs)
@@ -287,7 +289,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def_readwrite("m_max_weight_and_bias", &Substrate::m_max_weight_and_bias)
             .def_readwrite("m_min_time_const", &Substrate::m_min_time_const)
             .def_readwrite("m_max_time_const", &Substrate::m_max_time_const)
-            
+
             .def_readwrite("m_input_coords", &Substrate::m_input_coords )
             .def_readwrite("m_hidden_coords", &Substrate::m_hidden_coords)
             .def_readwrite("m_output_coords", &Substrate::m_output_coords)
@@ -501,7 +503,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
     class_< std::vector<float> >("FloatsList")
             .def(vector_indexing_suite< std::vector<float> >() )
             ;
-            
+
     class_< std::vector< std::vector<float> > >("FloatsList2D")
             .def(vector_indexing_suite< std::vector< std::vector<float> > >() )
             ;
@@ -509,7 +511,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
     class_< std::vector<int> >("IntsList")
             .def(vector_indexing_suite< std::vector<int> >() )
             ;
-            
+
     class_< std::vector< std::vector<int> > >("IntsList2D")
             .def(vector_indexing_suite< std::vector< std::vector<int> > >() )
             ;

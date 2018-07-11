@@ -205,6 +205,9 @@ namespace NEAT
         unsigned int NumNeurons() const
         { return static_cast<unsigned int>(m_NeuronGenes.size()); }
 
+        unsigned int NumHiddenNeurons() const
+        { return static_cast<unsigned int>(m_NeuronGenes.size() - m_NumInputs - m_NumOutputs); }
+
         unsigned int NumLinks() const
         { return static_cast<unsigned int>(m_LinkGenes.size()); }
 
