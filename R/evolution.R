@@ -135,7 +135,7 @@ dev.off()
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
 gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
   geom_smooth(fill=gsmooth_fill) +
-  labs(x="Generation", y=fit_label, col='') +
+  labs(x="Generation", y=FITNESS_FUNC, col='') +
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
@@ -147,7 +147,7 @@ dev.off()
 png(filename = paste(OUT_DIR, 'test_fit_line_per_gen.png', sep=''))
 gg_test_fit_line <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
   geom_line() +
-  labs(x="Generation", y=fit_label, col='') +
+  labs(x="Generation", y=FITNESS_FUNC, col='') +
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
@@ -160,7 +160,7 @@ png(filename = paste(OUT_DIR, 'fits_per_gen.png', sep=''), width = 900, height =
 gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_best)) +
   geom_smooth(fill=gsmooth_fill) +
   facet_wrap(~train_or_test) +
-  labs(x="Generation", y=fit_label, col='') +
+  labs(x="Generation", y=FITNESS_FUNC, col='') +
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal() +

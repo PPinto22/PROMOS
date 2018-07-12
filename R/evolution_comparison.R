@@ -94,7 +94,7 @@ dev.off()
 png(filename = paste(OUT_DIR, 'best_test_fit_by_gens.png', sep=''))
 gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) + 
   geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill) +
-  labs(x="Generation", y=fit_label, col=SERIES_LABEL) +
+  labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
@@ -121,4 +121,15 @@ gg_mean_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   theme_minimal()
 gg_mean_connections_gen <- add_window_vlines(gg_mean_connections_gen)
 print(gg_mean_connections_gen)
+dev.off()
+
+# mean complexity (neurons) over generations
+png(filename = paste(OUT_DIR, 'neurons_mean_by_gens.png', sep=''))
+gg_mean_neurons_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  geom_line(aes(y=neurons_mean, col=run_type)) +
+  labs(x="Generation", y="Neurons", col=SERIES_LABEL) + 
+  scale_color_brewer(palette = 'Set2') +
+  theme_minimal()
+gg_mean_neurons_gen <- add_window_vlines(gg_mean_neurons_gen)
+print(gg_mean_neurons_gen)
 dev.off()
