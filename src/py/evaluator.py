@@ -251,6 +251,6 @@ if __name__ == '__main__':
     data = Data(args.data_file)
     subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
 
-    Evaluator.setup(data.size())
+    Evaluator.setup(data)
     evaluation = Evaluator.evaluate(genome, FitFunction.AUC, data)
     print(evaluation.fitness)
