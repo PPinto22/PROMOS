@@ -1,6 +1,7 @@
 import MultiNEAT as neat
 import argparse
 import datetime
+import os
 from collections import namedtuple
 
 import numpy as np
@@ -41,6 +42,20 @@ def mult(l):
     for v in l:
         m *= v
     return m
+
+
+def xor(x, y):
+    return bool(x) ^ bool(y)
+
+
+def make_dir(dir_path=None, file_path=None):
+    assert xor(dir_path is not None, file_path is not None)
+
+    if file_path is not None:
+        dir_path, _ = os.path.split(file_path)
+
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
 
 
 def time(f, as_microseconds=False):

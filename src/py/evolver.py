@@ -257,8 +257,7 @@ class Evolver:
         if self.options.out_dir is None:
             raise ValueError('out_dir is None')
 
-        if not os.path.exists(self.options.out_dir):
-            os.makedirs(self.options.out_dir)
+        util.make_dir(self.options.out_dir)
 
     def get_out_file_path(self, suffix, include_window=True):
         if self.options.out_dir is None:

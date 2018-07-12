@@ -427,4 +427,5 @@ if __name__ == '__main__':
         cv2.imshow("Network visualization", network_image)
         cv2.waitKey(0)
     else:
+        util.make_dir(file_path=args.out_file)
         cv2.imwrite(args.out_file, network_image)
