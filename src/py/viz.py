@@ -228,7 +228,7 @@ else:
 
 
     def DrawPhenotype(image, rect, nn, neuron_radius=10,
-                      max_line_thickness=3, substrate=False):
+                      max_line_thickness=5, substrate=False):
         for i, n in enumerate(nn.neurons):
             nn.neurons[i].x = 0
             nn.neurons[i].y = 0
@@ -308,7 +308,7 @@ else:
             thickness = Clamp(thickness, 1, max_line_thickness)
 
             w = Scale(abs(conn.weight), 0.0, max_weight, 0.0, 1.0)
-            w = Clamp(w, 0.75, 1.0)
+            w = Clamp(w, 0.9, 1.0)
 
             if conn.recur_flag:
                 if conn.weight < 0:
@@ -371,15 +371,16 @@ else:
                 cv2.circle(image, pt, neuron_radius, (0, 0, 0), thickness=2)  # outline
             elif neuron.type == NeuronType.HIDDEN:
                 cv2.circle(image, pt, int(neuron_radius * a), clr, thickness=-1)  # filled
-                cv2.circle(image, pt, neuron_radius, (127, 127, 127), thickness=2)  # outline
+                cv2.circle(image, pt, neuron_radius, (50, 50, 50), thickness=2)  # outline
             elif neuron.type == NeuronType.OUTPUT:
                 cv2.circle(image, pt, int(neuron_radius * a), clr, thickness=-1)  # filled first
-                cv2.circle(image, pt, neuron_radius, (255, 255, 0), thickness=2)  # outline
+                cv2.circle(image, pt, neuron_radius, (30, 105, 210), thickness=2)  # outline
 
 
 # More general one that returns a NumPy image
-def Draw(x, size=(500, 500), padding=0):
+def Draw(x, size, padding=0):
     img = np.zeros((size[0], size[1], 3), dtype=np.uint8)
+    img += 255
 
     p0x, p0y = padding, padding
     p1x, p1y = size[0] - 2 * padding, size[1] - 2 * padding
@@ -403,9 +404,9 @@ def parse_args():
                         help='path to a substrate; required if method is hyperneat or eshyperneat')
     parser.add_argument('-o', '--output', dest='out_file', metavar='FILE', default=None,
                         help='save image to FILE')
-    parser.add_argument('-W', '--width', dest='width', metavar='PX', type=int, default=500,
+    parser.add_argument('-W', '--width', dest='width', metavar='PX', type=int, default=400,
                         help='image width in pixels')
-    parser.add_argument('-H', '--height', dest='height', metavar='PX', type=int, default=500,
+    parser.add_argument('-H', '--height', dest='height', metavar='PX', type=int, default=400,
                         help='image height in pixels')
     # parser.add_argument('-P', '--padding', dest='padding', metavar='PX', type=int, default=20,
     #                     help='image padding in pixels')
