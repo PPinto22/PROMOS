@@ -40,7 +40,7 @@ def write_predictions(inputs, targets, predictions, file_name, window=None, incl
         header = (['window'] if window is not None else []) + \
                  (data.input_labels if include_inputs else []) + [data.target_label] + ['prediction']
         writer.writerow(header)
-        for inputs, target, pred in zip(data.inputs, data.targets, predictions):
+        for inputs, target, pred in zip(inputs, targets, predictions):
             row = ([window] if window is not None else []) + \
                   (list(inputs) if include_inputs else []) + [target] + [pred]
             writer.writerow(row)
