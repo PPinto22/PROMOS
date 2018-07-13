@@ -24,7 +24,7 @@ def parse_args():
                         help='Test sliding window width in hours')
     parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
                         help='Sliding window shift in hours')
-    parser.add_argument('--no-inputs', dest='inputs', action='store_false')
+    parser.add_argument('--no-inputs', dest='inputs', action='store_false', help='Do not save input variables to file')
 
     args = parser.parse_args()
     return args
@@ -44,7 +44,6 @@ def write_predictions(inputs, targets, predictions, file_name, window=None, incl
             row = ([window] if window is not None else []) + \
                   (list(inputs) if include_inputs else []) + [target] + [pred]
             writer.writerow(row)
-
 
 if __name__ == '__main__':
     args = parse_args()

@@ -7,6 +7,7 @@ import multiprocessing.sharedctypes
 import random
 from enum import Enum
 from functools import partial
+import matplotlib.pyplot as plt
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
@@ -21,7 +22,7 @@ class GenomeEvaluation:
     def __init__(self, fitness, genome=None, fitness_adj=None, fitness_test=None,
                  genome_neurons=None, genome_connections=None,
                  neurons=None, connections=None, generation=None, window=None,
-                 global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None):
+                 global_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None, **extra):
         self.genome = genome
         self.genome_id = genome.GetID() if genome is not None else -1
         self.fitness = fitness
@@ -39,6 +40,8 @@ class GenomeEvaluation:
         self.pred_avg_time = pred_avg_time
         self.fit_time = fit_time
         self.eval_time = sum(x for x in (build_time, pred_time, fit_time) if x is not None)
+        for key, value in extra.items():
+            self.__setattr__(key, value)
 
     def set_genome(self, genome):
         self.genome = genome
@@ -97,7 +100,7 @@ class Evaluator:
     @staticmethod
     def create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
                                  initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
-                                 include_genome=False, **kwargs):
+                                 include_genome=False, extra={}, **kwargs):
         global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
         return GenomeEvaluation(genome=genome if include_genome else None,
@@ -107,7 +110,7 @@ class Evaluator:
                                 neurons=net.NumHiddenNeurons() if net is not None else None,
                                 connections=net.NumConnections() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
-                                pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time)
+                                pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time, **extra)
 
     @staticmethod
     def predict(net, inputs):
@@ -135,16 +138,20 @@ class Evaluator:
         return predictions
 
     @staticmethod
-    def _evaluate_auc(targets, predictions, length=None):
+    def _evaluate_auc(targets, predictions, length=None, include_roc=False, **kwargs):
         if length is not None:
             targets = targets[:length]
 
         fpr, tpr, thresholds = roc_curve(targets, predictions)
         roc_auc = auc(fpr, tpr)
-        return roc_auc
+
+        if include_roc:
+            return roc_auc, {'fpr': fpr, 'tpr': tpr, 'thresholds': thresholds}
+        else:
+            return roc_auc
 
     @staticmethod
-    def _evaluate_random(*args):
+    def _evaluate_random(*args, **kwargs):
         fitness = np.random.normal(0.5, 0.1)
         fitness = min(fitness, 1.0)  # Maximum of 1
         fitness = max(fitness, 0.0)  # Minimum of 0
@@ -159,8 +166,13 @@ class Evaluator:
         pred_time, predictions = util.time(lambda: Evaluator._predict(net, Evaluator._inputs, size[0], size[1]),
                                            as_microseconds=True)
         pred_avg_time = pred_time / size[0]
-        fit_time, fitness = util.time(lambda: evaluator(Evaluator._targets, predictions, size[0]),
+        fit_time, fitness = util.time(lambda: evaluator(Evaluator._targets, predictions, size[0], **kwargs),
                                       as_microseconds=True)
+        if isinstance(fitness, tuple):
+            extra = fitness[1]
+            fitness = fitness[0]
+        else:
+            extra = {}
 
         predictions_test = Evaluator._predict(net, Evaluator._test_inputs, test_size[0], test_size[1]) \
             if test_size is not None else None
@@ -169,7 +181,8 @@ class Evaluator:
 
         evaluation = Evaluator.create_genome_evaluation(genome, fitness, net=net, fitness_test=fitness_test,
                                                         build_time=build_time, pred_time=pred_time,
-                                                        pred_avg_time=pred_avg_time, fit_time=fit_time, **kwargs)
+                                                        pred_avg_time=pred_avg_time, fit_time=fit_time,
+                                                        extra=extra, **kwargs)
         if adjuster is not None:
             evaluation.fitness_adj = adjuster.get_adjusted_fitness(evaluation)
 
@@ -248,9 +261,30 @@ def parse_args():
                         help='Test sliding window width in hours')
     parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
                         help='Sliding window shift in hours')
+    parser.add_argument('--plot', dest='plot', action='store_true', help='Show a visualisation')
 
     args = parser.parse_args()
     return args
+
+
+def draw_roc(evaluation, window=None, wait_input=True):
+    fig = plt.gcf()
+    fig.canvas.set_window_title('ROC Curve {}'.format("(Window {})".format(window)) if window is not None else '')
+    plt.clf()
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.005])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.plot(evaluation.fpr, evaluation.tpr, color='darkorange',
+             lw=2, label='ROC Curve (area = %.2f)' % evaluation.fitness)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.title('ROC Curve {}'.format("(Window {})".format(window)) if window is not None else '')
+    plt.legend(loc="lower right")
+    plt.draw()
+    if wait_input:
+        plt.waitforbuttonpress()
+    else:
+        plt.pause(0.001)
 
 
 if __name__ == '__main__':
@@ -264,10 +298,16 @@ if __name__ == '__main__':
                            file_path=args.data_file) if args.width is not None else None
     if slider is None:
         Evaluator.setup(data)
-        evaluation = Evaluator.evaluate(genome, fit_func, data)
+        evaluation = Evaluator.evaluate(genome, fit_func, data, include_roc=args.plot)
         print(evaluation.fitness)
+        if args.plot:
+            if fit_func is FitFunction.AUC:
+                draw_roc(evaluation)
     else:
         for i, (train_data, test_data) in enumerate(slider):
             Evaluator.setup(test_data)
-            evaluation = Evaluator.evaluate(genome, fit_func, test_data)
-            print("Window {}/{}: {}".format(i+1, slider.n_windows, evaluation.fitness))
+            evaluation = Evaluator.evaluate(genome, fit_func, test_data, include_roc=args.plot)
+            print("Window {}/{}: {}".format(i + 1, slider.n_windows, evaluation.fitness))
+            if args.plot:
+                if fit_func is FitFunction.AUC:
+                    draw_roc(evaluation, window=i + 1, wait_input=i + 1 == slider.n_windows)
