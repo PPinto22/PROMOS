@@ -246,7 +246,7 @@ class SlidingWindow(Data):
         self.test_width = test_width if test_width is not None else 0
         assert test_width >= 0
         assert all(x > 0 for x in (width, shift))
-        assert test_width < width
+        assert test_width <= width
 
         super().__init__(**kwargs)
 

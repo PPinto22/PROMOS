@@ -14,7 +14,7 @@ from sklearn.metrics import roc_curve, auc
 import substrate
 import util
 from bloat import FitnessAdjuster
-from data import Data
+from data import Data, SlidingWindow
 
 
 class GenomeEvaluation:
@@ -238,8 +238,16 @@ def parse_args():
     methods = ['neat', 'hyperneat', 'eshyperneat']
     parser.add_argument('-m', '--method', dest='method', metavar='M', choices=methods, default='neat',
                         help='which algorithm was used to generate the network: ' + ', '.join(methods))
+    parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
+                        help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
     parser.add_argument('-s', '--substrate', dest='substrate_file', metavar='S', default=None,
                         help='path to a substrate; required if method is hyperneat or eshyperneat')
+    parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.uint, default=None,
+                        help='Sliding window width (train + test) in hours')
+    parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.uint, default=None,
+                        help='Test sliding window width in hours')
+    parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
+                        help='Sliding window shift in hours')
 
     args = parser.parse_args()
     return args
@@ -248,9 +256,18 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     genome = neat.Genome(args.genome_file)
+    fit_func = FitFunction(args.evaluator)
     data = Data(args.data_file)
     subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
 
-    Evaluator.setup(data)
-    evaluation = Evaluator.evaluate(genome, FitFunction.AUC, data)
-    print(evaluation.fitness)
+    slider = SlidingWindow(args.width, args.shift, args.test_width,
+                           file_path=args.data_file) if args.width is not None else None
+    if slider is None:
+        Evaluator.setup(data)
+        evaluation = Evaluator.evaluate(genome, fit_func, data)
+        print(evaluation.fitness)
+    else:
+        for i, (train_data, test_data) in enumerate(slider):
+            Evaluator.setup(test_data)
+            evaluation = Evaluator.evaluate(genome, fit_func, test_data)
+            print("Window {}/{}: {}".format(i+1, slider.n_windows, evaluation.fitness))
