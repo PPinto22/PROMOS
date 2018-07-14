@@ -1,13 +1,12 @@
-# install.packages("rstudioapi")
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+INPUT <- '../data/2weeks/best_pcp.csv'
+OUT_DIR <- '../data/2weeks/'
+OUT_ID <- 'best_pcp'
+OUT_FILES <- paste( OUT_DIR, OUT_ID, c('_train', '_val', '_test'), '.csv', sep='' )
 PROBS <- c(0.6, 0.2, 0.2)
-INPUT <- '../data/2weeks/test.csv'
-OUT_DIR <- "../data/2weeks/"
 
-OUT_FILES <- paste( OUT_DIR, c("test_train", "test_val", "test_test"), ".csv", sep='' )
-
-data <- read.csv(INPUT, header = TRUE, sep = ",")
+data <- read.csv(INPUT, header = TRUE, sep = ',')
 
 samples_idx = sample(length(PROBS), nrow(data), replace=TRUE, prob=PROBS)
 samples = setNames(split(data, samples_idx), OUT_FILES)

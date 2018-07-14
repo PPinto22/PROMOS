@@ -1,11 +1,12 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 library(data.table)
 library(scales)
+library(pROC)
 source('util.R')
 
 # CONFIG
-PREDS_FILE <- '../results/predictions.csv'
-OUT_DIR <- add_trailing_slash('out/predictions')
+PREDS_FILE <- '../results/predictions_mut_neurons.csv'
+OUT_DIR <- add_trailing_slash('out/predictions_mut_neurons')
 
 # SETUP
 preds_dt <- data.table(read.csv(file=PREDS_FILE, header=TRUE, sep=','))
@@ -16,6 +17,10 @@ colnames(target_freq) <- c("target", "frequency")
 # OUTPUTS
 # Create OUT_DIR
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
+
+# AUC
+roc_obj <- roc(preds_dt$target, preds_dt$prediction)
+auc(roc_obj)
 
 # Target histogram
 png(filename = paste(OUT_DIR, 'target_pie.png', sep=''))

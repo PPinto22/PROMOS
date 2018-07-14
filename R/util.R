@@ -67,6 +67,13 @@ add_trailing_slash <- function(s){
   s
 }
 
+append_str <- function(s, sufix){
+  if(!is.null(s) && s != ''){
+    s <- paste(s, sufix, sep='')
+  }
+  s
+}
+
 add_window_vlines <- function(gg){
   if(has_windows){
     gg <- gg + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
