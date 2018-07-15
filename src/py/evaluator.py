@@ -7,7 +7,10 @@ import multiprocessing.sharedctypes
 import random
 from enum import Enum
 from functools import partial
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
