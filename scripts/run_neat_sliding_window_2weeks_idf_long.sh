@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf.csv"
-id="bloat_mut"
-options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness -b ../params/bloat_mut.cfg"
+id="sw_2wks_idf_long"
+options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g1500 -s2500 -p10 -W120 -w24 -S24 --test-fitness"
 runs=4
 parallel=4
 

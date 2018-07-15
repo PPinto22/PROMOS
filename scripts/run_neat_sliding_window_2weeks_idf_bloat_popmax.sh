@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf.csv"
-id="hn_2weeks_idf"
-options="-P ../params/irace2.txt -o ../results/${id}/ -m hyperneat -x0 -g750 -s2500 -p10 -W120 -w24 -S24 --test-fitness"
+id="sw_2wks_idf_popmax"
+options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g750 -s2500 -p10 -W120 -w24 -S24 --test-fitness -b ../params/bloat_fit_popmax.cfg"
 runs=4
 parallel=4
 

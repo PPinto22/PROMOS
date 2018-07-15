@@ -1,7 +1,7 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/data_train.csv"
-options="-t ../data/data_test.csv -o ../results/TEMP -m neat -T 30 -p 54"
+args="../data/week1_best/train.csv"
+options="-t ../data/data_test.csv -o ../results/sampling -m neat -T 30 -p 54"
 
 # Do 30 runs
 for i in {1..30} 

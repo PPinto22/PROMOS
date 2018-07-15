@@ -1,9 +1,9 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf.csv"
-id="bloat_popmax_long"
-options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g1500 -s2500 -p10 -W120 -w24 -S24 --test-fitness -b ../params/bloat_fit_popmax.cfg"
-runs=4
+id="sw_2wks_idf_balanced_mut"
+options="-P ../params/irace2_balanced.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness"
+runs=8
 parallel=4
 
 for i in $(seq 1 $runs)
