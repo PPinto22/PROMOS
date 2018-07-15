@@ -15,8 +15,8 @@ DATE <- "date_added_utc"
 # Outputs
 OUT_DIR <- add_trailing_slash('../data/2weeks')
 OUT_ID <- append_str('best', '_')
-IDF <- FALSE
-PCP <- TRUE
+OUT_IDF <- FALSE
+OUT_PCP <- TRUE
 
 # Read data
 # If data is separated by rows
@@ -84,7 +84,7 @@ PCP <- function(f, percentage = 0.05)
 dir.create(file.path(OUT_DIR), recursive=TRUE, showWarnings=FALSE)
 
 # Inverse document frequency
-if(IDF){
+if(OUT_IDF){
   idf_dt <- data.table::copy(dt)
   idf_dt[, (cols) := lapply(.SD, idfDeep), .SDcols = cols]
   write.table(idf_dt, file = paste(OUT_DIR, OUT_ID, 'idf.csv', sep=''), sep=',', row.names = FALSE)
@@ -93,7 +93,7 @@ if(IDF){
 # PCP + One Hot: idapplication, idoperator, idpartner, idcampaign, country
 # One Hot: idaffmanager, idbrowser, idverticaltype, regioncontinent, accmanager
 # IDF: city
-if(PCP){
+if(OUT_PCP){
   # sapply(dt, function(x){length(levels(x))})
   pcp_dt <- data.table::copy(dt)
   
