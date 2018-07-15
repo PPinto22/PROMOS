@@ -7,7 +7,7 @@ library(dummies)
 source('util.R')
 
 # Inputs
-INPUT <- '../data/2weeks/ColetasPROMOSBESTTreated2018-06-13_TEMP.json'
+INPUT <- '../data/2weeks/ColetasPROMOSBESTTreated2018-06-13.json'
 TARGET <- "target"
 POSITIVE_CLASS <- "Sale"
 DATE <- "date_added_utc"
