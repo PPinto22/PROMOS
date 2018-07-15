@@ -7,7 +7,7 @@ library(dummies)
 source('util.R')
 
 # Inputs
-INPUT <- '../data/2weeks/ColetasPROMOSBESTTreated2018-06-13.json'
+INPUT <- '../data/2weeks/ColetasPROMOSBESTTreated2018-06-13_TEMP.json'
 TARGET <- "target"
 POSITIVE_CLASS <- "Sale"
 DATE <- "date_added_utc"
@@ -19,7 +19,13 @@ IDF <- FALSE
 PCP <- TRUE
 
 # Read data
-dt <- as.data.table(jsonlite::fromJSON(INPUT))
+# If data is separated by rows
+json_txt <- readLines(INPUT)
+json_formatted <- paste('[', paste(json_txt, collapse=','), ']', sep='')
+dt <- as.data.table(jsonlite::fromJSON(json_formatted))
+# If data is valid JSON
+# dt <- as.data.table(jsonlite::fromJSON(INPUT))
+
 dt$id <- NULL
 
 # Replace empty cells with the keyword EMPTY
