@@ -13,7 +13,7 @@ except:
     pass
 
 import numpy as np
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, f1_score
 
 import substrate
 import util
@@ -57,11 +57,14 @@ class GenomeEvaluation:
 
 class FitFunction(Enum):
     AUC = 'auc'
+    F1 = 'f1'
     RANDOM = 'random'
 
     def get_evaluator(self):
         if self is FitFunction.AUC:
             return Evaluator._evaluate_auc
+        elif self is FitFunction.F1:
+            return Evaluator._evaluate_f1
         elif self is FitFunction.RANDOM:
             return Evaluator._evaluate_random
 
@@ -141,9 +144,8 @@ class Evaluator:
         return predictions
 
     @staticmethod
-    def _evaluate_auc(targets, predictions, length=None, include_roc=False, **kwargs):
-        if length is not None:
-            targets = targets[:length]
+    def _evaluate_auc(targets, predictions, length, include_roc=False, **kwargs):
+        targets = targets[:length]
 
         fpr, tpr, thresholds = roc_curve(targets, predictions)
         roc_auc = auc(fpr, tpr)
@@ -152,6 +154,14 @@ class Evaluator:
             return roc_auc, {'fpr': fpr, 'tpr': tpr, 'thresholds': thresholds}
         else:
             return roc_auc
+
+    @staticmethod
+    def _evaluate_f1(targets, predictions, length, **kwargs):
+        targets = targets[:length]
+
+        predictions_round = predictions.round()
+        f1 = f1_score(targets, predictions_round)
+        return f1
 
     @staticmethod
     def _evaluate_random(*args, **kwargs):
