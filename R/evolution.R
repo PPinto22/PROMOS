@@ -38,6 +38,10 @@ if(has_windows){
   levels(window_times$state) <- c('Evaluation', 'Evolution')
 }
 
+# Eval and EA time per gen
+gen_times <- melt(gens_avg_dt, id.vars = c('generation'), measure.vars = c('eval_time', 'ea_time'), variable.name = 'state', value.name = 'time')
+levels(gen_times$state) <- c('Evaluation', 'Evolution')
+
 # Eval times
 eval_times <- melt(evals_avg_dt, id.vars=c('generation'), measure.vars=c('eval_time','pred_time','fit_time','build_time'), variable.name='state', value.name='time')
 levels(eval_times$state) <- c('Total', 'Predictions', FITNESS_FUNC, 'Build')
@@ -76,18 +80,39 @@ if(has_windows){
   print(gg_windows)
   dev.off()
 
-  # EA vs eval time
-  png(filename = paste(OUT_DIR, 'ea_eval_time.png', sep=''))
-  gg_ea_eval <- ggplot(window_times, aes(x=generations, y=time, fill=state)) +
+  # EA vs eval time (per window)
+  png(filename = paste(OUT_DIR, 'windows_ea_eval_time.png', sep=''))
+  gg_window_ea_eval <- ggplot(window_times, aes(x=generations, y=time, fill=state)) +
     geom_area(position='stack') +
-    labs(x='Generation', y='Time', fill='State') +
+    labs(x='Generation', y='Time (min)', fill='State') +
     scale_fill_brewer(palette = 'Oranges') +
     geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
     scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL) +
     theme_minimal()
-  print(gg_ea_eval)
+  print(gg_window_ea_eval)
   dev.off()
 }
+
+# EA vs eval time (per gen)
+png(filename = paste(OUT_DIR, 'gens_ea_eval_time.png', sep=''))
+gg_gens_ea_eval <- ggplot(gen_times, aes(x=generation, y=time, fill=state)) +
+  geom_area(position='stack') +
+  labs(x='Generation', y='Time', fill='State') +
+  scale_fill_brewer(palette = 'Oranges') +
+  theme_minimal()
+print(gg_gens_ea_eval)
+dev.off()
+
+# EA vs eval time (per gen, smooth)
+png(filename = paste(OUT_DIR, 'gens_ea_eval_time_smooth.png', sep=''))
+gg_gens_ea_eval_smooth <- ggplot(gen_times, aes(x=generation, y=time, fill=state)) +
+  # geom_area(position='stack') +
+  stat_smooth(geom='area') +
+  labs(x='Generation', y='Time', fill='State') +
+  scale_fill_brewer(palette = 'Oranges') +
+  theme_minimal()
+print(gg_gens_ea_eval_smooth)
+dev.off()
 
 # Boxplot average prediction time by discrete generations
 png(filename = paste(OUT_DIR, 'avg_pred_time_by_disc_gen.png', sep=''))
