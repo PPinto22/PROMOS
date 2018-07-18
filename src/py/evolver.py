@@ -140,6 +140,7 @@ class Evolver:
             if self.is_online else None
 
         # Data
+        self.print('Setting up data...')
         if self.is_online:  # Set the first window
             assert self.slider.has_next(), 'The specified window width (-W) is too large for the available data'
             self.train_data, test_data = next(self.slider)
@@ -463,7 +464,7 @@ class Evolver:
         best = self.get_best()
         best_test_str = ' Fitness (test): {:.6f},'.format(self.best_test.fitness) if self.best_test is not None else ''
 
-        self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
+        self.print("Best result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
                    format(best.fitness, best_test_str, best.neurons, best.connections), override=True)
 
     def evaluate_best_test(self):
@@ -475,7 +476,7 @@ class Evolver:
     def termination_sequence(self):
         # Reevaluate the best individuals with full data if sample_size is specified
         if self.options.sample_size != 0 and not self.options.no_reevaluation:
-            self.print("\nReevaluating the best individuals with the whole data-set...")
+            self.print("Reevaluating the best individuals with the whole data-set...")
             self.reevaluate_best_list()
 
         self.evaluate_best_test()  # Test the best individual obtained with the test data-set
@@ -490,6 +491,7 @@ class Evolver:
         self.best_test = None
         self.reset_window_timers()
 
+        self.print('Shifting window...')
         self.train_data, test = next(self.slider)
         if test is not None:
             self.test_data = test
@@ -544,7 +546,7 @@ class Evolver:
     def _gen_start(self):
         window_info = '[Window {}/{}] '.format(self.get_current_window() + 1,
                                                self.slider.n_windows) if self.is_online else ''
-        self.print("\n{}Generation {} ({})".format(window_info, self.generation, self.elapsed_time()))
+        self.print("{}Generation {} ({})".format(window_info, self.generation, self.elapsed_time()))
         self.reset_generation_timers()
 
     def _gen_end(self):

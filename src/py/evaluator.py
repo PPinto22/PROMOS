@@ -81,8 +81,9 @@ class Evaluator:
     @staticmethod
     def setup(data, test_data=None, processes=1, maxtasksperchild=500):
         Evaluator.close()
-        max_size = data.size()
+        max_train_size = data.size()
         max_test_size = test_data.size() if test_data is not None else None
+        max_size = max_train_size if util.mult(max_train_size) > util.mult(max_test_size) else max_test_size
         Evaluator._inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_size))
         Evaluator._targets = mp.sharedctypes.RawArray(ctypes.c_double, max_size[0])
         Evaluator._test_inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_test_size)) \

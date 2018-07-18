@@ -293,7 +293,7 @@ class SlidingWindow(Data):
         assert all(x > 0 for x in (width, shift))
         assert test_width <= width
 
-        super().__init__(timestamps_only=False, **kwargs)
+        super().__init__(timestamps_only=True, **kwargs)
 
         assert self.has_timestamps
 
