@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime, timedelta
+
 import numpy as np
 
 
@@ -8,7 +9,7 @@ class Data:
     # otherwise, it's copied from 'inputs', 'targets' and 'timestamps'
     def __init__(self, file_path=None, input_labels=None, target_label='target', positive_class=1,
                  timestamp_label='timestamp', inputs=None, targets=None, timestamps=None, is_sorted=False,
-                 date_format='%Y-%m-%d %H:%M:%S'):
+                 date_format='%Y-%m-%d %H:%M:%S', timestamps_only=False):
         self.inputs = None  # np.array of input rows
         self.targets = None  # np.array of target values
         self.timestamps = None  # np.array of timestamps
@@ -23,54 +24,61 @@ class Data:
         self.has_timestamps = False  # Does the data contain timestamps
         self.is_sorted = is_sorted  # Is the data sorted by time
         self.date_format = date_format  # Date format to use with datetime.strptime
+        self.timestamps_only = timestamps_only  # Contains timestamps only
 
+        self.file_labels = None  # Header of the csv file
+        self.input_order = None  # Indexes of the inputs columns in the csv file
+        self.target_idx = None  # Index of the target column in the csv file
+        self.timestamp_idx = None  # Index of the timestamp column in the csv file
+
+
+        self.file_path = file_path
         if file_path is not None:
             self._init_from_file(file_path)
         else:
             self._init_from_data(inputs, targets, timestamps)
 
+        self.order = None
         if self.has_timestamps and not is_sorted:
             self.sort()
+
+    def get_csv_reader(self, file):
+        return csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
 
     def _init_from_file(self, file_path):
         self._init_arrays(list)
         with open(file_path, 'r') as file:
-            reader = csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
+            reader = self.get_csv_reader(file)
             # Read fieldnames
-            file_labels = list(next(reader))
-            self.has_timestamps = self.timestamp_label in file_labels
+            self.file_labels = list(next(reader))
+            self.has_timestamps = self.timestamp_label in self.file_labels
             if self.input_labels is None:
-                self.input_labels = [label for label in file_labels if
+                self.input_labels = [label for label in self.file_labels if
                                      label not in [self.target_label, self.timestamp_label]]
-            file_input_target_labels = [x for x in file_labels if x != self.timestamp_label]
+            file_input_target_labels = [x for x in self.file_labels if x != self.timestamp_label]
             if sorted(self.input_labels + [self.target_label]) != sorted(file_input_target_labels):
                 raise ValueError('The specified input or target labels '
                                  'don\'t match those read from {}'.format(file_path))
 
             self.n_inputs = len(self.input_labels)
 
-            # Map the order of labels in _file_labels to that specified in input_labels
-            input_order = np.zeros(self.n_inputs, dtype=int)
+            # Map the order of labels in file_labels to that specified in input_labels
+            self.input_order = np.zeros(self.n_inputs, dtype=int)
             for i, label in enumerate(self.input_labels):
-                input_order[i] = file_labels.index(label)
-            target_idx = file_labels.index(self.target_label)
-            timestamp_idx = file_labels.index(self.timestamp_label) if self.has_timestamps else None
+                self.input_order[i] = self.file_labels.index(label)
+            self.target_idx = self.file_labels.index(self.target_label)
+            self.timestamp_idx = self.file_labels.index(self.timestamp_label) if self.has_timestamps else None
 
             for i, row in enumerate(reader):
                 extra_cols = 2 if self.has_timestamps else 1
                 if len(row) != self.n_inputs + extra_cols:
                     raise ValueError('Row length mismatch')
 
-                # Read row inputs
-                inputs = np.zeros(self.n_inputs)
-                for j in range(len(inputs)):
-                    inputs[j] = row[input_order[j]]
-                # Read target
-                target = row[target_idx]
-                # Read timestamp if exists
-                timestamp = datetime.strptime(row[timestamp_idx], self.date_format) if self.has_timestamps else None
-
-                self._add_row(inputs, target, timestamp, i)
+                if self.timestamps_only:
+                    self.timestamps.append(datetime.strptime(row[self.timestamp_idx], self.date_format))
+                else:
+                    inputs, target, timestamp = self.parse_row(row)
+                    self.add_row(inputs, target, timestamp, i)
 
         self._convert_to_numpy()
 
@@ -90,9 +98,20 @@ class Data:
             if len(input) != self.n_inputs:
                 raise ValueError('Row length mismatch')
 
-            self._add_row(input, target, timestamp, i, use_numpy=True)
+            if self.timestamps_only:
+                self.timestamps[i] = timestamp
+            else:
+                self.add_row(input, target, timestamp, i, use_numpy=True)
 
-    def _add_row(self, input, target, timestamp, row_idx, use_numpy=False):
+    def parse_row(self, row):
+        inputs = np.zeros(self.n_inputs)
+        for j in range(len(inputs)):
+            inputs[j] = row[self.input_order[j]]
+        target = row[self.target_idx]
+        timestamp = datetime.strptime(row[self.timestamp_idx], self.date_format) if self.has_timestamps else None
+        return inputs, target, timestamp
+
+    def add_row(self, input, target, timestamp, row_idx, use_numpy=False):
         if use_numpy:
             self.inputs[row_idx] = input
             self.targets[row_idx] = target
@@ -122,17 +141,21 @@ class Data:
         self.negatives = list()
 
     def _convert_to_numpy(self):
-        self.inputs = np.array(self.inputs)
-        self.targets = np.array(self.targets)
-        self.timestamps = np.array(self.timestamps)
+        if not self.timestamps_only:
+            self.inputs = np.array(self.inputs)
+            self.targets = np.array(self.targets)
+        if self.timestamps:
+            self.timestamps = np.array(self.timestamps)
 
     def sort(self):
         assert self.has_timestamps, "Cannot sort if there are no timestamps."
 
         order = np.argsort(self.timestamps)
-        self.inputs = self.inputs[order]
-        self.targets = self.targets[order]
+        if not self.timestamps_only:
+            self.inputs = self.inputs[order]
+            self.targets = self.targets[order]
         self.timestamps = self.timestamps[order]
+        self.order = order + 1  # Plus 1 for the header
 
         # Recreate the positive and negative lists
         for i, target in enumerate(self.targets):
@@ -143,7 +166,10 @@ class Data:
         return self
 
     def __len__(self):
-        return len(self.inputs)
+        if not self.timestamps_only:
+            return len(self.inputs)
+        else:
+            return len(self.order)
 
     def __getitem__(self, item):
         return self.inputs[item], self.targets[item]
@@ -172,16 +198,16 @@ class Data:
     # Returns the index of the first occurrence of a timestamp that is >= than dt
     def find_first_datetime(self, dt, start=0):
         assert self.is_sorted
-        for i in range(start, len(self)):
+        for i in range(start, len(self.timestamps)):
             if self.timestamps[i] >= dt:
                 return i
         raise ValueError('No datetime >= {} was found'.format(str(dt)))
 
     # Returns the index of the last occurrence of a timestamp that is <= than dt
     def find_last_datetime(self, dt, start=0):
-        assert len(self) > 1
+        assert len(self.timestamps) > 1
         assert self.is_sorted
-        for i in range(start, len(self) - 1):
+        for i in range(start, len(self.timestamps) - 1):
             if self.timestamps[i + 1] > dt:
                 return i + 1
         return len(self.timestamps) - 1
@@ -229,10 +255,29 @@ class Data:
         targets = np.zeros(length)
         timestamps = np.empty(length, dtype='datetime64[s]')
 
-        for i in range(length):
-            inputs[i] = self.inputs[start + i]
-            targets[i] = self.targets[start + i]
-            timestamps[i] = self.timestamps[start + i]
+        if not self.timestamps_only:
+            for i in range(length):
+                inputs[i] = self.inputs[start + i]
+                targets[i] = self.targets[start + i]
+                timestamps[i] = self.timestamps[start + i]
+        else:
+            # Get file line numbers
+            lines = set()
+            for i in range(start, end + 1):
+                lines.add(self.order[i])
+
+            with open(self.file_path, 'r') as file:
+                reader = self.get_csv_reader(file)
+                count = 0
+                for i, row in enumerate(reader):
+                    if i in lines:
+                        line_inputs, line_target, line_timestamp = self.parse_row(row)
+                        inputs[count] = line_inputs
+                        targets[count] = line_target
+                        timestamps[count] = line_timestamp
+                        count += 1
+                    if count >= len(lines):
+                        break
 
         return Data(inputs=inputs, targets=targets, timestamps=timestamps,
                     input_labels=self.input_labels, target_label=self.target_label,
@@ -248,7 +293,7 @@ class SlidingWindow(Data):
         assert all(x > 0 for x in (width, shift))
         assert test_width <= width
 
-        super().__init__(**kwargs)
+        super().__init__(timestamps_only=False, **kwargs)
 
         assert self.has_timestamps
 
@@ -273,7 +318,7 @@ class SlidingWindow(Data):
         t_width = t_end - t_start  # Trial window width
         # While the trial window's width is at least 80% of the regular width, accept it
         while t_width > 0.8 * self.width:
-            # Fix indexes based on the datetime limits
+            # Find indexes based on the datetime limits
             train_start = self.find_first_datetime(t_start)
             if self.has_test:
                 # train_end_dt = t_start + self.train_width
@@ -326,3 +371,11 @@ class SlidingWindow(Data):
 
     def reset(self):
         self._window = 0
+
+
+# if __name__ == '__main__':
+#     slider = SlidingWindow(120, 24, 24, file_path='../../data/2weeks/best_idf_test.csv')
+#
+#     assert slider.has_next(), 'The specified window width (-W) is too large for the available data'
+#     train_data, test_data = next(slider)
+#     print('')
