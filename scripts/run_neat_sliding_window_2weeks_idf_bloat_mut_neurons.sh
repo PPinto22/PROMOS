@@ -2,7 +2,7 @@
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf.csv"
 id="sw_2wks_idf_mut_neurons"
-options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness -b ../params/bloat_mut_neurons.cfg"
+options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness -b ../cfg/bloat_mut_neurons.cfg"
 runs=4
 parallel=4
 
