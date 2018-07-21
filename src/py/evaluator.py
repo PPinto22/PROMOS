@@ -82,14 +82,14 @@ class Evaluator:
     def setup(data, test_data=None, processes=1, maxtasksperchild=500):
         Evaluator.close()
         max_train_size = data.size()
-        max_test_size = test_data.size() if test_data is not None else None
+        max_test_size = test_data.size() if test_data is not None else (0,0)
         max_size = max_train_size if util.mult(max_train_size) > util.mult(max_test_size) else max_test_size
         Evaluator._inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_size))
         Evaluator._targets = mp.sharedctypes.RawArray(ctypes.c_double, max_size[0])
         Evaluator._test_inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_test_size)) \
-            if max_test_size is not None else None
+            if test_data is not None else None
         Evaluator._test_targets = mp.sharedctypes.RawArray(ctypes.c_double, max_test_size[0]) \
-            if max_test_size is not None else None
+            if test_data is not None else None
         Evaluator.multiprocessing = processes > 1
         Evaluator._pool = mp.Pool(processes=processes, maxtasksperchild=maxtasksperchild) \
             if Evaluator.multiprocessing else None
@@ -150,6 +150,7 @@ class Evaluator:
 
         fpr, tpr, thresholds = roc_curve(targets, predictions)
         roc_auc = auc(fpr, tpr)
+        roc_auc = util.zero_if_nan(roc_auc)
 
         if include_roc:
             return roc_auc, {'fpr': fpr, 'tpr': tpr, 'thresholds': thresholds}
@@ -162,6 +163,7 @@ class Evaluator:
 
         predictions_round = predictions.round()
         f1 = f1_score(targets, predictions_round)
+        f1 = util.zero_if_nan(f1)
         return f1
 
     @staticmethod

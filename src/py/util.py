@@ -5,6 +5,7 @@ import os
 from collections import namedtuple
 
 import numpy as np
+import pandas as pd
 
 Neuron = namedtuple('Neuron', 'index activation_function a b bias')
 Connection = namedtuple('Connection', 'source target weight')
@@ -43,9 +44,29 @@ def mult(l):
         m *= v
     return m
 
+def zero_if_nan(x):
+    x = x if not np.isnan(x) else 0
+    return x
+
 
 def xor(x, y):
     return bool(x) ^ bool(y)
+
+
+def get_i(l, i, default=None):
+    try:
+        return l[i]
+    except IndexError:
+        return default
+
+
+def table_dict(column):
+    if isinstance(column, np.ndarray):
+        unique, counts = np.unique(column, return_counts=True)
+        return dict(zip(unique, counts))
+    elif isinstance(column, pd.Series):
+        counts = column.value_counts().to_dict()
+        return counts
 
 
 def make_dir(dir_path=None, file_path=None):

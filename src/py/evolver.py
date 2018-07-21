@@ -12,6 +12,7 @@ from sortedcontainers import SortedListWithKey
 from functools import partial
 
 import params
+from encoder import Encoder
 from evaluator import Evaluator, FitFunction, GenomeEvaluation
 import util
 import bloat
@@ -37,6 +38,8 @@ def parse_args():
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
                         help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
+    parser.add_argument('-E', '--encoder', dest='encoder', metavar='FILE', default=None,
+                        help='configuration file for numeric encoding')
     parser.add_argument('-g', '--generations', dest='generations', type=util.uint, metavar='G', default=None,
                         help='number of generations per run or, if the option -W is specified, per sliding window')
     parser.add_argument('-T', '--time', dest='time_limit', type=util.uint, metavar='MIN', default=None,
@@ -139,15 +142,21 @@ class Evolver:
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
             if self.is_online else None
 
+        # Numeric encoder config
+        self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
+
         # Data
+        # TODO: Encoder
         self.print('Setting up data...')
         if self.is_online:  # Set the first window
             assert self.slider.has_next(), 'The specified window width (-W) is too large for the available data'
             self.train_data, test_data = next(self.slider)
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
         else:  # Use static data
-            self.train_data = Data(self.options.data_file)
+            self.train_data = Data(self.options.data_file) # FIXME
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+        if self.encoder is not None:
+            self.encode_data()
         self.setup_evaluator()
 
         # Substrate for HyperNEAT and ES-HyperNEAT
@@ -184,6 +193,11 @@ class Evolver:
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
         self.best_set = set()  # Set of IDs of the individuals in best_list
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
+
+    def encode_data(self):
+        mapping = self.train_data.encode(self.encoder)
+        if self.test_data is not None:
+            self.test_data.encode_from_mapping(mapping)
 
     def setup_evaluator(self):
         Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes, maxtasksperchild=500)

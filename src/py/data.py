@@ -2,6 +2,14 @@ import csv
 from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
+
+import util
+import encoder
+
+INPUTS_DTYPE = np.float32
+TARGETS_DTYPE = np.uint8
+TIMESTAMPS_DTYPE = 'datetime64[s]'
 
 
 class Data:
@@ -10,11 +18,11 @@ class Data:
     def __init__(self, file_path=None, input_labels=None, target_label='target', positive_class=1,
                  timestamp_label='timestamp', inputs=None, targets=None, timestamps=None, is_sorted=False,
                  date_format='%Y-%m-%d %H:%M:%S', timestamps_only=False):
-        self.inputs = None  # np.array of input rows
-        self.targets = None  # np.array of target values
-        self.timestamps = None  # np.array of timestamps
-        self.positives = None  # list of positive cases indexes
-        self.negatives = None  # list of negative cases indexes
+        self.inputs = list()  # list (converted to np.array later) of input rows
+        self.targets = list()  # list (converted to np.array later) of target values
+        self.timestamps = list()  # list (converted to np.array later) of timestamps
+        self.positives = list()  # list of positive cases indexes
+        self.negatives = list()  # list of negative cases indexes
         self.input_labels = input_labels  # List of input labels; values are stored in the same order as their labels
         self.target_label = target_label  # Label of the target column
         self.timestamp_label = timestamp_label  # Label of the timestamp column
@@ -31,7 +39,6 @@ class Data:
         self.target_idx = None  # Index of the target column in the csv file
         self.timestamp_idx = None  # Index of the timestamp column in the csv file
 
-
         self.file_path = file_path
         if file_path is not None:
             self._init_from_file(file_path)
@@ -39,14 +46,28 @@ class Data:
             self._init_from_data(inputs, targets, timestamps)
 
         self.order = None
-        if self.has_timestamps and not is_sorted:
+        if self.has_timestamps and not self.is_sorted:
             self.sort()
 
-    def get_csv_reader(self, file):
+    def encode_from_mapping(self, mapping):
+        inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
+        inputs_encoded = encoder.Encoder.encode_from_mapping(inputs_pd, mapping)
+        self.input_labels = list(inputs_encoded.columns)
+        self.n_inputs = len(self.input_labels)
+        self.inputs = inputs_encoded.values
+
+    def encode(self, encoder):
+        inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
+        inputs_encoded, mapping = encoder.encode(inputs_pd, return_mapping=True)
+        self.inputs = inputs_encoded.values
+        return mapping
+
+    @staticmethod
+    def get_csv_reader(file):
         return csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
 
     def _init_from_file(self, file_path):
-        self._init_arrays(list)
+        # self._init_arrays(list) TODO: Cleanup
         with open(file_path, 'r') as file:
             reader = self.get_csv_reader(file)
             # Read fieldnames
@@ -93,18 +114,24 @@ class Data:
         except IndexError:
             pass
 
-        self._init_arrays(np.ndarray, rows=length)
-        for i, (input, target, timestamp) in enumerate(zip(inputs, targets, timestamps)):
-            if len(input) != self.n_inputs:
-                raise ValueError('Row length mismatch')
-
-            if self.timestamps_only:
-                self.timestamps[i] = timestamp
-            else:
-                self.add_row(input, target, timestamp, i, use_numpy=True)
+        if not self.timestamps_only:
+            self.inputs = inputs
+            self.targets = targets
+        self.timestamps = timestamps
+        # TODO: cleanup
+        # self._init_arrays(np.ndarray, rows=length, inputs_type=inputs.dtype)
+        # for i, (input, target, timestamp) in enumerate(zip(inputs, targets, timestamps)):
+        #     if len(input) != self.n_inputs:
+        #         raise ValueError('Row length mismatch')
+        #
+        #     if self.timestamps_only:
+        #         self.timestamps[i] = timestamp
+        #     else:
+        #         self.add_row(input, target, timestamp, i, use_numpy=True)
 
     def parse_row(self, row):
-        inputs = np.zeros(self.n_inputs)
+        # inputs = np.zeros(self.n_inputs)
+        inputs = [None] * self.n_inputs
         for j in range(len(inputs)):
             inputs[j] = row[self.input_order[j]]
         target = row[self.target_idx]
@@ -124,32 +151,42 @@ class Data:
         positive_or_negative = self.positives if target == self.positive_class else self.negatives
         positive_or_negative.append(row_idx)
 
-    def _init_arrays(self, list_type, rows=None):
-        if list_type is list:
-            self.inputs = list()
-            self.targets = list()
-            self.timestamps = list()
-        elif list_type is np.ndarray:
-            if rows is None or rows < 0:
-                raise AttributeError('Invalid number of rows: ' + str(rows))
-            self.inputs = np.zeros((rows, self.n_inputs))
-            self.targets = np.zeros(rows)
-            self.timestamps = np.empty(rows, dtype='datetime64[s]')
-        else:
-            raise AttributeError('Invalid type: ' + str(list_type))
-        self.positives = list()
-        self.negatives = list()
+    # TODO: Cleanup
+    # def _init_arrays(self, list_type, rows=None):
+    #     if list_type is list:
+    #         self.inputs = list()
+    #         self.targets = list()
+    #         self.timestamps = list()
+    #     elif list_type is np.ndarray:
+    #         if rows is None or rows < 0:
+    #             raise AttributeError('Invalid number of rows: ' + str(rows))
+    #         self.inputs = np.zeros((rows, self.n_inputs), dtype=Data.INPUTS_DTYPE)
+    #         self.targets = np.zeros(rows, dtype=Data.TARGETS_DTYPE)
+    #         self.timestamps = np.empty(rows, dtype=Data.TIMESTAMPS_DTYPE)
+    #     else:
+    #         raise AttributeError('Invalid type: ' + str(list_type))
+    #     self.positives = list()
+    #     self.negatives = list()
 
     def _convert_to_numpy(self):
+        if self.input_labels is None:
+            self.input_labels = list(range(self.n_inputs))
+
         if not self.timestamps_only:
+            # TODO: Cleanup
+            # self.inputs = np.array(self.inputs)
+            # self.inputs.dtype = [(n, self.inputs.dtype) for n in self.input_labels]
+            # self.inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
+            # FIXME
+            import encoder
+            # encoder.raw(self.inputs_pd['idoperator'])
             self.inputs = np.array(self.inputs)
-            self.targets = np.array(self.targets)
+            self.targets = np.array(self.targets, dtype=TARGETS_DTYPE)
         if self.timestamps:
             self.timestamps = np.array(self.timestamps)
 
     def sort(self):
         assert self.has_timestamps, "Cannot sort if there are no timestamps."
-
         order = np.argsort(self.timestamps)
         if not self.timestamps_only:
             self.inputs = self.inputs[order]
@@ -231,8 +268,10 @@ class Data:
             positives_size = (len(self.positives) * size) // len(self)
             negatives_size = (len(self.negatives) * size) // len(self)
 
-        positives_sample = np.random.choice(self.positives, positives_size, replace=False)
-        negatives_sample = np.random.choice(self.negatives, negatives_size, replace=False)
+        positives_sample = np.random.choice(self.positives, positives_size, replace=False) \
+            if positives_size > 0 else np.array([], dtype=np.uint32)
+        negatives_sample = np.random.choice(self.negatives, negatives_size, replace=False) \
+            if negatives_size > 0 else np.array([], dtype=np.uint32)
 
         total_sample = np.concatenate((positives_sample, negatives_sample))
         total_sample.sort()  # To preserve order
@@ -283,6 +322,16 @@ class Data:
                     input_labels=self.input_labels, target_label=self.target_label,
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
+
+    def save(self, file_path):
+        util.make_dir(file_path=file_path)
+        with open(file_path, 'w') as file:
+            writer = csv.writer(file, csv.QUOTE_NONNUMERIC)
+            header = ([self.timestamp_label] if self.has_timestamps else []) + [self.target_label] + self.input_labels
+            writer.writerow(header)
+            for inputs, target, timestamp in zip(self.inputs, self.targets, self.timestamps):
+                row = ([timestamp] if self.has_timestamps else []) + [target] + list(inputs)
+                writer.writerow(row)
 
 
 class SlidingWindow(Data):
@@ -373,9 +422,7 @@ class SlidingWindow(Data):
         self._window = 0
 
 
-# if __name__ == '__main__':
-#     slider = SlidingWindow(120, 24, 24, file_path='../../data/2weeks/best_idf_test.csv')
-#
-#     assert slider.has_next(), 'The specified window width (-W) is too large for the available data'
-#     train_data, test_data = next(slider)
-#     print('')
+if __name__ == '__main__':
+    data = Data('../../data/2weeks/best_mini.csv')
+
+    data.save('../../data/2weeks/TEMP.csv')
