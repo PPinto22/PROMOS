@@ -194,8 +194,6 @@ class Encoder:
         for i in range(len(df)):
             for j, col_name in enumerate(df.columns):
                 raw_value = df.iat[i, j]
-                if i*len(df.columns)+j == 12:
-                    print('DEBUG')
                 value_map = mapping[col_name][raw_value]
                 df_encoded.iat[i, value_map.column] = value_map.value
         return df_encoded

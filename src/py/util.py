@@ -128,3 +128,16 @@ def range_int(value, lower=0, upper=0):
         return ivalue
     except ValueError:
         raise_arg_type_error(value)
+
+
+def ratio(value):
+    def raise_arg_type_error(s):
+        raise argparse.ArgumentTypeError("{} is not valid ratio".format(value))
+
+    try:
+        fvalue = float(value)
+        if fvalue < 0 or fvalue > 1:
+            raise_arg_type_error(value)
+        return fvalue
+    except ValueError:
+        raise_arg_type_error(value)
