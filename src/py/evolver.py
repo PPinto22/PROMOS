@@ -408,8 +408,9 @@ class Evolver:
             else:  # Add to best_list
                 index = self._add_to_best_list(e)
 
-                self.print("New best (#{})> Fitness: {:.6f}, Neurons: {}, Connections:{}".
-                           format(index, e.fitness, e.neurons, e.connections))
+                self.print("New best (#{})> Fitness: {:.6f}, Test Fitness: {:.6f}, Neurons: {}, Connections:{}".
+                           format(index, e.fitness, e.fitness_test if e.fitness_test is not None else 'NA',
+                                  e.genome_neurons, e.genome_connections))
 
                 # Cap the size of best_list at PopulationSize
                 if len(self.best_list) > self.params.PopulationSize:

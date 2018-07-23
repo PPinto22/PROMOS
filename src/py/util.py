@@ -44,6 +44,7 @@ def mult(l):
         m *= v
     return m
 
+
 def zero_if_nan(x):
     x = x if not np.isnan(x) else 0
     return x
