@@ -65,12 +65,29 @@ class RAW(Encoding):
 
 
 class PCP(Encoding):
-    def __init__(self, percentage=0.05):
-        self.percentage = percentage
+    PRUNE_STR = 'Other'
 
-    @staticmethod
-    def encode(column):
-        raise NotImplementedError  # TODO
+    def __init__(self, percentage=0.05):
+        self.percentage = float(percentage)
+
+    def prune(self, column):
+        N = len(column)
+        frequencies = column.value_counts(ascending=True)
+        prune_limit = N * self.percentage
+        sum = 0
+        to_prune = list()
+        for value, freq in frequencies.items():
+            sum += freq
+            if sum > prune_limit:
+                break
+            to_prune.append(value)
+        column_pruned = column.replace(to_prune, PCP.PRUNE_STR) if to_prune else column
+        return column_pruned
+
+    def encode(self, column):
+        pruned = self.prune(column)
+        one_hot = pd.get_dummies(pruned, prefix=pruned.name)
+        return one_hot
 
     @staticmethod
     def missing_value(length, value):
