@@ -60,6 +60,16 @@ def get_i(l, i, default=None):
         return default
 
 
+def join_str(sep, array):
+    res = ''
+    for s in array:
+        if res == '' and s is not None and s != '':
+            res = str(s)
+        elif s is not None and s != '':
+            res += sep + str(s)
+    return res
+
+
 def table_dict(column):
     if isinstance(column, np.ndarray):
         unique, counts = np.unique(column, return_counts=True)

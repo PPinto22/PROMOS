@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 import util
-import encoder
+import encoder as enc
 
 INPUTS_DTYPE = np.float32
 TARGETS_DTYPE = np.uint8
@@ -53,7 +53,7 @@ class Data:
 
     def encode_from_mapping(self, mapping):
         inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
-        inputs_encoded = encoder.Encoder.encode_from_mapping(inputs_pd, mapping)
+        inputs_encoded = enc.Encoder.encode_from_mapping(inputs_pd, mapping)
         self.input_labels = list(inputs_encoded.columns)
         self.n_inputs = len(self.input_labels)
         self.inputs = inputs_encoded.values
@@ -69,7 +69,6 @@ class Data:
         return csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
 
     def _init_from_file(self, file_path):
-        # self._init_arrays(list) TODO: Cleanup
         with open(file_path, 'r') as file:
             reader = self.get_csv_reader(file)
             # Read fieldnames
@@ -120,16 +119,6 @@ class Data:
             self.inputs = inputs
             self.targets = targets
         self.timestamps = timestamps
-        # TODO: cleanup
-        # self._init_arrays(np.ndarray, rows=length, inputs_type=inputs.dtype)
-        # for i, (input, target, timestamp) in enumerate(zip(inputs, targets, timestamps)):
-        #     if len(input) != self.n_inputs:
-        #         raise ValueError('Row length mismatch')
-        #
-        #     if self.timestamps_only:
-        #         self.timestamps[i] = timestamp
-        #     else:
-        #         self.add_row(input, target, timestamp, i, use_numpy=True)
 
     def parse_row(self, row):
         # inputs = np.zeros(self.n_inputs)
@@ -153,35 +142,11 @@ class Data:
         positive_or_negative = self.positives if target == self.positive_class else self.negatives
         positive_or_negative.append(row_idx)
 
-    # TODO: Cleanup
-    # def _init_arrays(self, list_type, rows=None):
-    #     if list_type is list:
-    #         self.inputs = list()
-    #         self.targets = list()
-    #         self.timestamps = list()
-    #     elif list_type is np.ndarray:
-    #         if rows is None or rows < 0:
-    #             raise AttributeError('Invalid number of rows: ' + str(rows))
-    #         self.inputs = np.zeros((rows, self.n_inputs), dtype=Data.INPUTS_DTYPE)
-    #         self.targets = np.zeros(rows, dtype=Data.TARGETS_DTYPE)
-    #         self.timestamps = np.empty(rows, dtype=Data.TIMESTAMPS_DTYPE)
-    #     else:
-    #         raise AttributeError('Invalid type: ' + str(list_type))
-    #     self.positives = list()
-    #     self.negatives = list()
-
     def _convert_to_numpy(self):
         if self.input_labels is None:
             self.input_labels = list(range(self.n_inputs))
 
         if not self.timestamps_only:
-            # TODO: Cleanup
-            # self.inputs = np.array(self.inputs)
-            # self.inputs.dtype = [(n, self.inputs.dtype) for n in self.input_labels]
-            # self.inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
-            # FIXME
-            import encoder
-            # encoder.raw(self.inputs_pd['idoperator'])
             self.inputs = np.array(self.inputs)
             self.targets = np.array(self.targets, dtype=TARGETS_DTYPE)
         if self.timestamps:
@@ -212,6 +177,9 @@ class Data:
 
     def __getitem__(self, item):
         return self.inputs[item], self.targets[item]
+
+    def __bool__(self):
+        return len(self) > 0
 
     def size(self):
         return len(self.inputs), self.n_inputs
@@ -287,7 +255,8 @@ class Data:
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
 
-    def split(self, probs):
+    def split(self, probs, seed=None):
+        np.random.seed(seed)
         choices = np.random.choice(range(len(probs)), len(self), replace=True, p=probs)
         splits = [[] for key in range(len(probs))]
         for idx, c in enumerate(choices):
@@ -445,7 +414,7 @@ def parse_args():
     parser.add_argument('data_file', help='path to data file to be encoded and/or sampled', metavar='DATA'),
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
                         help='directory where to save output files', metavar='DIR')
-    parser.add_argument('-v', '--val', dest='validation', type=util.ratio, default=0, metavar='RATIO',
+    parser.add_argument('-v', '--val', dest='val', type=util.ratio, default=0, metavar='RATIO',
                         help='use this fraction of the data as a validation data-set')
     parser.add_argument('-t', '--test', dest='test', type=util.ratio, default=0, metavar='RATIO',
                         help='use this fraction of the data as a test data-set')
@@ -460,23 +429,38 @@ def parse_args():
 
     options = parser.parse_args()
 
-    options.id = options.id if options.id is not None else util.get_current_datetime_string()
-    options.out_dir = options.out_dir if options.out_dir != 'NULL' else None
+    assert options.encoder is not None or options.val > 0 or options.test > 0
 
+    util.make_dir(options.out_dir)
     if options.seed is not None:
         random.seed(options.seed)
 
     return options
 
 
-
 if __name__ == '__main__':
+    def file_name(suffix):
+        if not has_split:
+            suffix = 'encoded_data' if options.id is None else None
+
+        return '{}/{}.csv'.format(options.out_dir, util.join_str('_', (options.id, suffix)))
+
+
     options = parse_args()
 
-    # TODO: Finish main for sampling and encoding
-    # data = Data('../../data/2weeks/best_mini.csv')
-    #
-    # train, test, empty = data.split((0.5, 0.5, 0.0))
-    # print(len(train))
-    # print(len(test))
-    # print(len(empty))
+    encoder = enc.Encoder(options.encoder) if options.encoder is not None else None
+    data = Data(options.data_file)
+    train_size = 1 - options.val - options.test
+    has_split = train_size < 1
+
+    train, val, test = data.split((train_size, options.val, options.test), seed=options.seed)
+    if encoder is not None:
+        mapping = train.encode(encoder)
+        val.encode_from_mapping(mapping)
+        test.encode_from_mapping(mapping)
+
+    train.save(file_name('train'))
+    if val:
+        val.save(file_name('val'))
+    if test:
+        test.save(file_name('test'))

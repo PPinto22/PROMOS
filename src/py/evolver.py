@@ -486,7 +486,6 @@ class Evolver:
     def evaluate_best_test(self):
         best = self.get_best()
         if self.test_data is not None:
-            # FIXME This won't work if the test data is larger than the train data
             self.best_test = self.evaluate_test(best.genome)
 
     def termination_sequence(self):

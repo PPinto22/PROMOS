@@ -200,10 +200,3 @@ class Encoder:
 
     def get_mapping(self, raw_df, encoded_df):
         return Mapping(raw_df, encoded_df, self)
-
-
-# if __name__ == '__main__':
-#     e = Encoder('../../cfg/encoder_idf.cfg')
-#     raw_data = data.Data('../../data/2weeks/best_mini.csv')
-#
-#     encoded_inputs = e.encode(raw_data.inputs)
