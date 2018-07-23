@@ -148,14 +148,13 @@ class Evolver:
         self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
 
         # Data
-        # TODO: Encoder
         self.print('Setting up data...')
         if self.is_online:  # Set the first window
             assert self.slider.has_next(), 'The specified window width (-W) is too large for the available data'
             self.train_data, test_data = next(self.slider)
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
         else:  # Use static data
-            self.train_data = Data(self.options.data_file) # FIXME
+            self.train_data = Data(self.options.data_file)
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
         if self.encoder is not None:
             self.encode_data()
@@ -510,6 +509,8 @@ class Evolver:
         self.train_data, test = next(self.slider)
         if test is not None:
             self.test_data = test
+        if self.encoder is not None:
+            self.encode_data()
         self.setup_evaluator()
 
     def should_shift(self):

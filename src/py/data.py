@@ -120,6 +120,10 @@ class Data:
             self.targets = targets
         self.timestamps = timestamps
 
+        for i, target in enumerate(self.targets):
+            positive_or_negative = self.positives if target == self.positive_class else self.negatives
+            positive_or_negative.append(i)
+
     def parse_row(self, row):
         # inputs = np.zeros(self.n_inputs)
         inputs = [None] * self.n_inputs
@@ -277,16 +281,14 @@ class Data:
         assert start >= 0 and end < len(self)
 
         length = end - start + 1
-        inputs = np.zeros((length, self.n_inputs))
-        targets = np.zeros(length)
-        timestamps = np.empty(length, dtype='datetime64[s]')
 
         if not self.timestamps_only:
-            for i in range(length):
-                inputs[i] = self.inputs[start + i]
-                targets[i] = self.targets[start + i]
-                timestamps[i] = self.timestamps[start + i]
+            inputs = self.inputs[start:end]
+            targets = self.targets[start:end]
+            timestamps = self.timestamps[start:end]
         else:
+            inputs, targets, timestamps = list(), list(), list()
+
             # Get file line numbers
             lines = set()
             for i in range(start, end + 1):
@@ -298,12 +300,13 @@ class Data:
                 for i, row in enumerate(reader):
                     if i in lines:
                         line_inputs, line_target, line_timestamp = self.parse_row(row)
-                        inputs[count] = line_inputs
-                        targets[count] = line_target
-                        timestamps[count] = line_timestamp
+                        inputs.append(line_inputs)
+                        targets.append(line_target)
+                        timestamps.append(line_timestamp)
                         count += 1
                     if count >= len(lines):
                         break
+            inputs, targets, timestamps = (np.array(x) for x in (inputs,targets,timestamps))
 
         return Data(inputs=inputs, targets=targets, timestamps=timestamps,
                     input_labels=self.input_labels, target_label=self.target_label,
