@@ -496,7 +496,7 @@ namespace NEAT {
                     m_neurons[k].m_sensitivity_matrix[i][j] = 0;
     }
 
-    void NeuralNetwork::Input(std::vector<double> &a_Inputs) {
+    void NeuralNetwork::Input(const std::vector<double> &a_Inputs) {
         unsigned mx = a_Inputs.size();
         if (mx != m_num_inputs) {
             throw std::invalid_argument( std::string("Number of inputs received (") + to_string(mx) + ") " +
@@ -523,25 +523,25 @@ namespace NEAT {
 #ifdef USE_BOOST_PYTHON
 
     void NeuralNetwork::Input_python_list(const py::list &a_Inputs) {
-        int len = py::len(a_Inputs);
-        std::vector<double> inp;
-        inp.resize(len);
-        for (int i = 0; i < len; i++) {
-            inp[i] = py::extract<double>(a_Inputs[i]);
+        unsigned len = py::len(a_Inputs);
+        if (len != m_num_inputs) {
+            throw std::invalid_argument( std::string("Number of inputs received (") + to_string(len) + ") " +
+                                         "does not match the network's number of inputs (" + to_string(m_num_inputs) + ")." );
         }
-
-        Input(inp);
+        for (int i = 0; i < len; i++) {
+            m_neurons[i].m_activation = py::extract<double>(a_Inputs[i]);
+        }
     }
 
     void NeuralNetwork::Input_numpy(const py::numeric::array &a_Inputs) {
-        int len = py::len(a_Inputs);
-        std::vector<double> inp;
-        inp.resize(len);
-        for (int i = 0; i < len; i++) {
-            inp[i] = py::extract<double>(a_Inputs[i]);
-        }
-
-        Input(inp);
+      unsigned len = py::len(a_Inputs);
+      if (len != m_num_inputs) {
+          throw std::invalid_argument( std::string("Number of inputs received (") + to_string(len) + ") " +
+                                       "does not match the network's number of inputs (" + to_string(m_num_inputs) + ")." );
+      }
+      for (int i = 0; i < len; i++) {
+          m_neurons[i].m_activation = py::extract<double>(a_Inputs[i]);
+      }
     }
 
 #endif
