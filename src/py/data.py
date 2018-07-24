@@ -54,15 +54,18 @@ class Data:
     def encode_from_mapping(self, mapping):
         inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
         inputs_encoded = enc.Encoder.encode_from_mapping(inputs_pd, mapping)
-        self.input_labels = list(inputs_encoded.columns)
-        self.n_inputs = len(self.input_labels)
-        self.inputs = inputs_encoded.values
+        self._update_inputs(inputs_encoded)
 
     def encode(self, encoder):
         inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
         inputs_encoded, mapping = encoder.encode(inputs_pd, return_mapping=True)
-        self.inputs = inputs_encoded.values
+        self._update_inputs(inputs_encoded)
         return mapping
+
+    def _update_inputs(self, df):
+        self.input_labels = list(df.columns)
+        self.n_inputs = len(self.input_labels)
+        self.inputs = df.values
 
     @staticmethod
     def get_csv_reader(file):
@@ -199,12 +202,6 @@ class Data:
             return self.timestamps[0], self.timestamps[-1]
         else:
             return np.amin(self.timestamps), np.amax(self.timestamps)
-
-    def get_num_inputs(self):
-        if self.input_labels is not None:
-            return len(self.input_labels)
-        else:
-            return len(self.inputs[0])
 
     # Returns the index of the first occurrence of a timestamp that is >= than dt
     def find_first_datetime(self, dt, start=0):

@@ -236,7 +236,7 @@ class Evolver:
         seed = random.randint(0, 2147483647) if self.options.seed is None else self.options.seed
 
         if self.options.method == 'neat':
-            g = neat.Genome(0, self.train_data.get_num_inputs(), 0, 1, False, output_act_f, hidden_act_f, 0,
+            g = neat.Genome(0, self.train_data.n_inputs, 0, 1, False, output_act_f, hidden_act_f, 0,
                             self.params, 0)
             pop = neat.Population(g, self.params, True, 1.0, seed)
         elif self.options.method in ['hyperneat', 'eshyperneat']:
@@ -408,7 +408,7 @@ class Evolver:
             else:  # Add to best_list
                 index = self._add_to_best_list(e)
 
-                self.print("New best (#{})> Fitness: {:.6f}, Test Fitness: {:.6f}, Neurons: {}, Connections:{}".
+                self.print("New best (#{})> Fitness: {}, Test Fitness: {}, Neurons: {}, Connections: {}".
                            format(index, e.fitness, e.fitness_test if e.fitness_test is not None else 'NA',
                                   e.genome_neurons, e.genome_connections))
 

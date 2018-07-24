@@ -5,6 +5,7 @@ import pandas as pd
 import math
 import data
 
+
 class EncodingFactory:
     class _EncodingType(Enum):
         RAW = 'raw'
@@ -65,7 +66,8 @@ class RAW(Encoding):
 
 
 class PCP(Encoding):
-    PRUNE_STR = 'Other'
+    OTHERS_STR = 'Other'
+    SEP = '__'
 
     def __init__(self, percentage=0.05):
         self.percentage = float(percentage)
@@ -81,12 +83,29 @@ class PCP(Encoding):
             if sum > prune_limit:
                 break
             to_prune.append(value)
-        column_pruned = column.replace(to_prune, PCP.PRUNE_STR) if to_prune else column
+        column_pruned = column.replace(to_prune, PCP.OTHERS_STR) if to_prune else column
         return column_pruned
+
+    @staticmethod
+    def get_others_col_name(column_name):
+        return column_name + PCP.SEP + PCP.OTHERS_STR
+
+    @staticmethod
+    def feature_split(column_name):
+        split = column_name.split(PCP.SEP)
+        feature = split[0]
+        value = split[1] if len(split) > 1 else None
+        if len(split) > 2:
+            print('Warning: column name \'{}\' is ambiguous and cannot be accurately split into feature and value. '
+                  'Assuming feature = \'{}\', value = \'{}\''.format(column_name, feature, value))
+        return feature, value
 
     def encode(self, column):
         pruned = self.prune(column)
-        one_hot = pd.get_dummies(pruned, prefix=pruned.name)
+        one_hot = pd.get_dummies(pruned, prefix=pruned.name, prefix_sep=PCP.SEP)
+        others_col_name = self.get_others_col_name(column.name)
+        if others_col_name not in one_hot:
+            one_hot[others_col_name] = 0
         return one_hot
 
     @staticmethod
@@ -113,9 +132,13 @@ class ColumnMapping:
             self._direct_mapping(raw_column, encoded_df)
 
     def _pcp_mapping(self, raw_col, encoded_df):
-        # TODO
-        # self.default_column = 'others' column index
-        raise NotImplementedError
+        for i, col_name in enumerate(encoded_df):
+            feature, value = PCP.feature_split(col_name)
+            if feature == raw_col.name:
+                if value == PCP.OTHERS_STR:
+                    self.default_column = i
+                else:
+                    self.values[value] = ValueMapping(1, i)
 
     def _direct_mapping(self, raw_col, encoded_df):
         encoded_col_i = list(encoded_df).index(raw_col.name)
