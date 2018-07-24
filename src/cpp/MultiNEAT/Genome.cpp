@@ -696,7 +696,6 @@ namespace NEAT {
             }
 
             //////////////////////
-
             a_Net.AddConnection(t_c);
         }
 

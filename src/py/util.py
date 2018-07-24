@@ -5,6 +5,7 @@ import os
 from collections import namedtuple
 
 import numpy as np
+import pandas as pd
 
 Neuron = namedtuple('Neuron', 'index activation_function a b bias')
 Connection = namedtuple('Connection', 'source target weight')
@@ -44,8 +45,58 @@ def mult(l):
     return m
 
 
+def zero_if_nan(x):
+    x = x if not np.isnan(x) else 0
+    return x
+
+
 def xor(x, y):
     return bool(x) ^ bool(y)
+
+
+def get_i(l, i, default=None):
+    try:
+        return l[i]
+    except IndexError:
+        return default
+
+
+def soft_sort(to_sort, order):
+    val_idx_map = {value: i for i, value in enumerate(to_sort)}
+    ret = list(to_sort)
+    for i in range(min(len(to_sort), len(order))):
+        old, new = ret[i], order[i]
+        if new != old and new in val_idx_map:
+            new_i = val_idx_map[new]
+            ret[i], ret[new_i] = ret[new_i], ret[i]
+            val_idx_map[old], val_idx_map[new] = new_i, i
+    return ret
+
+
+def join_str(sep, array):
+    res = ''
+    for s in array:
+        if res == '' and s is not None and s != '':
+            res = str(s)
+        elif s is not None and s != '':
+            res += sep + str(s)
+    return res
+
+
+def list_find(list, key):
+    for i, e in enumerate(list):
+        if key(e):
+            return i
+    raise KeyError
+
+
+def table_dict(column):
+    if isinstance(column, np.ndarray):
+        unique, counts = np.unique(column, return_counts=True)
+        return dict(zip(unique, counts))
+    elif isinstance(column, pd.Series):
+        counts = column.value_counts().to_dict()
+        return counts
 
 
 def make_dir(dir_path=None, file_path=None):
@@ -105,5 +156,18 @@ def range_int(value, lower=0, upper=0):
         if ivalue < lower or ivalue > upper:
             raise_arg_type_error(value)
         return ivalue
+    except ValueError:
+        raise_arg_type_error(value)
+
+
+def ratio(value):
+    def raise_arg_type_error(s):
+        raise argparse.ArgumentTypeError("{} is not valid ratio".format(value))
+
+    try:
+        fvalue = float(value)
+        if fvalue < 0 or fvalue > 1:
+            raise_arg_type_error(value)
+        return fvalue
     except ValueError:
         raise_arg_type_error(value)

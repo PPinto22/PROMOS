@@ -5,6 +5,7 @@ build-debug/
 cmake-build*/
 **.so
 **.pyd
+src/py/test.py
 
 ### Python template
 # Byte-compiled / optimized / DLL files

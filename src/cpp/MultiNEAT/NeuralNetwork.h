@@ -130,7 +130,7 @@ namespace NEAT {
         void Flush();     // clears all activations
         void FlushCube(); // clears the sensitivity cube
 
-        void Input(std::vector<double> &a_Inputs);
+        void Input(const std::vector<double> &a_Inputs);
 
         int NumConnections();
 

@@ -1,6 +1,17 @@
+import argparse
 import csv
+import random
 from datetime import datetime, timedelta
+
 import numpy as np
+import pandas as pd
+
+import util
+import encoder as enc
+
+INPUTS_DTYPE = np.float32
+TARGETS_DTYPE = np.uint8
+TIMESTAMPS_DTYPE = 'datetime64[s]'
 
 
 class Data:
@@ -8,12 +19,12 @@ class Data:
     # otherwise, it's copied from 'inputs', 'targets' and 'timestamps'
     def __init__(self, file_path=None, input_labels=None, target_label='target', positive_class=1,
                  timestamp_label='timestamp', inputs=None, targets=None, timestamps=None, is_sorted=False,
-                 date_format='%Y-%m-%d %H:%M:%S'):
-        self.inputs = None  # np.array of input rows
-        self.targets = None  # np.array of target values
-        self.timestamps = None  # np.array of timestamps
-        self.positives = None  # list of positive cases indexes
-        self.negatives = None  # list of negative cases indexes
+                 date_format='%Y-%m-%d %H:%M:%S', timestamps_only=False):
+        self.inputs = list()  # list (converted to np.array later) of input rows
+        self.targets = list()  # list (converted to np.array later) of target values
+        self.timestamps = list()  # list (converted to np.array later) of timestamps
+        self.positives = list()  # list of positive cases indexes
+        self.negatives = list()  # list of negative cases indexes
         self.input_labels = input_labels  # List of input labels; values are stored in the same order as their labels
         self.target_label = target_label  # Label of the target column
         self.timestamp_label = timestamp_label  # Label of the timestamp column
@@ -23,54 +34,91 @@ class Data:
         self.has_timestamps = False  # Does the data contain timestamps
         self.is_sorted = is_sorted  # Is the data sorted by time
         self.date_format = date_format  # Date format to use with datetime.strptime
+        self.timestamps_only = timestamps_only  # Contains timestamps only
 
+        self.file_labels = None  # Header of the csv file
+        self.input_order = None  # Indexes of the inputs columns in the csv file
+        self.target_idx = None  # Index of the target column in the csv file
+        self.timestamp_idx = None  # Index of the timestamp column in the csv file
+
+        self.file_path = file_path
         if file_path is not None:
             self._init_from_file(file_path)
         else:
             self._init_from_data(inputs, targets, timestamps)
 
-        if self.has_timestamps and not is_sorted:
+        self.order = None
+        if self.has_timestamps and not self.is_sorted:
             self.sort()
 
+    def encode_from_mapping(self, mapping):
+        inputs_dt = pd.DataFrame(self.inputs, columns=self.input_labels)
+        inputs_encoded = enc.Encoder.encode_from_mapping(inputs_dt, mapping)
+        self._update_inputs(inputs_encoded)
+
+    # 'soft_order' is a list of column names. Applicable if the encoding produces new columns,
+    # in which case the positions of the columns in the new data-set will match those in 'soft_order', as much as possible
+    # e.g:
+    # soft_order:                [A, B, C, D]
+    # output without soft_order: [A, x, y, C, D]
+    # output with soft_order:    [A, x, C, D, y]
+    def encode(self, encoder, soft_order=None):
+        inputs_dt = pd.DataFrame(self.inputs, columns=self.input_labels)
+        inputs_encoded = encoder.encode(inputs_dt, return_mapping=False)
+        if soft_order is not None:
+            inputs_encoded = self.soft_sort(inputs_encoded, soft_order)
+        mapping = encoder.get_mapping(inputs_dt, inputs_encoded)
+        self._update_inputs(inputs_encoded)
+        return mapping
+
+    @staticmethod
+    def soft_sort(pandas_dt, soft_order):
+        new_order = util.soft_sort(list(pandas_dt), soft_order)
+        sorted_inputs = pandas_dt[new_order]
+        return sorted_inputs
+
+    def _update_inputs(self, df):
+        self.input_labels = list(df.columns)
+        self.n_inputs = len(self.input_labels)
+        self.inputs = df.values
+
+    @staticmethod
+    def get_csv_reader(file):
+        return csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
+
     def _init_from_file(self, file_path):
-        self._init_arrays(list)
         with open(file_path, 'r') as file:
-            reader = csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
+            reader = self.get_csv_reader(file)
             # Read fieldnames
-            file_labels = list(next(reader))
-            self.has_timestamps = self.timestamp_label in file_labels
+            self.file_labels = list(next(reader))
+            self.has_timestamps = self.timestamp_label in self.file_labels
             if self.input_labels is None:
-                self.input_labels = [label for label in file_labels if
+                self.input_labels = [label for label in self.file_labels if
                                      label not in [self.target_label, self.timestamp_label]]
-            file_input_target_labels = [x for x in file_labels if x != self.timestamp_label]
+            file_input_target_labels = [x for x in self.file_labels if x != self.timestamp_label]
             if sorted(self.input_labels + [self.target_label]) != sorted(file_input_target_labels):
                 raise ValueError('The specified input or target labels '
                                  'don\'t match those read from {}'.format(file_path))
 
             self.n_inputs = len(self.input_labels)
 
-            # Map the order of labels in _file_labels to that specified in input_labels
-            input_order = np.zeros(self.n_inputs, dtype=int)
+            # Map the order of labels in file_labels to that specified in input_labels
+            self.input_order = np.zeros(self.n_inputs, dtype=int)
             for i, label in enumerate(self.input_labels):
-                input_order[i] = file_labels.index(label)
-            target_idx = file_labels.index(self.target_label)
-            timestamp_idx = file_labels.index(self.timestamp_label) if self.has_timestamps else None
+                self.input_order[i] = self.file_labels.index(label)
+            self.target_idx = self.file_labels.index(self.target_label)
+            self.timestamp_idx = self.file_labels.index(self.timestamp_label) if self.has_timestamps else None
 
             for i, row in enumerate(reader):
                 extra_cols = 2 if self.has_timestamps else 1
                 if len(row) != self.n_inputs + extra_cols:
                     raise ValueError('Row length mismatch')
 
-                # Read row inputs
-                inputs = np.zeros(self.n_inputs)
-                for j in range(len(inputs)):
-                    inputs[j] = row[input_order[j]]
-                # Read target
-                target = row[target_idx]
-                # Read timestamp if exists
-                timestamp = datetime.strptime(row[timestamp_idx], self.date_format) if self.has_timestamps else None
-
-                self._add_row(inputs, target, timestamp, i)
+                if self.timestamps_only:
+                    self.timestamps.append(datetime.strptime(row[self.timestamp_idx], self.date_format))
+                else:
+                    inputs, target, timestamp = self.parse_row(row)
+                    self.add_row(inputs, target, timestamp, i)
 
         self._convert_to_numpy()
 
@@ -85,14 +133,25 @@ class Data:
         except IndexError:
             pass
 
-        self._init_arrays(np.ndarray, rows=length)
-        for i, (input, target, timestamp) in enumerate(zip(inputs, targets, timestamps)):
-            if len(input) != self.n_inputs:
-                raise ValueError('Row length mismatch')
+        if not self.timestamps_only:
+            self.inputs = inputs
+            self.targets = targets
+        self.timestamps = timestamps
 
-            self._add_row(input, target, timestamp, i, use_numpy=True)
+        for i, target in enumerate(self.targets):
+            positive_or_negative = self.positives if target == self.positive_class else self.negatives
+            positive_or_negative.append(i)
 
-    def _add_row(self, input, target, timestamp, row_idx, use_numpy=False):
+    def parse_row(self, row):
+        # inputs = np.zeros(self.n_inputs)
+        inputs = [None] * self.n_inputs
+        for j in range(len(inputs)):
+            inputs[j] = row[self.input_order[j]]
+        target = row[self.target_idx]
+        timestamp = datetime.strptime(row[self.timestamp_idx], self.date_format) if self.has_timestamps else None
+        return inputs, target, timestamp
+
+    def add_row(self, input, target, timestamp, row_idx, use_numpy=False):
         if use_numpy:
             self.inputs[row_idx] = input
             self.targets[row_idx] = target
@@ -105,34 +164,24 @@ class Data:
         positive_or_negative = self.positives if target == self.positive_class else self.negatives
         positive_or_negative.append(row_idx)
 
-    def _init_arrays(self, list_type, rows=None):
-        if list_type is list:
-            self.inputs = list()
-            self.targets = list()
-            self.timestamps = list()
-        elif list_type is np.ndarray:
-            if rows is None or rows < 0:
-                raise AttributeError('Invalid number of rows: ' + str(rows))
-            self.inputs = np.zeros((rows, self.n_inputs))
-            self.targets = np.zeros(rows)
-            self.timestamps = np.empty(rows, dtype='datetime64[s]')
-        else:
-            raise AttributeError('Invalid type: ' + str(list_type))
-        self.positives = list()
-        self.negatives = list()
-
     def _convert_to_numpy(self):
-        self.inputs = np.array(self.inputs)
-        self.targets = np.array(self.targets)
-        self.timestamps = np.array(self.timestamps)
+        if self.input_labels is None:
+            self.input_labels = list(range(self.n_inputs))
+
+        if not self.timestamps_only:
+            self.inputs = np.array(self.inputs)
+            self.targets = np.array(self.targets, dtype=TARGETS_DTYPE)
+        if self.timestamps:
+            self.timestamps = np.array(self.timestamps)
 
     def sort(self):
         assert self.has_timestamps, "Cannot sort if there are no timestamps."
-
         order = np.argsort(self.timestamps)
-        self.inputs = self.inputs[order]
-        self.targets = self.targets[order]
+        if not self.timestamps_only:
+            self.inputs = self.inputs[order]
+            self.targets = self.targets[order]
         self.timestamps = self.timestamps[order]
+        self.order = order + 1  # Plus 1 for the header
 
         # Recreate the positive and negative lists
         for i, target in enumerate(self.targets):
@@ -143,10 +192,16 @@ class Data:
         return self
 
     def __len__(self):
-        return len(self.inputs)
+        if not self.timestamps_only:
+            return len(self.inputs)
+        else:
+            return len(self.order)
 
     def __getitem__(self, item):
         return self.inputs[item], self.targets[item]
+
+    def __bool__(self):
+        return len(self) > 0
 
     def size(self):
         return len(self.inputs), self.n_inputs
@@ -163,25 +218,19 @@ class Data:
         else:
             return np.amin(self.timestamps), np.amax(self.timestamps)
 
-    def get_num_inputs(self):
-        if self.input_labels is not None:
-            return len(self.input_labels)
-        else:
-            return len(self.inputs[0])
-
     # Returns the index of the first occurrence of a timestamp that is >= than dt
     def find_first_datetime(self, dt, start=0):
         assert self.is_sorted
-        for i in range(start, len(self)):
+        for i in range(start, len(self.timestamps)):
             if self.timestamps[i] >= dt:
                 return i
         raise ValueError('No datetime >= {} was found'.format(str(dt)))
 
     # Returns the index of the last occurrence of a timestamp that is <= than dt
     def find_last_datetime(self, dt, start=0):
-        assert len(self) > 1
+        assert len(self.timestamps) > 1
         assert self.is_sorted
-        for i in range(start, len(self) - 1):
+        for i in range(start, len(self.timestamps) - 1):
             if self.timestamps[i + 1] > dt:
                 return i + 1
         return len(self.timestamps) - 1
@@ -205,8 +254,10 @@ class Data:
             positives_size = (len(self.positives) * size) // len(self)
             negatives_size = (len(self.negatives) * size) // len(self)
 
-        positives_sample = np.random.choice(self.positives, positives_size, replace=False)
-        negatives_sample = np.random.choice(self.negatives, negatives_size, replace=False)
+        positives_sample = np.random.choice(self.positives, positives_size, replace=False) \
+            if positives_size > 0 else np.array([], dtype=np.uint32)
+        negatives_sample = np.random.choice(self.negatives, negatives_size, replace=False) \
+            if negatives_size > 0 else np.array([], dtype=np.uint32)
 
         total_sample = np.concatenate((positives_sample, negatives_sample))
         total_sample.sort()  # To preserve order
@@ -220,24 +271,69 @@ class Data:
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
 
-    def get_subset(self, start, end):
+    def split(self, probs, seed=None):
+        np.random.seed(seed)
+        choices = np.random.choice(range(len(probs)), len(self), replace=True, p=probs)
+        splits = [[] for key in range(len(probs))]
+        for idx, c in enumerate(choices):
+            splits[c].append(idx)
+        return (self.get_subset_by_indexes(indexes) for indexes in splits)
+
+    def get_subset_by_indexes(self, indexes):
+        inputs = self.inputs[indexes]
+        targets = self.targets[indexes]
+        timestamps = self.timestamps[indexes]
+
+        return Data(inputs=inputs, targets=targets, timestamps=timestamps, input_labels=self.input_labels,
+                    target_label=self.target_label, timestamp_label=self.timestamp_label,
+                    positive_class=self.positive_class, date_format=self.date_format, is_sorted=self.is_sorted)
+
+    def get_subset_by_time_interval(self, start, end):
         assert end > start
         assert start >= 0 and end < len(self)
 
         length = end - start + 1
-        inputs = np.zeros((length, self.n_inputs))
-        targets = np.zeros(length)
-        timestamps = np.empty(length, dtype='datetime64[s]')
 
-        for i in range(length):
-            inputs[i] = self.inputs[start + i]
-            targets[i] = self.targets[start + i]
-            timestamps[i] = self.timestamps[start + i]
+        if not self.timestamps_only:
+            inputs = self.inputs[start:end]
+            targets = self.targets[start:end]
+            timestamps = self.timestamps[start:end]
+        else:
+            inputs, targets, timestamps = list(), list(), list()
+
+            # Get file line numbers
+            lines = set()
+            for i in range(start, end + 1):
+                lines.add(self.order[i])
+
+            with open(self.file_path, 'r') as file:
+                reader = self.get_csv_reader(file)
+                count = 0
+                for i, row in enumerate(reader):
+                    if i in lines:
+                        line_inputs, line_target, line_timestamp = self.parse_row(row)
+                        inputs.append(line_inputs)
+                        targets.append(line_target)
+                        timestamps.append(line_timestamp)
+                        count += 1
+                    if count >= len(lines):
+                        break
+            inputs, targets, timestamps = (np.array(x) for x in (inputs, targets, timestamps))
 
         return Data(inputs=inputs, targets=targets, timestamps=timestamps,
                     input_labels=self.input_labels, target_label=self.target_label,
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
+
+    def save(self, file_path):
+        util.make_dir(file_path=file_path)
+        with open(file_path, 'w') as file:
+            writer = csv.writer(file, quoting=csv.QUOTE_NONNUMERIC)
+            header = ([self.timestamp_label] if self.has_timestamps else []) + [self.target_label] + self.input_labels
+            writer.writerow(header)
+            for inputs, target, timestamp in zip(self.inputs, self.targets, self.timestamps):
+                row = ([timestamp] if self.has_timestamps else []) + [target] + list(inputs)
+                writer.writerow(row)
 
 
 class SlidingWindow(Data):
@@ -248,7 +344,7 @@ class SlidingWindow(Data):
         assert all(x > 0 for x in (width, shift))
         assert test_width <= width
 
-        super().__init__(**kwargs)
+        super().__init__(timestamps_only=True, **kwargs)
 
         assert self.has_timestamps
 
@@ -273,7 +369,7 @@ class SlidingWindow(Data):
         t_width = t_end - t_start  # Trial window width
         # While the trial window's width is at least 80% of the regular width, accept it
         while t_width > 0.8 * self.width:
-            # Fix indexes based on the datetime limits
+            # Find indexes based on the datetime limits
             train_start = self.find_first_datetime(t_start)
             if self.has_test:
                 # train_end_dt = t_start + self.train_width
@@ -296,8 +392,8 @@ class SlidingWindow(Data):
         if window_i < 0 or window_i > len(self.windows):
             raise IndexError('Invalid window index: {}'.format(window_i))
         window = self.windows[window_i]
-        train = self.get_subset(window[0], window[1])
-        test = self.get_subset(window[2], window[3]) if self.has_test else None
+        train = self.get_subset_by_time_interval(window[0], window[1])
+        test = self.get_subset_by_time_interval(window[2], window[3]) if self.has_test else None
 
         return train, test
 
@@ -326,3 +422,60 @@ class SlidingWindow(Data):
 
     def reset(self):
         self._window = 0
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('data_file', help='path to data file to be encoded and/or sampled', metavar='DATA'),
+    parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
+                        help='directory where to save output files', metavar='DIR')
+    parser.add_argument('-v', '--val', dest='val', type=util.ratio, default=0, metavar='RATIO',
+                        help='use this fraction of the data as a validation data-set')
+    parser.add_argument('-t', '--test', dest='test', type=util.ratio, default=0, metavar='RATIO',
+                        help='use this fraction of the data as a test data-set')
+    parser.add_argument('-E', '--encoder', dest='encoder', metavar='FILE', default=None,
+                        help='configuration file for numeric encoding. The encoding is performed over the training'
+                             'data-set only. The test and validation data-sets are generated by mapping their raw'
+                             'values to the corresponding codification in the training data-set')
+    parser.add_argument('--id', dest='id', metavar='ID', default=None,
+                        help='identifier used to name the output files (e.g., ID_train.csv, ID_val.csv, ID_test.csv)')
+    parser.add_argument('--seed', dest='seed', metavar='S', type=util.uint, default=None,
+                        help='specify an RNG integer seed')
+
+    options = parser.parse_args()
+
+    assert options.encoder is not None or options.val > 0 or options.test > 0
+
+    util.make_dir(options.out_dir)
+    if options.seed is not None:
+        random.seed(options.seed)
+
+    return options
+
+
+if __name__ == '__main__':
+    def file_name(suffix):
+        if not has_split:
+            suffix = 'encoded_data' if options.id is None else None
+
+        return '{}/{}.csv'.format(options.out_dir, util.join_str('_', (options.id, suffix)))
+
+
+    options = parse_args()
+
+    encoder = enc.Encoder(options.encoder) if options.encoder is not None else None
+    data = Data(options.data_file)
+    train_size = 1 - options.val - options.test
+    has_split = train_size < 1
+
+    train, val, test = data.split((train_size, options.val, options.test), seed=options.seed)
+    if encoder is not None:
+        mapping = train.encode(encoder)
+        val.encode_from_mapping(mapping)
+        test.encode_from_mapping(mapping)
+
+    train.save(file_name('train'))
+    if val:
+        val.save(file_name('val'))
+    if test:
+        test.save(file_name('test'))

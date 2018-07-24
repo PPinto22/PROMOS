@@ -7,39 +7,18 @@ library(dummies)
 source('util.R')
 
 # Inputs
-INPUT <- '../data/2weeks/ColetasPROMOSBESTTreated2018-06-13.json'
+INPUT <- '../data/2weeks/best.csv'
 TARGET <- "target"
-POSITIVE_CLASS <- "Sale"
-DATE <- "date_added_utc"
+DATE <- "timestamp"
 
 # Outputs
 OUT_DIR <- add_trailing_slash('../data/2weeks')
-OUT_ID <- append_str('best', '_')
+OUT_ID <- append_str('best_temp', '_')
 OUT_IDF <- FALSE
 OUT_PCP <- TRUE
 
 # Read data
-# If data is separated by rows
-json_txt <- readLines(INPUT)
-json_formatted <- paste('[', paste(json_txt, collapse=','), ']', sep='')
-dt <- as.data.table(jsonlite::fromJSON(json_formatted))
-# If data is valid JSON
-# dt <- as.data.table(jsonlite::fromJSON(INPUT))
-
-dt$id <- NULL
-
-# Replace empty cells with the keyword EMPTY
-dt <- dt[, lapply(.SD, function(x) replace(x, which(x==''), 'empty'))]
-
-# Transform TARGET from categorical to numeric
-dt[[TARGET]] <- replace(dt[[TARGET]], dt[[TARGET]]!=POSITIVE_CLASS, 0)
-dt[[TARGET]] <- replace(dt[[TARGET]], dt[[TARGET]]==POSITIVE_CLASS, 1)
-dt[[TARGET]] <- as.numeric(dt[[TARGET]])
-
-# Rename columns
-names(dt)[names(dt) == 'country_name'] <- 'country'
-names(dt)[names(dt) == 'date_added_utc'] <- 'timestamp'
-DATE <- "timestamp"
+dt <- data.table(read.csv(file=INPUT, header=TRUE, sep=','))
 
 # Input columns
 cols <- colnames(dt)[!colnames(dt) %in% c(TARGET, DATE)]
