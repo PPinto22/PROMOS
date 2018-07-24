@@ -195,8 +195,8 @@ class Evolver:
         self.best_set = set()  # Set of IDs of the individuals in best_list
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
 
-    def encode_data(self):
-        mapping = self.train_data.encode(self.encoder)
+    def encode_data(self, soft_order=None):
+        mapping = self.train_data.encode(self.encoder, soft_order=soft_order)
         if self.test_data is not None:
             self.test_data.encode_from_mapping(mapping)
 
@@ -395,16 +395,21 @@ class Evolver:
         return self.best_list[0]
 
     def update_best_list(self, evaluations):
-        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most the best 5% of evaluations
+        # Penalize individuals older than 20 generations
+        if self.generation % 20 == 0:
+            for e in self.best_list:
+                if e.generation < self.generation - 20:
+                    e.fitness -= e.fitness * 0.01
 
+        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most the best 5% of evaluations
         # Evaluations must be sorted by descending fitness
         for i in range(max_updates):
             e = evaluations[i]
             # Break condition (best_list is full and e is worse than the worst evaluation in best_list)
             if len(self.best_list) == self.params.PopulationSize and e.fitness < self.best_list[-1].fitness:
                 break
-            elif e.genome_id in self.best_set:  # Individual already exists in best_list; skip
-                continue
+            elif e.genome_id in self.best_set:  # Individual already exists in best_list; update
+                self._update_best_list_evaluation(e)
             else:  # Add to best_list
                 index = self._add_to_best_list(e)
 
@@ -415,6 +420,11 @@ class Evolver:
                 # Cap the size of best_list at PopulationSize
                 if len(self.best_list) > self.params.PopulationSize:
                     self._remove_from_best_list(-1)
+
+    def _update_best_list_evaluation(self, new_eval):
+        i = util.list_find(self.best_list, lambda e: e.genome_id == new_eval.genome_id)
+        del self.best_list[i]
+        self._add_to_best_list(new_eval)
 
     def _add_to_best_list(self, evaluation):
         evaluation.save_genome_copy()
@@ -507,11 +517,12 @@ class Evolver:
         self.reset_window_timers()
 
         self.print('Shifting window...')
+        old_columns = self.train_data.input_labels
         self.train_data, test = next(self.slider)
         if test is not None:
             self.test_data = test
         if self.encoder is not None:
-            self.encode_data()
+            self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
 
     def should_shift(self):

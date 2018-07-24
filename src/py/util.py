@@ -61,6 +61,18 @@ def get_i(l, i, default=None):
         return default
 
 
+def soft_sort(to_sort, order):
+    val_idx_map = {value: i for i, value in enumerate(to_sort)}
+    ret = list(to_sort)
+    for i in range(min(len(to_sort), len(order))):
+        old, new = ret[i], order[i]
+        if new != old and new in val_idx_map:
+            new_i = val_idx_map[new]
+            ret[i], ret[new_i] = ret[new_i], ret[i]
+            val_idx_map[old], val_idx_map[new] = new_i, i
+    return ret
+
+
 def join_str(sep, array):
     res = ''
     for s in array:
@@ -69,6 +81,13 @@ def join_str(sep, array):
         elif s is not None and s != '':
             res += sep + str(s)
     return res
+
+
+def list_find(list, key):
+    for i, e in enumerate(list):
+        if key(e):
+            return i
+    raise KeyError
 
 
 def table_dict(column):

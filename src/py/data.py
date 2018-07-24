@@ -52,15 +52,30 @@ class Data:
             self.sort()
 
     def encode_from_mapping(self, mapping):
-        inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
-        inputs_encoded = enc.Encoder.encode_from_mapping(inputs_pd, mapping)
+        inputs_dt = pd.DataFrame(self.inputs, columns=self.input_labels)
+        inputs_encoded = enc.Encoder.encode_from_mapping(inputs_dt, mapping)
         self._update_inputs(inputs_encoded)
 
-    def encode(self, encoder):
-        inputs_pd = pd.DataFrame(self.inputs, columns=self.input_labels)
-        inputs_encoded, mapping = encoder.encode(inputs_pd, return_mapping=True)
+    # 'soft_order' is a list of column names. Applicable if the encoding produces new columns,
+    # in which case the positions of the columns in the new data-set will match those in 'soft_order', as much as possible
+    # e.g:
+    # soft_order:                [A, B, C, D]
+    # output without soft_order: [A, x, y, C, D]
+    # output with soft_order:    [A, x, C, D, y]
+    def encode(self, encoder, soft_order=None):
+        inputs_dt = pd.DataFrame(self.inputs, columns=self.input_labels)
+        inputs_encoded = encoder.encode(inputs_dt, return_mapping=False)
+        if soft_order is not None:
+            inputs_encoded = self.soft_sort(inputs_encoded, soft_order)
+        mapping = encoder.get_mapping(inputs_dt, inputs_encoded)
         self._update_inputs(inputs_encoded)
         return mapping
+
+    @staticmethod
+    def soft_sort(pandas_dt, soft_order):
+        new_order = util.soft_sort(list(pandas_dt), soft_order)
+        sorted_inputs = pandas_dt[new_order]
+        return sorted_inputs
 
     def _update_inputs(self, df):
         self.input_labels = list(df.columns)
@@ -303,7 +318,7 @@ class Data:
                         count += 1
                     if count >= len(lines):
                         break
-            inputs, targets, timestamps = (np.array(x) for x in (inputs,targets,timestamps))
+            inputs, targets, timestamps = (np.array(x) for x in (inputs, targets, timestamps))
 
         return Data(inputs=inputs, targets=targets, timestamps=timestamps,
                     input_labels=self.input_labels, target_label=self.target_label,
@@ -313,7 +328,7 @@ class Data:
     def save(self, file_path):
         util.make_dir(file_path=file_path)
         with open(file_path, 'w') as file:
-            writer = csv.writer(file, csv.QUOTE_NONNUMERIC)
+            writer = csv.writer(file, quoting=csv.QUOTE_NONNUMERIC)
             header = ([self.timestamp_label] if self.has_timestamps else []) + [self.target_label] + self.input_labels
             writer.writerow(header)
             for inputs, target, timestamp in zip(self.inputs, self.targets, self.timestamps):
