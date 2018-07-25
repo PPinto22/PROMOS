@@ -205,6 +205,8 @@ public:
 
     InnovationDatabase& AccessInnovationDatabase() { return m_InnovationDatabase; }
 
+    int ResizeInputs(int a_Size);
+
     // Sorts each species's genomes by fitness
     void Sort();
 

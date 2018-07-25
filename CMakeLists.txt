@@ -65,3 +65,7 @@ add_library(csv ${SOURCES_DIR}/csv/csv.cpp ${SOURCES_DIR}/csv/csv.h)
 # Executables
 add_executable(main ${SOURCES_DIR}/Main.cpp)
 target_link_libraries(main MultiNEAT csv)
+
+# 'Tests'
+add_executable(dynamic_inputs ${SOURCES_DIR}/tests/DynamicInputsTest.cpp)
+target_link_libraries(dynamic_inputs MultiNEAT csv)

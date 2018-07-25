@@ -173,6 +173,18 @@ Population::Population(const char *a_FileName)
     }
 }
 
+int Population::ResizeInputs(int a_Size) {
+    ASSERT(a_Size > 0);
+    int diff = 0;
+    for(Species &s : m_Species){
+        for(Genome &g: s.m_Individuals){
+            diff = g.ResizeInputs(a_Size, m_Parameters, m_InnovationDatabase);
+        }
+    }
+    m_InnovationDatabase.IncreaseNeuronIDCounter(diff);
+    return diff;
+}
+
 std::vector<Genome> Population::GetBestGenomesBySpecies(int quantity){
     ASSERT(quantity <= m_Genomes.size());
 

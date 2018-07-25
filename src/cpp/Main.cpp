@@ -174,7 +174,7 @@ int main() {
     long ms_ea = 0;
     auto start = chrono::system_clock::now();
 
-    Genome g(0, 10, 0, 1, false, ActivationFunction::UNSIGNED_SIGMOID, ActivationFunction::UNSIGNED_SIGMOID, 0, params, 5);
+    Genome g(0, 10, 0, 1, false, ActivationFunction::UNSIGNED_SIGMOID, ActivationFunction::UNSIGNED_SIGMOID, 0, params, 1);
     Population pop(g, params, true, 1.0, 0);
 
     auto data = readData(DATA_FILE_PATH);

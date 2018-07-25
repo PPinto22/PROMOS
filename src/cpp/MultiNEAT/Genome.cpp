@@ -420,6 +420,47 @@ namespace NEAT {
         m_initial_num_links = NumLinks();
     }
 
+    int Genome::ResizeInputs(int a_size, const Parameters &a_Parameters, const InnovationDatabase &a_Innovs){
+        int size_diff = a_size - NumInputs();
+        int new_total_size = static_cast<unsigned int>(m_NeuronGenes.size()) + size_diff;
+        RNG t_RNG;
+        t_RNG.TimeSeed();
+
+        ASSERT(new_total_size > 0);
+
+        std::vector<NeuronGene> t_neuron_genes(static_cast<unsigned int>(new_total_size));
+        NeuronGene last_old_input = m_NeuronGenes[NumInputs()-1];
+
+        unsigned int n_common_inputs = std::min(NumInputs(), static_cast<unsigned int>(a_size));
+        if(m_NeuronGenes[n_common_inputs - 1].Type() == BIAS) n_common_inputs--;
+
+        // Keep common inputs
+        for(int i = 0; i < n_common_inputs; i++){
+            t_neuron_genes[i] = m_NeuronGenes[i];
+        }
+
+        int t_next_neuron_id = a_Innovs.GetNextNeuronID();
+        // New inputs
+        for(int i = n_common_inputs; i < a_size; i++){
+            NeuronGene t_gene(INPUT, t_next_neuron_id++, 0.0);
+            t_gene.InitTraits(a_Parameters.NeuronTraits, t_RNG);
+            t_neuron_genes[i] = t_gene;
+        }
+
+        // If the old last input was a bias, move it to new the last input position
+        if(last_old_input.Type() == BIAS){
+            t_neuron_genes[a_size - 1] = last_old_input;
+        }
+
+        // Outputs and hidden neurons
+        for(int i = 0; i < NumOutputs() + NumHiddenNeurons(); i++){
+            t_neuron_genes[a_size + i] = m_NeuronGenes[NumInputs() + i];
+        }
+
+        m_NeuronGenes = t_neuron_genes;
+        return size_diff;
+    }
+
     void Genome::SetDepth(unsigned int a_d) {
         m_Depth = a_d;
     }
@@ -1615,27 +1656,27 @@ namespace NEAT {
         // find a good pair of nodes for a forward link
         if (!t_MakeRecurrent) {
             // first see if this should come from the bias or not
-            bool t_found_bias = true;
-            t_n1idx = static_cast<int>(NumInputs() - 1); // the bias is always the last input
-            // try to find a neuron that is not connected to the bias already
-            t_NumTries = 0;
-            do {
-                t_n2idx = a_RNG.RandInt(t_first_noninput, static_cast<int>(NumNeurons() - 1));
-                t_NumTries++;
+            if(t_MakeBias){
+              bool t_found_bias = true;
+              t_n1idx = static_cast<int>(NumInputs() - 1); // the bias is always the last input
+              // try to find a neuron that is not connected to the bias already
+              t_NumTries = 0;
+              do {
+                  t_n2idx = a_RNG.RandInt(t_first_noninput, static_cast<int>(NumNeurons() - 1));
+                  t_NumTries++;
 
-                if (t_NumTries >= a_Parameters.LinkTries) {
-                    // couldn't find anything
-                    t_found_bias = false;
-                    break;
-                }
-            } while ((HasLink(m_NeuronGenes[t_n1idx].ID(), m_NeuronGenes[t_n2idx].ID()))); // already present?
-
-            // so if we found that link, we can skip the rest of the things
-            if (t_found_bias && t_MakeBias) {
-                t_Found = true;
+                  if (t_NumTries >= a_Parameters.LinkTries) {
+                      // couldn't find anything
+                      t_found_bias = false;
+                      break;
+                  }
+              } while ((HasLink(m_NeuronGenes[t_n1idx].ID(), m_NeuronGenes[t_n2idx].ID()))); // already present?
+              // so if we found that link, we can skip the rest of the things
+              t_Found = t_found_bias;
             }
-                // otherwise continue trying to find a normal forward link
-            else {
+
+            // otherwise continue trying to find a normal forward link
+            if(!t_Found) {
                 t_NumTries = 0;
                 // try to find a standard forward connection
                 do {

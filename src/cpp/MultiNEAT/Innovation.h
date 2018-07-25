@@ -162,6 +162,8 @@ public:
     // If not found, returns -1
     int FindNeuronID(int a_in, int a_out) const;
     int FindLastNeuronID(int a_in, int a_out) const;
+    int GetNextNeuronID() const { return m_NextNeuronID; }
+    void IncreaseNeuronIDCounter(int a_Increase){ if(a_Increase > 0) m_NextNeuronID += a_Increase; }
 
     // Adds a new link innovation and returns its ID
     // Increments the m_NextInnovationNum internally
