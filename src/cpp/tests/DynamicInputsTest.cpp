@@ -11,7 +11,7 @@ int main() {
     Parameters params;
     params.PopulationSize = 25;
     params.DynamicCompatibility = true;
-    params.DontUseBiasNeuron = false; // !
+    params.DontUseBiasNeuron = true; // !
     params.AllowClones = false;
     params.CompatThreshold = 5.0;
     params.CompatThresholdModifier = 0.3;
@@ -41,7 +41,10 @@ int main() {
     Genome g(0, 10, 2, 1, false, ActivationFunction::UNSIGNED_SIGMOID, ActivationFunction::UNSIGNED_SIGMOID, 1, params, 1);
     Population pop(g, params, true, 1.0, 0);
 //    pop.Epoch();
-    pop.ResizeInputs(20);
+    pop.ResizeInputs(3);
+
+    vector<int> inputs_to_disconnect {0};
+    pop.DisconnectInputs(inputs_to_disconnect);
 
     cout << "Finish" << endl;
   }

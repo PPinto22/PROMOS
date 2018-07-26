@@ -457,8 +457,29 @@ namespace NEAT {
             t_neuron_genes[a_size + i] = m_NeuronGenes[NumInputs() + i];
         }
 
+        // Cleanup: remove all connections coming from any inputs that will be removed, due to a smaller size
+        for(int i = a_size; i < NumInputs(); i++){
+            NeuronGene& t_to_be_removed = m_NeuronGenes[i];
+            DisconnectInputByID(t_to_be_removed.m_ID);
+        }
+
         m_NeuronGenes = t_neuron_genes;
+        m_NumInputs = static_cast<unsigned int>(a_size);
         return size_diff;
+    }
+
+    void Genome::DisconnectInputs(const std::vector<int> &input_idxs){
+        for(int i: input_idxs){
+            if(i >= m_NumInputs) throw std::out_of_range(std::string("Input index out of range: " + to_string(i)));
+            int id = m_NeuronGenes[i].m_ID;
+            DisconnectInputByID(id);
+        }
+    }
+
+    void Genome::DisconnectInputByID(int a_ID){
+        ASSERT(a_ID >= 0 && a_ID <= m_NumInputs)
+        m_LinkGenes.erase(std::remove_if(m_LinkGenes.begin(), m_LinkGenes.end(),
+        [a_ID](LinkGene& g){return g.FromNeuronID() == a_ID;}), m_LinkGenes.end());
     }
 
     void Genome::SetDepth(unsigned int a_d) {

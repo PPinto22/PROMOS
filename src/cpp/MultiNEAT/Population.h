@@ -12,6 +12,11 @@
 #include "Parameters.h"
 #include "Random.h"
 
+#ifdef USE_BOOST_PYTHON
+#include <boost/python.hpp>
+namespace py = boost::python;
+#endif
+
 namespace NEAT
 {
 
@@ -140,6 +145,11 @@ public:
     ////////////////////////////
     // Methods
     ////////////////////////////
+    int ResizeInputs(int a_Size);
+    void DisconnectInputs(const std::vector<int> &input_idxs);
+    #ifdef USE_BOOST_PYTHON
+    void DisconnectInputs_py(const py::list &input_idxs);
+    #endif
 
     ////////////////////////////
     // Island methods
@@ -189,9 +199,6 @@ public:
         return m_Species[idx_species].m_Individuals[idx_genome];
     }
 
-
-    
-
     unsigned int GetStagnation() const { return m_GensSinceBestFitnessLastChanged; }
     unsigned int GetMPCStagnation() const { return m_GensSinceMPCLastChanged; }
 
@@ -204,8 +211,6 @@ public:
     Genome& AccessGenomeByID(unsigned int const a_id);
 
     InnovationDatabase& AccessInnovationDatabase() { return m_InnovationDatabase; }
-
-    int ResizeInputs(int a_Size);
 
     // Sorts each species's genomes by fitness
     void Sort();
@@ -261,7 +266,7 @@ public:
 
     // Call this function to allocate memory for your custom
     // behaviors. This initializes everything.
-    void InitPhenotypeBehaviorData(std::vector< PhenotypeBehavior >* a_population, 
+    void InitPhenotypeBehaviorData(std::vector< PhenotypeBehavior >* a_population,
                                    std::vector< PhenotypeBehavior >* a_archive);
 
     // This is the main method performing novelty search.
@@ -282,4 +287,3 @@ public:
 } // namespace NEAT
 
 #endif
-

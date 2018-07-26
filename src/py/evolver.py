@@ -143,6 +143,7 @@ class Evolver:
         self.is_online = self.options.width is not None  # Is sliding window being used
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
             if self.is_online else None
+        self.input_diff = 0  # How many input columns changed since the last window
 
         # Numeric encoder config
         self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
@@ -329,6 +330,7 @@ class Evolver:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['window', 'begin_date', 'end_date', 'generations', 'run_time', 'eval_time', 'ea_time',
+                          'inputs', 'input_diff',
                           'train_size', 'train_positives', 'train_negatives',
                           'test_size', 'test_positives', 'test_negatives',
                           'train_fitness', 'test_fitness',
@@ -346,6 +348,7 @@ class Evolver:
                              self.window_elapsed_time().total_seconds() / 60.0,
                              self.window_eval_time.total_seconds() / 60.0,
                              self.window_ea_time.total_seconds() / 60.0,
+                             self.train_data.n_inputs, self.input_diff,
                              len(self.train_data), len(self.train_data.positives), len(self.train_data.negatives),
                              test_size, test_positives, test_negatives, best.fitness, test_fitness,
                              best.neurons, best.connections])
@@ -517,6 +520,7 @@ class Evolver:
         self.reset_window_timers()
 
         self.print('Shifting window...')
+        # Prepare new data
         old_columns = self.train_data.input_labels
         self.train_data, test = next(self.slider)
         if test is not None:
@@ -524,6 +528,14 @@ class Evolver:
         if self.encoder is not None:
             self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
+
+        # Resize the number of inputs of each individual in the population
+        self.pop.ResizeInputs(self.train_data.n_inputs)
+        # How many columns have changed
+        new_inputs = util.diff_indexes(old_columns, self.train_data.input_labels)
+        self.input_diff = len(new_inputs)
+        # Remove the old connections of the new inputs
+        self.pop.DisconnectInputs(new_inputs)
 
     def should_shift(self):
         if not self.is_online or not self.slider.has_next():

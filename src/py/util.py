@@ -90,6 +90,11 @@ def list_find(list, key):
     raise KeyError
 
 
+def diff_indexes(l1, l2):
+    size = min(len(l1), len(l2))
+    return [i for i in range(size) if l1[i] != l2[i]]
+
+
 def table_dict(column):
     if isinstance(column, np.ndarray):
         unique, counts = np.unique(column, return_counts=True)

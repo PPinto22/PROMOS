@@ -187,6 +187,9 @@ namespace NEAT
         // Returns: number of neurons added (or removed)
         int ResizeInputs(int a_size, const Parameters &a_Parameters, const InnovationDatabase &a_Innovs);
 
+        void DisconnectInputs(const std::vector<int> &input_idxs);
+        void DisconnectInputByID(int a_ID);
+
         ////////////////////
         // Accessor methods
 

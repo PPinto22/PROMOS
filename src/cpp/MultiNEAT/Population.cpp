@@ -71,7 +71,7 @@ Population::Population(const Genome& a_Seed, const Parameters& a_Parameters,
                         }
                     }
                 }
-                
+
                 // Also don't let any genome to fail the constraints
                 if (!is_invalid) // doesn't make sense to do the test if already failed
                 {
@@ -184,6 +184,24 @@ int Population::ResizeInputs(int a_Size) {
     m_InnovationDatabase.IncreaseNeuronIDCounter(diff);
     return diff;
 }
+
+void Population::DisconnectInputs(const std::vector<int> &input_idxs){
+    for(Species &s: m_Species){
+        for(Genome &g: s.m_Individuals){
+            g.DisconnectInputs(input_idxs);
+        }
+    }
+}
+
+#ifdef USE_BOOST_PYTHON
+void Population::DisconnectInputs_py(const py::list &input_idxs) {
+    std::vector<int> t_input_idxs;
+    for (int i = 0; i < py::len(input_idxs); ++i) {
+        t_input_idxs.push_back(py::extract<int>(input_idxs[i]));
+    }
+    DisconnectInputs(t_input_idxs);
+}
+#endif
 
 std::vector<Genome> Population::GetBestGenomesBySpecies(int quantity){
     ASSERT(quantity <= m_Genomes.size());
@@ -467,7 +485,7 @@ void Population::UpdateSpecies()
 
 // the epoch method - the heart of the GA
 void Population::Epoch()
-{   
+{
     // So, all genomes are evaluated..
     for(unsigned int i=0; i<m_Species.size(); i++)
     {
@@ -784,7 +802,7 @@ Genome& Population::AccessGenomeByID(unsigned int const a_id)
             }
         }
     }
-    
+
     // not found?!
     throw std::runtime_error("No such ID in population");
 }
@@ -930,7 +948,7 @@ void Population::ReassignSpecies(unsigned int a_genome_idx)
 
 // Main realtime loop. We assume that the whole population was evaluated once before calling this.
 // Returns a pointer to the baby in the population. It will be the only individual that was not evaluated.
-// Set the m_Evaluated flag of the baby to true after evaluation! 
+// Set the m_Evaluated flag of the baby to true after evaluation!
 Genome* Population::Tick(Genome& a_deleted_genome)
 {
     // Make sure all individuals are evaluated
@@ -1327,4 +1345,3 @@ bool Population::NoveltySearchTick(Genome& a_SuccessfulGenome)
 
 
 } // namespace NEAT
-

@@ -316,7 +316,6 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 ///////////////////////////////////////////////////////////////////
 // Population class
 ///////////////////////////////////////////////////////////////////
-
     class_<Population>("Population", init<Genome, Parameters, bool, double, int>())
             .def(init<char*>())
             .def("Epoch", &Population::Epoch)
@@ -336,6 +335,11 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def("AccessGenomeByIndex", &Population::AccessGenomeByIndex, return_value_policy<reference_existing_object>())
             .def("AccessGenomeByID", &Population::AccessGenomeByID, return_value_policy<reference_existing_object>())
             .def("NumGenomes", &Population::NumGenomes)
+
+            .def("ResizeInputs", &Population::ResizeInputs)
+            .def("DisconnectInputs", &Population::DisconnectInputs)
+            .def("DisconnectInputs", &Population::DisconnectInputs_py)
+
             .def_readwrite("Species", &Population::m_Species)
             .def_readwrite("Parameters", &Population::m_Parameters)
             .def_readwrite("RNG", &Population::m_RNG)
