@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/2weeks/best_pcp.csv"
+args="../data/2weeks/best.csv"
 id="sw_2wks_pcp"
-options="-P ../params/irace2.txt -o ../results/${id}/ -m neat -g250 -s2500 -p10 -W120 -w24 -S24 --test-fitness"
+options="-P ../params/irace2.txt -o ../results/${id}/ -E ../cfg/encoder_pcp.cfg -m neat -g250 -s2500 -p10 -W120 -w24 -S24 --test-fitness"
 runs=4
 parallel=4
 
