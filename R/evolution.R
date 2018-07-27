@@ -106,8 +106,7 @@ dev.off()
 # EA vs eval time (per gen, smooth)
 png(filename = paste(OUT_DIR, 'gens_ea_eval_time_smooth.png', sep=''))
 gg_gens_ea_eval_smooth <- ggplot(gen_times, aes(x=generation, y=time, fill=state)) +
-  # geom_area(position='stack') +
-  stat_smooth(geom='area') +
+  stat_smooth(geom='area', position='stack') +
   labs(x='Generation', y='Time', fill='State') +
   scale_fill_brewer(palette = 'Oranges') +
   theme_minimal()
