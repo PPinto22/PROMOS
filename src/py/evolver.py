@@ -143,7 +143,10 @@ class Evolver:
         self.is_online = self.options.width is not None  # Is sliding window being used
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
             if self.is_online else None
-        self.input_diff = 0  # How many input columns changed since the last window
+        self.n_inputs_diff = 0  # How many existing input columns changed since the last window
+        self.inputs_diff = []  # List of tuples of columns which have been replaced (old_input, new_input)
+        self.n_inputs_delta = 0  # Difference of inputs between he current window and the previous one
+        self.inputs_new = []  # Names on new inputs which have not replaced any existing ones
 
         # Numeric encoder config
         self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
@@ -334,7 +337,7 @@ class Evolver:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['window', 'begin_date', 'end_date', 'generations', 'run_time', 'eval_time', 'ea_time',
-                          'inputs', 'input_diff',
+                          'inputs', 'inputs_delta', 'n_inputs_diff', 'inputs_diff',
                           'train_size', 'train_positives', 'train_negatives',
                           'test_size', 'test_positives', 'test_negatives',
                           'train_fitness', 'test_fitness',
@@ -352,7 +355,7 @@ class Evolver:
                              self.window_elapsed_time().total_seconds() / 60.0,
                              self.window_eval_time.total_seconds() / 60.0,
                              self.window_ea_time.total_seconds() / 60.0,
-                             self.train_data.n_inputs, self.input_diff,
+                             self.train_data.n_inputs, self.n_inputs_delta, self.n_inputs_diff, self.inputs_diff,
                              len(self.train_data), len(self.train_data.positives), len(self.train_data.negatives),
                              test_size, test_positives, test_negatives, best.fitness, test_fitness,
                              best.neurons, best.connections])
@@ -538,7 +541,12 @@ class Evolver:
     def _update_inputs(self, old_inputs):
         # Which columns have changed
         new_inputs = util.diff_indexes(old_inputs, self.train_data.input_labels)
-        self.input_diff = len(new_inputs)
+        self.n_inputs_diff = len(new_inputs)
+        self.n_inputs_delta = self.train_data.n_inputs - len(old_inputs)
+        self.inputs_diff_old = [old_inputs[i] for i in new_inputs]
+        self.inputs_diff_new = [self.train_data.input_labels[i] for i in new_inputs]
+        self.inputs_diff = [(old_inputs[i], self.train_data.input_labels[i]) for i in new_inputs]
+        self.inputs_new = self.train_data.input_labels[-self.n_inputs_delta:] if self.n_inputs_delta > 0 else []
 
         if self.options.method == 'hyperneat':
             # Just update the substrate to match the new number of inputs
