@@ -161,16 +161,8 @@ class Evolver:
             self.encode_data()
         self.setup_evaluator()
 
-        # Substrate for HyperNEAT and ES-HyperNEAT
-        try:
-            self.substrate = subst.get_substrate(self.options.substrate,
-                                                 inputs=self.train_data.n_inputs,
-                                                 hidden_layers=10, nodes_per_layer=[10] * 10,
-                                                 outputs=1) \
-                if self.options.method in ['hyperneat', 'eshyperneat'] else None
-        except IndexError:
-            raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
-                             format(self.options.substrate, len(subst.substrates) - 1)) from None
+        # Substrate for HyperNEAT
+        self.substrate = self._init_substrate()
 
         self.initial_time = None  # When the run started
         self.window_initial_time = None  # When the current window started
@@ -195,6 +187,18 @@ class Evolver:
         self.best_list = SortedListWithKey(key=lambda x: -x.fitness)
         self.best_set = set()  # Set of IDs of the individuals in best_list
         self.best_test = None  # GenomeEvaluation (evaluated with the test data-set) of the best individual in best_test
+
+    def _init_substrate(self):
+        try:
+            substrate = subst.get_substrate(self.options.substrate,
+                                            inputs=self.train_data.n_inputs,
+                                            hidden_layers=10, nodes_per_layer=[10] * 10,
+                                            outputs=1) \
+                if self.options.method in ['hyperneat', 'eshyperneat'] else None
+            return substrate
+        except IndexError:
+            raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
+                             format(self.options.substrate, len(subst.substrates) - 1)) from None
 
     def encode_data(self, soft_order=None):
         mapping = self.train_data.encode(self.encoder, soft_order=soft_order)
@@ -529,13 +533,21 @@ class Evolver:
             self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
 
-        # Resize the number of inputs of each individual in the population
-        self.pop.ResizeInputs(self.train_data.n_inputs)
-        # How many columns have changed
-        new_inputs = util.diff_indexes(old_columns, self.train_data.input_labels)
+        self._update_inputs(old_columns)
+
+    def _update_inputs(self, old_inputs):
+        # Which columns have changed
+        new_inputs = util.diff_indexes(old_inputs, self.train_data.input_labels)
         self.input_diff = len(new_inputs)
-        # Remove the old connections of the new inputs
-        self.pop.DisconnectInputs(new_inputs)
+
+        if self.options.method == 'hyperneat':
+            # Just update the substrate to match the new number of inputs
+            self.substrate = self._init_substrate()
+        else:
+            # Resize the number of inputs of each individual in the population
+            self.pop.ResizeInputs(self.train_data.n_inputs)
+            # Remove the old connections of the new inputs
+            self.pop.DisconnectInputs(new_inputs)
 
     def should_shift(self):
         if not self.is_online or not self.slider.has_next():

@@ -372,7 +372,6 @@ class SlidingWindow(Data):
             # Find indexes based on the datetime limits
             train_start = self.find_first_datetime(t_start)
             if self.has_test:
-                # train_end_dt = t_start + self.train_width
                 train_end_dt = t_end - self.test_width
                 train_end = self.find_last_datetime(train_end_dt, start=train_start)
                 test_start = train_end + 1
