@@ -10,6 +10,7 @@ import argparse
 import datetime
 from sortedcontainers import SortedListWithKey
 from functools import partial
+import numpy as np
 
 import params
 from encoder import Encoder
@@ -423,8 +424,8 @@ class Evolver:
             else:  # Add to best_list
                 index = self._add_to_best_list(e)
 
-                self.print("New best (#{})> Fitness: {}, Test Fitness: {}, Neurons: {}, Connections: {}".
-                           format(index, e.fitness, e.fitness_test if e.fitness_test is not None else 'NA',
+                self.print("New best (#{})> Fitness: {:.5f}, Test Fitness: {:.5f}, Neurons: {}, Connections: {}".
+                           format(index, e.fitness, e.fitness_test if e.fitness_test is not None else np.NAN,
                                   e.genome_neurons, e.genome_connections))
 
                 # Cap the size of best_list at PopulationSize
