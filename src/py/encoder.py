@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import math
 import data
+from abc import ABC, abstractmethod
 
 
 class EncodingFactory:
@@ -16,52 +17,64 @@ class EncodingFactory:
     def create(cls, encoding_str, *args):
         encoding_type = EncodingFactory._EncodingType(encoding_str)
         if encoding_type is EncodingFactory._EncodingType.RAW:
-            return RAW()
+            return RAW(*args)
         elif encoding_type is EncodingFactory._EncodingType.IDF:
-            return IDF()
+            return IDF(*args)
         elif encoding_type is EncodingFactory._EncodingType.PCP:
             return PCP(*args)
         else:
             raise AttributeError('Invalid encoding type: {}'.format(encoding_type))
 
 
-class Encoding:
-    @staticmethod
-    def encode(column):
-        raise NotImplementedError  # abstract method
+class Encoding(ABC):
+    @abstractmethod
+    def encode(self, column):
+        raise NotImplementedError
 
-    @staticmethod
-    def missing_value(length, value):
-        raise NotImplementedError  # abstract method
+    @abstractmethod
+    def missing_value(self, value):
+        raise NotImplementedError
 
 
 class IDF(Encoding):
-    @staticmethod
-    def encode(column):
+    def __init__(self, keep_first=False):
+        self.keep_first = util.str_to_bool(keep_first)
+        self.values = {}  # Map<Column, Map<Raw_Value, Encoded_Value>>
+        self.length = 0
+
+    def encode(self, column):
+        self._init_column(column.name)
         tf = util.table_dict(column)
-        N = len(column)
+        self.length = len(column)
         idf = {}
         for key, freq in tf.items():
-            idf[key] = math.log(N / freq)
-        idf_col = np.zeros(N, dtype=data.INPUTS_DTYPE)
+            if self.keep_first and key in self.values[column.name]:
+                idf_value = self.values[column.name][key]
+            else:
+                idf_value = math.log(self.length / freq)
+                if self.keep_first:
+                    self.values[column.name][key] = idf_value
+            idf[key] = idf_value
+        idf_col = np.zeros(self.length, dtype=data.INPUTS_DTYPE)
         for i, key in enumerate(column):
             idf_col[i] = idf[key]
         return pd.DataFrame({column.name: idf_col})
 
-    @staticmethod
-    def missing_value(length, value):
-        return math.log(length)
+    def _init_column(self, col_name):
+        if self.keep_first and col_name not in self.values:
+            self.values[col_name] = {}
+
+    def missing_value(self, value):
+        return math.log(self.length)
 
 
 class RAW(Encoding):
-    @staticmethod
-    def encode(column):
+    def encode(self, column):
         for i in range(len(column)):
             column[i] = data.INPUTS_DTYPE(column[i])
         return pd.DataFrame({column.name: column})
 
-    @staticmethod
-    def missing_value(length, value):
+    def missing_value(self, value):
         return float(value)
 
 
@@ -108,8 +121,7 @@ class PCP(Encoding):
             one_hot[others_col_name] = 0
         return one_hot
 
-    @staticmethod
-    def missing_value(length, value):
+    def missing_value(self, value):
         return 1
 
 
@@ -123,7 +135,6 @@ class ColumnMapping:
     def __init__(self, raw_column, encoded_df, encoding):
         assert isinstance(encoding, Encoding)
         self.encoding = encoding
-        self.col_length = len(raw_column)
         self.default_column = None
         self.values = {}  # Map: raw_value, ValueMapping
         if isinstance(self.encoding, PCP):
@@ -156,7 +167,7 @@ class ColumnMapping:
         if value in self.values:
             return self.values[value]
         else:
-            return ValueMapping(self.encoding.missing_value(self.col_length, value), self.default_column)
+            return ValueMapping(self.encoding.missing_value(value), self.default_column)
 
     def __getitem__(self, item):
         return self.get_value(item)

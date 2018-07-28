@@ -61,6 +61,18 @@ def get_i(l, i, default=None):
         return default
 
 
+def str_to_bool(str):
+    if str is True or str is False:
+        return str
+
+    if str.lower() in ['yes', 'true', 't', '1']:
+        return True
+    elif str.lower() in ['no', 'false', 'f', '0']:
+        return False
+    else:
+        raise AttributeError('Invalid boolean string: {}'.format(str))
+
+
 def soft_sort(to_sort, order):
     val_idx_map = {value: i for i, value in enumerate(to_sort)}
     ret = list(to_sort)
