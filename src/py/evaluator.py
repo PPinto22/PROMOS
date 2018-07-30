@@ -36,6 +36,7 @@ class GenomeEvaluation:
         self.neurons = neurons
         self.connections = connections
         self.generation = generation
+        self.spawn_gen = generation
         self.window = window
         self.global_time = global_time
         self.build_time = build_time
