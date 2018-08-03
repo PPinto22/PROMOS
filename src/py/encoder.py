@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 class EncodingFactory:
     class _EncodingType(Enum):
         RAW = 'raw'
+        FACTOR = 'factor'
         IDF = 'idf'
         PCP = 'pcp'
 
@@ -18,6 +19,8 @@ class EncodingFactory:
         encoding_type = EncodingFactory._EncodingType(encoding_str)
         if encoding_type is EncodingFactory._EncodingType.RAW:
             return RAW(*args)
+        if encoding_type is EncodingFactory._EncodingType.FACTOR:
+            return Factor(*args)
         elif encoding_type is EncodingFactory._EncodingType.IDF:
             return IDF(*args)
         elif encoding_type is EncodingFactory._EncodingType.PCP:
@@ -27,54 +30,93 @@ class EncodingFactory:
 
 
 class Encoding(ABC):
+    def __init__(self):
+        self.values = {}  # Map<Column, Map<Raw_Value, Encoded_Value>>
+
     @abstractmethod
     def encode(self, column):
         raise NotImplementedError
 
     @abstractmethod
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         raise NotImplementedError
+
+    def init_column(self, column_name):
+        if column_name not in self.values:
+            self.values[column_name] = {}
+
+    def exists(self, column, value):
+        return column in self.values and value in self.values[column]
+
+    def set(self, column, key, value):
+        self.values[column][key] = value
+
+    def get(self, column, key):
+        return self.values[column][key]
+
+
+class Factor(Encoding):
+    def __init__(self):
+        super().__init__()
+        self.num = 1
+
+    def encode(self, column):
+        self.init_column(column.name)
+        factor_col = np.zeros(len(column), dtype=data.INPUTS_DTYPE)
+        for i, raw_value in enumerate(column):
+            if self.exists(column.name, raw_value):
+                encoded_value = self.get(column.name, raw_value)
+            else:
+                encoded_value = self.num
+                self.set(column.name, raw_value, encoded_value)
+                self.num += 1
+            factor_col[i] = encoded_value
+        return pd.DataFrame({column.name: factor_col})
+
+    def missing_value(self, column_name, value):
+        self.set(column_name, value, self.num)
+        self.num += 1
+        return self.num - 1
 
 
 class IDF(Encoding):
     def __init__(self, keep_first=False):
+        super().__init__()
         self.keep_first = util.str_to_bool(keep_first)
-        self.values = {}  # Map<Column, Map<Raw_Value, Encoded_Value>>
         self.length = 0
 
     def encode(self, column):
-        self._init_column(column.name)
+        self.keep_first and self.init_column(column.name)
         tf = util.table_dict(column)
         self.length = len(column)
         idf = {}
         for key, freq in tf.items():
-            if self.keep_first and key in self.values[column.name]:
-                idf_value = self.values[column.name][key]
+            if self.keep_first and self.exists(column.name, key):
+                idf_value = self.get(column.name, key)
             else:
                 idf_value = math.log(self.length / freq)
                 if self.keep_first:
-                    self.values[column.name][key] = idf_value
+                    self.set(column.name, key, idf_value)
             idf[key] = idf_value
         idf_col = np.zeros(self.length, dtype=data.INPUTS_DTYPE)
         for i, key in enumerate(column):
             idf_col[i] = idf[key]
         return pd.DataFrame({column.name: idf_col})
 
-    def _init_column(self, col_name):
-        if self.keep_first and col_name not in self.values:
-            self.values[col_name] = {}
-
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         return math.log(self.length)
 
 
 class RAW(Encoding):
+    def __init__(self):
+        super().__init__()
+
     def encode(self, column):
         for i in range(len(column)):
             column[i] = data.INPUTS_DTYPE(column[i])
         return pd.DataFrame({column.name: column})
 
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         return float(value)
 
 
@@ -83,6 +125,7 @@ class PCP(Encoding):
     SEP = '__'
 
     def __init__(self, percentage=0.05):
+        super().__init__()
         self.percentage = float(percentage)
 
     def prune(self, column):
@@ -121,7 +164,7 @@ class PCP(Encoding):
             one_hot[others_col_name] = 0
         return one_hot
 
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         return 1
 
 
@@ -135,6 +178,7 @@ class ColumnMapping:
     def __init__(self, raw_column, encoded_df, encoding):
         assert isinstance(encoding, Encoding)
         self.encoding = encoding
+        self.column_name = raw_column.name
         self.default_column = None
         self.values = {}  # Map: raw_value, ValueMapping
         if isinstance(self.encoding, PCP):
@@ -167,7 +211,7 @@ class ColumnMapping:
         if value in self.values:
             return self.values[value]
         else:
-            return ValueMapping(self.encoding.missing_value(value), self.default_column)
+            return ValueMapping(self.encoding.missing_value(self.column_name, value), self.default_column)
 
     def __getitem__(self, item):
         return self.get_value(item)
