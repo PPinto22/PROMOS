@@ -1,4 +1,4 @@
-from MultiNEAT import NeuronType, Genome, NeuralNetwork
+from MultiNEAT import NeuronType, Genome, NeuralNetwork, Neuron, ActivationFunction
 import argparse
 
 import substrate
@@ -228,7 +228,7 @@ else:
 
 
     def DrawPhenotype(image, rect, nn, neuron_radius=10,
-                      max_line_thickness=5, substrate=False):
+                      max_line_thickness=5, substrate=False, show_functions=True):
         for i, n in enumerate(nn.neurons):
             nn.neurons[i].x = 0
             nn.neurons[i].y = 0
@@ -376,16 +376,32 @@ else:
                 cv2.circle(image, pt, int(neuron_radius * a), clr, thickness=-1)  # filled first
                 cv2.circle(image, pt, neuron_radius, (30, 105, 210), thickness=2)  # outline
 
+            if show_functions and (neuron.type == NeuronType.HIDDEN or neuron.type == NeuronType.OUTPUT):
+                cv2.putText(image, get_activation_func_text(neuron),
+                            (pt[0] - neuron_radius//2, pt[1] - neuron_radius//2),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), thickness=2)
+
+
+def get_activation_func_text(neuron):
+    if neuron.activation_function_type == ActivationFunction.UNSIGNED_SIGMOID:
+        return 'S'
+    elif neuron.activation_function_type == ActivationFunction.RELU:
+        return 'R'
+    elif neuron.activation_function_type == ActivationFunction.UNSIGNED_GAUSS:
+        return 'G'
+    else:
+        return '?'
+
 
 # More general one that returns a NumPy image
-def Draw(x, size, padding=0):
+def Draw(x, size, padding=0, show_functions=True):
     img = np.zeros((size[0], size[1], 3), dtype=np.uint8)
     img += 255
 
     p0x, p0y = padding, padding
     p1x, p1y = size[0] - 2 * padding, size[1] - 2 * padding
     if isinstance(x, NeuralNetwork):
-        DrawPhenotype(img, (p0x, p0y, p1x, p1y), x)
+        DrawPhenotype(img, (p0x, p0y, p1x, p1y), x, show_functions=show_functions)
     else:
         nn = NeuralNetwork()
         x.BuildPhenotype(nn)
@@ -408,8 +424,8 @@ def parse_args():
                         help='image width in pixels')
     parser.add_argument('-H', '--height', dest='height', metavar='PX', type=int, default=400,
                         help='image height in pixels')
-    # parser.add_argument('-P', '--padding', dest='padding', metavar='PX', type=int, default=20,
-    #                     help='image padding in pixels')
+    parser.add_argument('--no-functions', dest='functions', action='store_false',
+                        help='do not draw activation functions')
 
     args = parser.parse_args()
     return args
@@ -422,7 +438,7 @@ if __name__ == '__main__':
     subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
 
     network = util.build_network(genome, args.method, substrate)
-    network_image = Draw(network, size=size)
+    network_image = Draw(network, size=size, show_functions=args.functions)
     if args.out_file is None:
         cv2.namedWindow('Network visualization', cv2.WINDOW_AUTOSIZE)
         cv2.imshow("Network visualization", network_image)
