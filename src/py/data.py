@@ -9,7 +9,7 @@ import pandas as pd
 import util
 import encoder as enc
 
-INPUTS_DTYPE = np.float32
+INPUTS_DTYPE = np.float64
 TARGETS_DTYPE = np.uint8
 TIMESTAMPS_DTYPE = 'datetime64[s]'
 

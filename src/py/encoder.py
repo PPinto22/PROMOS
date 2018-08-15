@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import math
 import data
+import pickle
 from abc import ABC, abstractmethod
 
 
@@ -239,6 +240,24 @@ class Mapping:
     def __getitem__(self, item):
         return self.columns[item]
 
+    @classmethod
+    def load(cls, file_path):
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+
+    def save(self, file_path):
+        with open(file_path, 'wb') as file:
+            pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
+
+    def map(self, input_list):
+        if len(input_list) != self.n_cols_raw:
+            raise AttributeError('Input length mismatch: expected {}, got {}'.format(self.n_cols_raw, len(input_list)))
+        mapped_inputs = np.zeros(self.n_cols_encoded, dtype=data.INPUTS_DTYPE)
+        for i, column_name in enumerate(self.col_names_raw):
+            value_map = self[column_name][input_list[i]]
+            mapped_inputs[value_map.column] = value_map.value
+        return mapped_inputs
+
 
 class Encoder:
     def __init__(self, cfg_file):
@@ -246,6 +265,15 @@ class Encoder:
         self.default = None
 
         self._setup(cfg_file)
+
+    @classmethod
+    def load(cls, file_path):
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+
+    def save(self, file_path):
+        with open(file_path, 'wb') as file:
+            pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
 
     def _setup(self, cfg_file):
         with open(cfg_file, 'r') as file:

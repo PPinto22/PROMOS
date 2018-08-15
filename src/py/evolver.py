@@ -1,28 +1,25 @@
 #!/usr/bin/python3
 
 import MultiNEAT as neat
+import argparse
 import csv
+import datetime
 import json
 import math
 import os
-import pickle
 import random
-import argparse
-import datetime
-import time
-
-from sortedcontainers import SortedListWithKey
 from functools import partial
-import numpy as np
-from reprint import reprint, output
+
 import tabulate
+from reprint import reprint, output
+from sortedcontainers import SortedListWithKey
 
 tabulate.PRESERVE_WHITESPACE = True
 from tabulate import tabulate
 
 import params
 from encoder import Encoder
-from evaluator import Evaluator, FitFunction, GenomeEvaluation
+from evaluator import Evaluator, FitFunction
 import util
 import bloat
 from util import avg
@@ -62,8 +59,6 @@ def parse_args():
                         help='use a balanced sample of size N in evaluations. If S=0, use the whole data-set')
     parser.add_argument('-l', '--load', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
-    parser.add_argument('-M', '--mapping', dest='mapping_file', metavar='FILE', default=None,
-                        help='load the encoding mapping in the binary FILE')
     parser.add_argument('-r', '--resume', dest='progress_file', metavar='FILE', default=None,
                         help='resume execution from the progress FILE')
     parser.add_argument('-R', '--runs', dest='runs', metavar='R', help='run R times', type=util.uint, default=1)
@@ -87,8 +82,6 @@ def parse_args():
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
                              'the best individuals with the whole data-set.')
-    parser.add_argument('--no-mapping', dest='save_mapping', action='store_false',
-                        help='do not save the encoding mapping to file')
     parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.uint, default=None,
                         help='Sliding window width (train + test) in hours')
     parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.uint, default=None,
@@ -167,9 +160,6 @@ class Evolver:
         self.windows_best = []  # Best results of every window (List of tuples)
         self.windows_final_gens = []  # List of generations when each window ended
 
-        # Numeric encoder config
-        self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
-
         # Timers, counters and other auxiliary variables
         self.run_i = None  # Current run, in case of multiple runs
         self.generation = 0  # Current generation
@@ -201,8 +191,13 @@ class Evolver:
         self.windows_lines = 0  # How many output lines are required for the windows table
         self.windows_header = []  # Header for the windows best table
 
-        # Data and encoding mapping
-        self.load_mapping(self.options.mapping_file)
+        # Encoding and load progress
+        self.mapping = None
+        self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
+        if self.options.progress_file is not None:
+            self.output_update_state('Resuming', pre=True)
+            self.load_progress(self.options.progress_file)
+        # Data
         self.output_update_state('Preparing data', pre=True)
         self._setup_data()
 
@@ -212,8 +207,6 @@ class Evolver:
         self._keep_timers = False
         self.init_timers()
         self.pop = self.init_population()  # C++ Population
-        self.options.progress_file is not None and self.load_progress(self.options.progress_file)
-        self.params = self.pop.Parameters  # Needed in case pop is loaded from file
         if self.mutation_rate_controller is not None:
             self.mutation_rate_controller.set_params(self.params)
 
@@ -223,9 +216,11 @@ class Evolver:
             self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
         else:
             if self.is_online:  # Set the first window
-                assert self.slider.has_next(), 'The specified window width (-W) is too large for the available data'
-                self.train_data, test_data = next(self.slider)
-                self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
+                if self.slider._window == 0 and not self.slider.has_next():
+                    raise AttributeError('The specified window width (-W) is too large for the available data')
+                if self.slider.has_next():
+                    self.train_data, test_data = next(self.slider)
+                    self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
             else:  # Use static data
                 self.train_data = Data(self.options.data_file)
                 self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
@@ -246,9 +241,9 @@ class Evolver:
                              format(self.options.substrate, len(subst.substrates) - 1)) from None
 
     def encode_data(self, soft_order=None):
-        mapping = self.train_data.encode(self.encoder, soft_order=soft_order)
+        self.mapping = self.train_data.encode(self.encoder, soft_order=soft_order)
         if self.test_data is not None:
-            self.test_data.encode_from_mapping(mapping)
+            self.test_data.encode_from_mapping(self.mapping)
 
     def setup_evaluator(self):
         Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes, maxtasksperchild=500)
@@ -276,13 +271,18 @@ class Evolver:
         if self.mutation_rate_controller is not None:
             self.mutation_rate_controller.reset()
 
+    def load_pop(self, file_path):
+        try:
+            self.pop = neat.Population(file_path)
+        except RuntimeError:
+            raise AttributeError('Invalid population file \'{}\''.format(file_path))
+        self.params = self.pop.Parameters
+        return self.pop
+
+
     def init_population(self):
         if self.options.pop_file is not None:
-            self.output_update_state('Loading pop')
-            try:
-                return neat.Population(self.options.pop_file)
-            except RuntimeError:
-                raise AttributeError('Invalid population file \'{}\''.format(self.options.pop_file))
+            return self.load_pop(self.options.pop_file)
 
         output_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
         hidden_act_f = neat.ActivationFunction.UNSIGNED_SIGMOID
@@ -433,6 +433,9 @@ class Evolver:
 
     def save_progress(self):
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
+            self.encoder is not None and file.write(
+                'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
+            file.write('population {}\n'.format(os.path.abspath(self.get_out_file_path('population.txt'))))
             self.run_i is not None and file.write('run {}\n'.format(self.run_i))
             self.is_online and file.write('window {}\n'.format(self.get_current_window()))
             file.write('generation {}\n'.format(self.generation))
@@ -440,15 +443,11 @@ class Evolver:
             file.write('ea_time {}\n'.format(self.ea_time.total_seconds()))
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
 
-    def save_mapping(self):
-        if self.options.save_mapping and self.encoder is not None:
-            with open(self.get_out_file_path('mapping.bin', include_window=False), 'wb') as file:
-                pickle.dump(self.encoder, file, pickle.HIGHEST_PROTOCOL)
+    def save_encoder(self):
+        self.encoder is not None and self.encoder.save(self.get_out_file_path('encoder.bin', include_window=False))
 
-    def load_mapping(self, file_path):
-        if file_path is not None:
-            with open(file_path, 'rb') as file:
-                self.encoder = pickle.load(file)
+    def save_mapping(self):
+        self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
     def load_progress(self, file_path):
         self.output_update_state('Resuming')
@@ -468,6 +467,10 @@ class Evolver:
                     self.ea_time = datetime.timedelta(seconds=float(value))
                 elif key == 'eval_time':
                     self.eval_time = datetime.timedelta(seconds=float(value))
+                elif key == 'encoder':
+                    self.encoder = Encoder.load(value)
+                elif key == 'population':
+                    self.load_pop(value)
         self._keep_timers = True
         self.output_update_state('Resuming')
 
@@ -700,7 +703,8 @@ class Evolver:
         self.evaluate_best_test()  # Test the best individual obtained with the test data-set
         self.print_best()  # Print to stdout the best result
         self.write_results()  # Write run details to files
-        self.save_mapping()  # Save encoder mapping
+        self.save_encoder()  # Save encoder
+        self.save_mapping()  # Save encoding mapping
 
     def shift_window(self):
         self.termination_sequence()

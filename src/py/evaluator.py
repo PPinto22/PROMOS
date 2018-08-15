@@ -121,6 +121,13 @@ class Evaluator:
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time, **extra)
 
     @staticmethod
+    def predict_single(net, input):
+        net.Flush()
+        net.Input(input)
+        net.FeedForward()
+        return net.Output()[0]
+
+    @staticmethod
     def predict(net, inputs):
         predictions = np.zeros(len(inputs))
         for i, row in enumerate(inputs):

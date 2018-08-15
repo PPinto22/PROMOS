@@ -122,7 +122,7 @@ def make_dir(dir_path=None, file_path=None):
     if file_path is not None:
         dir_path, _ = os.path.split(file_path)
 
-    if not os.path.exists(dir_path):
+    if dir_path and not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
 
