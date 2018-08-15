@@ -74,9 +74,7 @@ class Factor(Encoding):
         return pd.DataFrame({column.name: factor_col})
 
     def missing_value(self, column_name, value):
-        self.set(column_name, value, self.num)
-        self.num += 1
-        return self.num - 1
+        return 0
 
 
 class IDF(Encoding):

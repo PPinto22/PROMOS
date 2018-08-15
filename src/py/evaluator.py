@@ -219,8 +219,11 @@ class Evaluator:
         size = data.size()
         flat_len = util.mult(size)
         assert flat_len <= len(Evaluator._inputs) and size[0] <= len(Evaluator._targets)
-        Evaluator._inputs[:flat_len] = data.inputs.ravel()[:flat_len]
-        Evaluator._targets[:size[0]] = data.targets[:size[0]]
+        try:
+            Evaluator._inputs[:flat_len] = data.inputs.ravel()[:flat_len]
+            Evaluator._targets[:size[0]] = data.targets[:size[0]]
+        except TypeError:
+            raise TypeError('Data must be numeric')
 
         test_size = test_data.size() if test_data is not None else None
         if test_size is not None:
