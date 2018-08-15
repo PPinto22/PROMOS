@@ -5,6 +5,7 @@ import csv
 import json
 import math
 import os
+import pickle
 import random
 import argparse
 import datetime
@@ -61,8 +62,10 @@ def parse_args():
                         help='use a balanced sample of size N in evaluations. If S=0, use the whole data-set')
     parser.add_argument('-l', '--load', dest='pop_file', metavar='FILE', default=None,
                         help='load the contents of FILE as the initial population and parameters')
+    parser.add_argument('-M', '--mapping', dest='mapping_file', metavar='FILE', default=None,
+                        help='load the encoding mapping in the binary FILE')
     parser.add_argument('-r', '--resume', dest='progress_file', metavar='FILE', default=None,
-                        help='resume execution from a progress file')
+                        help='resume execution from the progress FILE')
     parser.add_argument('-R', '--runs', dest='runs', metavar='R', help='run R times', type=util.uint, default=1)
     parser.add_argument('-q', '--quiet', dest='quiet', action='store_true',
                         help='Do not print any messages to stdout, except for the result')
@@ -84,6 +87,8 @@ def parse_args():
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
                              'the best individuals with the whole data-set.')
+    parser.add_argument('--no-mapping', dest='save_mapping', action='store_false',
+                        help='do not save the encoding mapping to file')
     parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.uint, default=None,
                         help='Sliding window width (train + test) in hours')
     parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.uint, default=None,
@@ -196,19 +201,10 @@ class Evolver:
         self.windows_lines = 0  # How many output lines are required for the windows table
         self.windows_header = []  # Header for the windows best table
 
-        # Data
+        # Data and encoding mapping
+        self.load_mapping(self.options.mapping_file)
         self.output_update_state('Preparing data', pre=True)
         self._setup_data()
-        # if self.is_online:  # Set the first window
-        #     assert self.slider.has_next(), 'The specified window width (-W) is too large for the available data'
-        #     self.train_data, test_data = next(self.slider)
-        #     self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
-        # else:  # Use static data
-        #     self.train_data = Data(self.options.data_file)
-        #     self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
-        # if self.encoder is not None:
-        #     self.encode_data()
-        # self.setup_evaluator()
 
         # Substrate for HyperNEAT
         self.substrate = self._init_substrate()
@@ -443,6 +439,16 @@ class Evolver:
             file.write('time {}\n'.format(self.elapsed_time().total_seconds()))
             file.write('ea_time {}\n'.format(self.ea_time.total_seconds()))
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
+
+    def save_mapping(self):
+        if self.options.save_mapping and self.encoder is not None:
+            with open(self.get_out_file_path('mapping.bin', include_window=False), 'wb') as file:
+                pickle.dump(self.encoder, file, pickle.HIGHEST_PROTOCOL)
+
+    def load_mapping(self, file_path):
+        if file_path is not None:
+            with open(file_path, 'rb') as file:
+                self.encoder = pickle.load(file)
 
     def load_progress(self, file_path):
         self.output_update_state('Resuming')
@@ -690,10 +696,11 @@ class Evolver:
             self.output_update_state('Full reevaluation')
             self.reevaluate_best_list()
 
-        self.output_update_state('Terminating')
+        self.output_update_state('Saving results')
         self.evaluate_best_test()  # Test the best individual obtained with the test data-set
         self.print_best()  # Print to stdout the best result
         self.write_results()  # Write run details to files
+        self.save_mapping()  # Save encoder mapping
 
     def shift_window(self):
         self.termination_sequence()

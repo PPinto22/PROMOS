@@ -58,7 +58,7 @@ class Encoding(ABC):
 class Factor(Encoding):
     def __init__(self):
         super().__init__()
-        self.num = 1
+        self.ids = {}
 
     def encode(self, column):
         self.init_column(column.name)
@@ -67,11 +67,22 @@ class Factor(Encoding):
             if self.exists(column.name, raw_value):
                 encoded_value = self.get(column.name, raw_value)
             else:
-                encoded_value = self.num
-                self.set(column.name, raw_value, encoded_value)
-                self.num += 1
+                encoded_value = self.set(column.name, raw_value, None)
             factor_col[i] = encoded_value
         return pd.DataFrame({column.name: factor_col})
+
+    def set(self, column, key, value=None):
+        assert value is None  # Assigned automatically, sequentially
+
+        id = self.ids[column]
+        super(Factor, self).set(column, key, id)
+        self.ids[column] += 1
+        return id
+
+    def init_column(self, column_name):
+        super(Factor, self).init_column(column_name)
+        if column_name not in self.ids:
+            self.ids[column_name] = 1
 
     def missing_value(self, column_name, value):
         return 0
