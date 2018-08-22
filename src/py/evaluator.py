@@ -36,6 +36,7 @@ class GenomeEvaluation:
         self.neurons = neurons
         self.connections = connections
         self.generation = generation
+        self.spawn_gen = generation
         self.window = window
         self.global_time = global_time
         self.build_time = build_time
@@ -118,6 +119,13 @@ class Evaluator:
                                 connections=net.NumConnections() if net is not None else None,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time, **extra)
+
+    @staticmethod
+    def predict_single(net, input):
+        net.Flush()
+        net.Input(input)
+        net.FeedForward()
+        return net.Output()[0]
 
     @staticmethod
     def predict(net, inputs):
@@ -218,8 +226,11 @@ class Evaluator:
         size = data.size()
         flat_len = util.mult(size)
         assert flat_len <= len(Evaluator._inputs) and size[0] <= len(Evaluator._targets)
-        Evaluator._inputs[:flat_len] = data.inputs.ravel()[:flat_len]
-        Evaluator._targets[:size[0]] = data.targets[:size[0]]
+        try:
+            Evaluator._inputs[:flat_len] = data.inputs.ravel()[:flat_len]
+            Evaluator._targets[:size[0]] = data.targets[:size[0]]
+        except TypeError:
+            raise TypeError('Data must be numeric')
 
         test_size = test_data.size() if test_data is not None else None
         if test_size is not None:

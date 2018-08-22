@@ -4,12 +4,14 @@ import numpy as np
 import pandas as pd
 import math
 import data
+import pickle
 from abc import ABC, abstractmethod
 
 
 class EncodingFactory:
     class _EncodingType(Enum):
         RAW = 'raw'
+        FACTOR = 'factor'
         IDF = 'idf'
         PCP = 'pcp'
 
@@ -18,6 +20,8 @@ class EncodingFactory:
         encoding_type = EncodingFactory._EncodingType(encoding_str)
         if encoding_type is EncodingFactory._EncodingType.RAW:
             return RAW(*args)
+        if encoding_type is EncodingFactory._EncodingType.FACTOR:
+            return Factor(*args)
         elif encoding_type is EncodingFactory._EncodingType.IDF:
             return IDF(*args)
         elif encoding_type is EncodingFactory._EncodingType.PCP:
@@ -27,54 +31,102 @@ class EncodingFactory:
 
 
 class Encoding(ABC):
+    def __init__(self):
+        self.values = {}  # Map<Column, Map<Raw_Value, Encoded_Value>>
+
     @abstractmethod
     def encode(self, column):
         raise NotImplementedError
 
     @abstractmethod
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         raise NotImplementedError
+
+    def init_column(self, column_name):
+        if column_name not in self.values:
+            self.values[column_name] = {}
+
+    def exists(self, column, value):
+        return column in self.values and value in self.values[column]
+
+    def set(self, column, key, value):
+        self.values[column][key] = value
+
+    def get(self, column, key):
+        return self.values[column][key]
+
+
+class Factor(Encoding):
+    def __init__(self):
+        super().__init__()
+        self.ids = {}
+
+    def encode(self, column):
+        self.init_column(column.name)
+        factor_col = np.zeros(len(column), dtype=data.INPUTS_DTYPE)
+        for i, raw_value in enumerate(column):
+            if self.exists(column.name, raw_value):
+                encoded_value = self.get(column.name, raw_value)
+            else:
+                encoded_value = self.set(column.name, raw_value, None)
+            factor_col[i] = encoded_value
+        return pd.DataFrame({column.name: factor_col})
+
+    def set(self, column, key, value=None):
+        assert value is None  # Assigned automatically, sequentially
+
+        id = self.ids[column]
+        super(Factor, self).set(column, key, id)
+        self.ids[column] += 1
+        return id
+
+    def init_column(self, column_name):
+        super(Factor, self).init_column(column_name)
+        if column_name not in self.ids:
+            self.ids[column_name] = 1
+
+    def missing_value(self, column_name, value):
+        return 0
 
 
 class IDF(Encoding):
     def __init__(self, keep_first=False):
+        super().__init__()
         self.keep_first = util.str_to_bool(keep_first)
-        self.values = {}  # Map<Column, Map<Raw_Value, Encoded_Value>>
         self.length = 0
 
     def encode(self, column):
-        self._init_column(column.name)
+        self.keep_first and self.init_column(column.name)
         tf = util.table_dict(column)
         self.length = len(column)
         idf = {}
         for key, freq in tf.items():
-            if self.keep_first and key in self.values[column.name]:
-                idf_value = self.values[column.name][key]
+            if self.keep_first and self.exists(column.name, key):
+                idf_value = self.get(column.name, key)
             else:
                 idf_value = math.log(self.length / freq)
                 if self.keep_first:
-                    self.values[column.name][key] = idf_value
+                    self.set(column.name, key, idf_value)
             idf[key] = idf_value
         idf_col = np.zeros(self.length, dtype=data.INPUTS_DTYPE)
         for i, key in enumerate(column):
             idf_col[i] = idf[key]
         return pd.DataFrame({column.name: idf_col})
 
-    def _init_column(self, col_name):
-        if self.keep_first and col_name not in self.values:
-            self.values[col_name] = {}
-
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         return math.log(self.length)
 
 
 class RAW(Encoding):
+    def __init__(self):
+        super().__init__()
+
     def encode(self, column):
         for i in range(len(column)):
             column[i] = data.INPUTS_DTYPE(column[i])
         return pd.DataFrame({column.name: column})
 
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         return float(value)
 
 
@@ -83,6 +135,7 @@ class PCP(Encoding):
     SEP = '__'
 
     def __init__(self, percentage=0.05):
+        super().__init__()
         self.percentage = float(percentage)
 
     def prune(self, column):
@@ -121,7 +174,7 @@ class PCP(Encoding):
             one_hot[others_col_name] = 0
         return one_hot
 
-    def missing_value(self, value):
+    def missing_value(self, column_name, value):
         return 1
 
 
@@ -135,6 +188,7 @@ class ColumnMapping:
     def __init__(self, raw_column, encoded_df, encoding):
         assert isinstance(encoding, Encoding)
         self.encoding = encoding
+        self.column_name = raw_column.name
         self.default_column = None
         self.values = {}  # Map: raw_value, ValueMapping
         if isinstance(self.encoding, PCP):
@@ -167,7 +221,7 @@ class ColumnMapping:
         if value in self.values:
             return self.values[value]
         else:
-            return ValueMapping(self.encoding.missing_value(value), self.default_column)
+            return ValueMapping(self.encoding.missing_value(self.column_name, value), self.default_column)
 
     def __getitem__(self, item):
         return self.get_value(item)
@@ -186,6 +240,24 @@ class Mapping:
     def __getitem__(self, item):
         return self.columns[item]
 
+    @classmethod
+    def load(cls, file_path):
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+
+    def save(self, file_path):
+        with open(file_path, 'wb') as file:
+            pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
+
+    def map(self, input_list):
+        if len(input_list) != self.n_cols_raw:
+            raise AttributeError('Input length mismatch: expected {}, got {}'.format(self.n_cols_raw, len(input_list)))
+        mapped_inputs = np.zeros(self.n_cols_encoded, dtype=data.INPUTS_DTYPE)
+        for i, column_name in enumerate(self.col_names_raw):
+            value_map = self[column_name][input_list[i]]
+            mapped_inputs[value_map.column] = value_map.value
+        return mapped_inputs
+
 
 class Encoder:
     def __init__(self, cfg_file):
@@ -193,6 +265,15 @@ class Encoder:
         self.default = None
 
         self._setup(cfg_file)
+
+    @classmethod
+    def load(cls, file_path):
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+
+    def save(self, file_path):
+        with open(file_path, 'wb') as file:
+            pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
 
     def _setup(self, cfg_file):
         with open(cfg_file, 'r') as file:

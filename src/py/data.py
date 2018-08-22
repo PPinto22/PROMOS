@@ -9,7 +9,7 @@ import pandas as pd
 import util
 import encoder as enc
 
-INPUTS_DTYPE = np.float32
+INPUTS_DTYPE = np.float64
 TARGETS_DTYPE = np.uint8
 TIMESTAMPS_DTYPE = 'datetime64[s]'
 
@@ -359,7 +359,7 @@ class SlidingWindow(Data):
         self.windows = list()
         self.setup_windows()
         self.n_windows = len(self.windows)
-        self._window = 0  # Current window + 1
+        self._window = 0  # Current window
 
     def setup_windows(self):
         global_start, global_end = self.get_time_range()  # Start and end datetimes
@@ -387,13 +387,15 @@ class SlidingWindow(Data):
             t_end = min(t_start + self.width, global_end)
             t_width = t_end - t_start
 
-    def get_window_data(self, window_i):
+    def get_window_data(self, window_i, update_state=False):
         if window_i < 0 or window_i > len(self.windows):
             raise IndexError('Invalid window index: {}'.format(window_i))
         window = self.windows[window_i]
         train = self.get_subset_by_time_interval(window[0], window[1])
         test = self.get_subset_by_time_interval(window[2], window[3]) if self.has_test else None
 
+        if update_state:
+            self._window = window_i + 1
         return train, test
 
     def get_current_window_data(self):

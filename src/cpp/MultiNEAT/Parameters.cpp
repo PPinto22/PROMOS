@@ -632,6 +632,9 @@ namespace NEAT
 
             else if (s == "LinkTries")
                 a_DataFile >> LinkTries;
+            else if (s == "NeuronTries")
+                a_DataFile >> NeuronTries;
+
 
             else if (s == "RecurrentProb")
                 a_DataFile >> RecurrentProb;
