@@ -432,6 +432,7 @@ class Evolver:
             self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def save_progress(self):
+        self.make_out_dir()
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
@@ -444,9 +445,11 @@ class Evolver:
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
 
     def save_encoder(self):
+        self.make_out_dir()
         self.encoder is not None and self.encoder.save(self.get_out_file_path('encoder.bin', include_window=False))
 
     def save_mapping(self):
+        self.make_out_dir()
         self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
     def load_progress(self, file_path):
