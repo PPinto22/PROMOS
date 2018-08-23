@@ -5,6 +5,7 @@ library(chron)
 library(ggplot2)
 library(scales)
 library(RColorBrewer)
+library(ggstance)
 
 INPUT = '../results/processes2/processes.csv'
 
@@ -18,12 +19,12 @@ dt_melt <- melt(dt_med, measure.vars = c('time', 'eval_time', 'ea_time'), variab
 levels(dt_melt$type) <- c('Run', 'Evaluation', 'Evolution')
 
 # https://stackoverflow.com/questions/19235466/how-do-i-plot-time-hhmmss-in-x-axis-in-r
+pd <- position_jitterdodge(dodge.width = -1, jitter.height = 5)
 ggplot(dt_melt, aes(x=processes, y=time, color=type)) + 
-  geom_point(position=position_dodge(width=-.5)) + 
-  geom_line(position=position_dodge(width=-.5)) + 
+  geom_point(position=pd) + 
+  geom_line(position=pd) + 
   scale_x_continuous(breaks=dt_med$processes, minor_breaks = NULL) +
   scale_y_datetime(labels = date_format("%M:%S")) +
   scale_color_brewer(palette = 'Set2') +
-  labs(x = 'Processes', y='Time', color=NULL) +
+  labs(x = 'Processes', y='Time (m:s)', color=NULL) +
   theme_minimal()
-
