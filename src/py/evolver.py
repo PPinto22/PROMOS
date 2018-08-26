@@ -432,6 +432,7 @@ class Evolver:
             self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def save_progress(self):
+        self.make_out_dir()
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
@@ -444,9 +445,11 @@ class Evolver:
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
 
     def save_encoder(self):
+        self.make_out_dir()
         self.encoder is not None and self.encoder.save(self.get_out_file_path('encoder.bin', include_window=False))
 
     def save_mapping(self):
+        self.make_out_dir()
         self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
     def load_progress(self, file_path):
@@ -616,21 +619,28 @@ class Evolver:
         del self.best_list[index]
 
     def reevaluate_best_list(self):
-        evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0)
+        evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0, time=True)
         original_gens = [e.generation for e in self.best_list]
         self.best_list.clear()
         for i, e in enumerate(evaluation_list):
             e.generation = original_gens[i]
             self.best_list.add(e)
 
-    def evaluate_list(self, genome_list, sample_size=None, adjuster=None):
+    def evaluate_list(self, genome_list, sample_size=None, adjuster=None, time=True):
         sample_size = sample_size if sample_size is not None else self.options.sample_size
         test_data = self.test_data if self.options.test_fitness and not self.options.no_statistics else None
-        return Evaluator.evaluate_genome_list(
+        time_diff, evaluation_list = util.time(lambda: Evaluator.evaluate_genome_list(
             genome_list, self.fitness_func, data=self.train_data, sample_size=sample_size,
             test_data=test_data, adjuster=adjuster, method=self.options.method, substrate=self.substrate,
             generation=self.generation, window=self.get_current_window(), initial_time=self.initial_time
-        )
+        ))
+
+        if time:
+            self.eval_time += time_diff
+            self.window_eval_time += time_diff
+            self.gen_eval_time = time_diff
+
+        return evaluation_list
 
     def evaluate(self, genome):
         return self._evaluate(genome, self.train_data)
@@ -645,12 +655,7 @@ class Evolver:
 
     def evaluate_pop(self):
         self.output_update_state('Evaluating')
-        time_diff, evaluation_list = util.time(
-            lambda: self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster))
-
-        self.eval_time += time_diff
-        self.window_eval_time += time_diff
-        self.gen_eval_time = time_diff
+        evaluation_list = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
 
         self.gen_connections = [e.genome_connections for e in evaluation_list]
         self.gen_neurons = [e.genome_neurons for e in evaluation_list]
