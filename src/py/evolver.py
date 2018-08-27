@@ -246,7 +246,7 @@ class Evolver:
             self.test_data.encode_from_mapping(self.mapping)
 
     def setup_evaluator(self):
-        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes, maxtasksperchild=500)
+        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes)
 
     def clear(self):
         self.initial_time = None

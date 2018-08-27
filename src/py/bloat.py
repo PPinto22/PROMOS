@@ -1,6 +1,8 @@
 from enum import Enum
 import configparser
 
+import evaluator
+
 
 class ComplexityType(Enum):
     TIME = 'time'
@@ -78,6 +80,9 @@ class FitnessAdjuster:
         return evaluation.fitness * ((pop_max / complexity) ** self.options.popmax_alpha)
 
     def get_complexity(self, evaluation):
+        if not isinstance(evaluation, evaluator.GenomeEvaluation):
+            return 0
+
         if self.options.complexity_type is ComplexityType.CONNECTIONS:
             return evaluation.genome_connections
         elif self.options.complexity_type is ComplexityType.NEURONS:
@@ -88,6 +93,9 @@ class FitnessAdjuster:
             raise AttributeError("Invalid bloat type: {}".format(self.options.complexity_type))
 
     def get_adjusted_fitness(self, evaluation, pop_max=None):
+        if not isinstance(evaluation, evaluator.GenomeEvaluation):
+            return 0
+
         f = self.options.penalty_function
         if f is PenaltyFunction.STEP:
             fitness_adj = self._step(evaluation)
@@ -108,7 +116,7 @@ class FitnessAdjuster:
     @classmethod
     def maybe_get_pop_adjusted_fitness(cls, adjuster, evaluation_list):
         if adjuster is None:
-            return [e.fitness for e in evaluation_list]
+            return [e.fitness if isinstance(e, evaluator.GenomeEvaluation) else 0 for e in evaluation_list]
         else:
             return adjuster.get_pop_adjusted_fitness(evaluation_list)
 
