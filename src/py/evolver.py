@@ -448,6 +448,9 @@ class Evolver:
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
 
     def save_encoder(self):
+        if self.options.out_dir is None:
+            return
+
         self.make_out_dir()
         self.encoder is not None and self.encoder.save(self.get_out_file_path('encoder.bin', include_window=False))
 
