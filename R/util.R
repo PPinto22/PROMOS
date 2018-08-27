@@ -136,7 +136,7 @@ group_evals <- function(evals_dt, crop=TRUE){
     # Count how many times each generation occurs
     generation_count = table(evals_run_avg$generation)
     # Crop outlier generations that appear in less than 80% of runs
-    evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
+    evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*max(generation_count)],]
   }
   
   # Get the average of every run's average
