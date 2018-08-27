@@ -180,6 +180,7 @@ class Evolver:
         self.gen_neurons = None  # List of the number of hidden neurons of all individuals in the current generation
         if printer is None:
             self.reprint_obj = output()
+            self.reprint_obj.no_warning = True
             self.printer = self.reprint_obj.__enter__()
         else:
             self.reprint_obj = None
