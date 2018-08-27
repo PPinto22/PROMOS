@@ -432,6 +432,8 @@ class Evolver:
             self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def save_progress(self):
+        if self.options.out_dir is None:
+            return
         self.make_out_dir()
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
