@@ -290,11 +290,9 @@ class Evaluator:
     # This is a workaround for a memory leak -- periodically restarts the processes
     @staticmethod
     def _update_tasks(n):
-        print('DEBUG: N = {}, TASKS = {}'.format(n, Evaluator._tasks))
         if not Evaluator.multiprocessing or Evaluator._maxtasks is None:
             return
         if Evaluator._tasks > Evaluator._maxtasks:
-            print('DEBUG: RESETTING')
             Evaluator._pool.shutdown()
             Evaluator._pool = concurrent.futures.ProcessPoolExecutor(max_workers=Evaluator._processes)
             Evaluator._tasks = n
