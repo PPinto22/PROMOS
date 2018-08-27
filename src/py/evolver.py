@@ -178,8 +178,8 @@ class Evolver:
         self.gen_ea_time = None  # Time spent in the EA during the current generation
         self.gen_connections = None  # List of the number of connections of all individuals in the current generation
         self.gen_neurons = None  # List of the number of hidden neurons of all individuals in the current generation
-        if printer is None:
-            self.reprint_obj = output()
+        if printer is None and not self.options.quiet:
+            self.reprint_obj = output(initial_len=0)
             self.reprint_obj.no_warning = True
             self.printer = self.reprint_obj.__enter__()
         else:
@@ -401,11 +401,14 @@ class Evolver:
         return '{} / {}'.format(self.get_current_window() + 1, self.slider.n_windows)
 
     def print(self, msg, i=None, override=False):
-        if not self.options.quiet or override:
-            if i is None or i >= len(self.printer):
-                self.printer.append(msg)
-            else:
-                self.printer[i] = msg
+        if override:
+            print(msg)
+        else:
+            if not self.options.quiet:
+                if i is None or i >= len(self.printer):
+                    self.printer.append(msg)
+                else:
+                    self.printer[i] = msg
 
     def make_out_dir(self):
         if self.options.out_dir is None:
@@ -685,7 +688,7 @@ class Evolver:
         if not self.is_online:
             best_test_str = ' Fitness (test): {:.6f},'.format(
                 self.best_test.fitness) if self.best_test is not None else ''
-            self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
+            self.print("Best result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
                        format(best.fitness, best_test_str, best.genome_neurons, best.genome_connections), override=True)
         else:
             best_tuple = (self.get_current_window() + 1, best.genome_id,
