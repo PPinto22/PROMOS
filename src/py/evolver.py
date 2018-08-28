@@ -42,6 +42,10 @@ def parse_args():
     parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
                         type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
+    parser.add_argument('--substrate-layers', dest='layers', metavar='N', default=10, type=util.uint,
+                        help='how many layers the grid substrate should have')
+    parser.add_argument('--substrate-width', dest='layer_width', metavar='M', default=10, type=util.uint,
+                        help='how many neurons each layer of the grid substrate should have')
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
                         help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
     parser.add_argument('-E', '--encoder', dest='encoder', metavar='FILE', default=None,
@@ -233,7 +237,8 @@ class Evolver:
         try:
             substrate = subst.get_substrate(self.options.substrate,
                                             inputs=self.train_data.n_inputs,
-                                            hidden_layers=10, nodes_per_layer=[10] * 10,
+                                            hidden_layers=self.options.layers,
+                                            nodes_per_layer=[self.options.layer_width] * self.options.layers,
                                             outputs=1) \
                 if self.options.method in ['hyperneat', 'eshyperneat'] else None
             return substrate
