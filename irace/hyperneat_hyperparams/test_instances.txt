@@ -10,22 +10,22 @@
 # for higher statistical confidence
 
 # INSTANCE TRAIN_DATA                           TEST_DATA
-test1.0    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.1    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.2    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.4    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.5    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.6    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.7    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.8    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.9    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.10   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.11   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.12   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.13   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.14   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.15   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.16   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.17   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.18   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
-test1.19   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv
+test1.1    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.2    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.0    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.4    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.5    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.6    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.7    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.8    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.9    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.10   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.11   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.12   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.13   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.14   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.15   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.16   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.17   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.18   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
+test1.19   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv
