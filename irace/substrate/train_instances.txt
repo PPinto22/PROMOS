@@ -1,0 +1,1 @@
+train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/irace2.txt
