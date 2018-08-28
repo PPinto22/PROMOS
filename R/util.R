@@ -122,7 +122,7 @@ group_gens <- function(gens_dt){
                add_neuron=mean(add_neuron), rem_neuron=mean(rem_neuron), add_link=mean(add_link), rem_link=mean(rem_link)), by=generation]
 }
 
-group_evals <- function(evals_dt, crop=TRUE){
+group_evals <- function(evals_dt, crop=0){
   # First average each run
   evals_run_avg = evals_dt[ , .(window=round(median(window)), fitness_mean = mean(fitness), fitness_best = max(fitness), fitness_adj = mean(fitness_adj),
                                 fitness_test_mean = mean(fitness_test), fitness_test_best = fitness_test[which.max(fitness)],
@@ -132,11 +132,11 @@ group_evals <- function(evals_dt, crop=TRUE){
                                 fit_time=mean(fit_time), eval_time=mean(build_time+pred_time+fit_time),
                                 run_time = mean(run_time)), by = list(run, generation)]
   
-  if(crop){
+  if(crop > 0){
     # Count how many times each generation occurs
     generation_count = table(evals_run_avg$generation)
-    # Crop outlier generations that appear in less than 80% of runs
-    evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=0.8*max(generation_count)],]
+    # Crop outlier generations that appear in less than [crop]% of runs
+    evals_run_avg = evals_run_avg[evals_run_avg$generation %in% names(generation_count)[generation_count>=crop*max(generation_count)],]
   }
   
   # Get the average of every run's average

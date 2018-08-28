@@ -10,7 +10,7 @@ setup(multi_types=TRUE)
 
 # Read evaluations
 evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
-  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]]))  # Read all evals; average each run individually; then average the average of every run
+  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]]), crop=0.2)  # Read all evals; average each run individually; then average the average of every run
   run_type_dt$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_dt))   # Add "run_type" column
   return(run_type_dt)
 }))
@@ -56,6 +56,15 @@ if(!has_windows){
     theme_minimal()
   gg_best_connections
   dev.off()
+  
+  # Generations bar plot
+  png(filename = paste(OUT_DIR, 'generations_bar.png', sep=''))
+  gg_generations_bar <- ggplot(data=summaries_dt, aes(x=run_type)) +
+    geom_bar(aes(y=generations), stat='identity') + 
+    labs(x=SERIES_LABEL, y='Generations') +
+    theme_minimal()
+  print(gg_generations_bar)
+  dev.off()
 } else{
   # Box plot of each window best, split by run_type
   png(filename = paste(OUT_DIR, 'window_best_bps.png', sep=''))
@@ -100,7 +109,6 @@ gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   theme_minimal()
 print(gg_best_test_fit_gens)
 dev.off()
-
 
 # generations over time
 png(filename = paste(OUT_DIR, 'generations_by_time.png', sep=''))
