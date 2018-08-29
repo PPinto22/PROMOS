@@ -41,12 +41,13 @@ sink()
 if(!has_windows){
   # Boxplot best test fitness by run type
   png(filename = paste(OUT_DIR, 'fitness_best_bp.png', sep=''))
-  gg_best_testfit <-  ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
-    geom_boxplot() +
-    geom_shadowtext(data = summaries_avg_dt, aes(x=run_type, y=test_fit, label=sprintf("%.4f", round(test_fit, digits = 4))), size=5) +
+  # gg_best_testfit <-  
+    ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
+    geom_boxplot(fill=gsmooth_fill) +
+    geom_shadowtext(data = summaries_avg_dt, aes(x=run_type, y=test_fit, label=sprintf("%.4f", round(test_fit, digits = 4))), size=6) +
     labs(x=SERIES_LABEL, y=FITNESS_FUNC) + 
     theme_minimal()
-  gg_best_testfit
+  # gg_best_testfit
   dev.off()
   
   # Boxplot #connections of the best individual by run type
