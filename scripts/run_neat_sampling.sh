@@ -1,7 +1,7 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf_train.csv"
-options="-t ../data/2weeks/best_idf_test.csv -P ../params/irace2.txt -o ../results/sampling -m neat -T20 -p8"
+options="-t ../data/2weeks/best_idf_test.csv -P ../params/neat.txt -o ../results/sampling -m neat -T20 -p8"
 runs=10
 
 for i in $(seq 1 $runs)

@@ -1,9 +1,9 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-load('arena/irace.Rdata')
+load('hyperneat_hyperparams/output/irace.Rdata')
 
 results <- iraceResults$testing$experiments
-results <- results[, seq(1, 4)]
+# results <- results[, seq(1, 4)]
 results <- apply(results, c(1,2), '*', -1) # Flip from negative to positive
 colnames(results) <- paste("Config", seq(1, ncol(results)))
 
