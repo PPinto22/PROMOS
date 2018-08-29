@@ -5,6 +5,7 @@ library(ggplot2)
 library(ggpubr)
 library(RColorBrewer)
 library(GGally)
+library(shadowtext)
 
 setup <- function(multi_types=FALSE){
   fit_label <<- paste("Fitness ", "(", FITNESS_FUNC, ")", sep='')
