@@ -1,2 +1,2 @@
-layers    "--substrate-layers="   i   (1, 100)
-width     "--substrate-width="    i   (1, 50)
+width    "--substrate-width="   i   (1, 100)
+length   "--substrate-length="  i   (1, 100)
