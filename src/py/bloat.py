@@ -6,6 +6,7 @@ import evaluator
 
 class ComplexityType(Enum):
     TIME = 'time'
+    PREDTIME = 'predtime'
     CONNECTIONS = 'connections'
     NEURONS = 'neurons'
 
@@ -89,6 +90,8 @@ class FitnessAdjuster:
             return evaluation.genome_neurons
         elif self.options.complexity_type is ComplexityType.TIME:
             return evaluation.eval_time  # microseconds
+        elif self.options.complexity_type is ComplexityType.PREDTIME:
+            return evaluation.pred_avg_time  # microseconds
         else:
             raise AttributeError("Invalid bloat type: {}".format(self.options.complexity_type))
 
