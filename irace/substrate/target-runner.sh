@@ -10,7 +10,7 @@ shift 7 || exit 1
 CONFIG_PARAMS=$*
 
 EXE="python ../../src/py/evolver.py"
-FIXED_PARAMS="${TRAIN_DATA} -t ${TEST_DATA} -P ${PARAMS} -s2000 -g8 -p6 -o NULL --quiet"
+FIXED_PARAMS="${TRAIN_DATA} -t ${TEST_DATA} -P ${PARAMS} -s2000 -T8 -p6 -o NULL --quiet --no-reevaluation"
 
 STDOUT=c${CONFIG_ID}-${INSTANCE_ID}.stdout
 STDERR=c${CONFIG_ID}-${INSTANCE_ID}.stderr
@@ -24,7 +24,6 @@ if [ ! "$(command -v ${EXE})" ]; then
     error "$EXE: not found or not executable (pwd: $(pwd))"
 fi
 
-echo "$EXE ${FIXED_PARAMS} --seed ${SEED} ${CONFIG_PARAMS}"
 { $EXE ${FIXED_PARAMS} --seed ${SEED} ${CONFIG_PARAMS}; } 1> ${STDOUT} 2> ${STDERR}
 
 if [ -s "${STDOUT}" ]; then
