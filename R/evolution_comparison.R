@@ -14,6 +14,7 @@ evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
   run_type_dt$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_dt))   # Add "run_type" column
   return(run_type_dt)
 }))
+evals_avg_dt$run_type <- factor(evals_avg_dt$run_type, levels = RUN_TYPE_LABELS)
 
 # Read windows/summaries
 read_windows_or_summaries()
@@ -69,6 +70,15 @@ if(!has_windows){
   print(gg_generations_bar)
   dev.off()
 } else{
+  # Box plot of last windows results
+  png(filename = paste(OUT_DIR, 'window_final_best_bp.png', sep=''))
+  gg_windows_final = ggplot(data=windows_final_dt, aes(x=run_type, y=test_fitness)) +
+    geom_boxplot() +
+    labs(x=SERIES_LABEL, y=FITNESS_FUNC) +
+    theme_minimal()
+  print(gg_windows_final)
+  dev.off()
+  
   # Box plot of each window best, split by run_type
   png(filename = paste(OUT_DIR, 'window_best_bps.png', sep=''))
   gg_windows = ggplot(data=windows_dt, aes(x=window_factor, y=test_fitness)) +
@@ -132,6 +142,17 @@ gg_mean_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   theme_minimal()
 gg_mean_connections_gen <- add_window_vlines(gg_mean_connections_gen)
 print(gg_mean_connections_gen)
+dev.off()
+
+# mean complexity (connections) over time
+png(filename = paste(OUT_DIR, 'connections_mean_by_time.png', sep=''))
+gg_mean_connections_time <- ggplot(data=evals_avg_dt, aes(run_time)) + 
+  geom_line(aes(y=connections_mean, col=run_type)) +
+  labs(x="Run time (minutes)", y="Connections", col=SERIES_LABEL) + 
+  scale_color_brewer(palette = 'Set2') +
+  theme_minimal()
+gg_mean_connections_time <- add_window_vlines(gg_mean_connections_gen)
+print(gg_mean_connections_time)
 dev.off()
 
 # mean complexity (neurons) over generations

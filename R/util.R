@@ -206,7 +206,7 @@ read_windows_or_summaries <- function(){
         run_type_summaries$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_summaries))
         run_type_summaries
       }))
-      summaries_dt$run_type <<- factor(summaries_dt$run_type)
+      summaries_dt$run_type <<- factor(summaries_dt$run_type, levels = RUN_TYPE_LABELS)
       setcolorder(summaries_dt, "run_type")
       summaries_avg_dt <<- group_summaries(summaries_dt, group_by = 'run_type')
     } else {
@@ -215,7 +215,7 @@ read_windows_or_summaries <- function(){
         run_type_windows$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_windows))
         run_type_windows
       }))
-      windows_dt$run_type <<- factor(windows_dt$run_type)
+      windows_dt$run_type <<- factor(windows_dt$run_type, levels = RUN_TYPE_LABELS)
       setcolorder(windows_dt, "run_type")
       windows_avg_dt <<- group_windows(windows_dt, group_by = c("run_type", "window"))
       windows_gen_splits <<- windows_avg_dt$generations[1:(length(windows_avg_dt$generations)-1)]
@@ -229,6 +229,27 @@ read_windows_or_summaries <- function(){
       windows_avg_dt <<- group_windows(windows_dt)
       windows_gen_splits <<- windows_avg_dt$generations[1:(length(windows_avg_dt$generations)-1)]
     }
+  }
+  if(has_windows){
+    windows_final_dt <<- get_final_window(windows_dt)
+    if(multi_types){
+      windows_final_avg_dt <<- group_windows(windows_final_dt, group_by = 'run_type')
+    }
+    else{
+      windows_final_avg_dt <<- group_windows(windows_final_dt, group_by = NULL)
+    }
+  }
+}
+
+get_final_window <- function(windows_dt){
+  if(multi_types){
+    final_windows = rbindlist(lapply(1:n_run_types, function(i){
+      windows_dt[window==WINDOWS[[i]]-1 & run_type==RUN_TYPE_LABELS[[i]]]
+    }))
+    return(final_windows)
+  }
+  else{
+    return(windows_dt[window==WINDOWS-1])
   }
 }
 
