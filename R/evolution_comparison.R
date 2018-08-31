@@ -10,7 +10,7 @@ setup(multi_types=TRUE)
 
 # Read evaluations
 evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
-  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]]))  # Read all evals; average each run individually; then average the average of every run
+  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]]), crop=0.2)  # Read all evals; average each run individually; then average the average of every run
   run_type_dt$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_dt))   # Add "run_type" column
   return(run_type_dt)
 }))
@@ -41,11 +41,13 @@ sink()
 if(!has_windows){
   # Boxplot best test fitness by run type
   png(filename = paste(OUT_DIR, 'fitness_best_bp.png', sep=''))
-  gg_best_testfit <- ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
-    geom_boxplot() +
-    labs(x=SERIES_LABEL, y=fit_label) + 
+  # gg_best_testfit <-  
+    ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
+    geom_boxplot(fill=gsmooth_fill) +
+    geom_shadowtext(data = summaries_avg_dt, aes(x=run_type, y=test_fit, label=sprintf("%.4f", round(test_fit, digits = 4))), size=6) +
+    labs(x=SERIES_LABEL, y=FITNESS_FUNC) + 
     theme_minimal()
-  gg_best_testfit
+  # gg_best_testfit
   dev.off()
   
   # Boxplot #connections of the best individual by run type
@@ -55,6 +57,16 @@ if(!has_windows){
     labs(x=SERIES_LABEL, y="Connections") +
     theme_minimal()
   gg_best_connections
+  dev.off()
+  
+  # Generations bar plot
+  png(filename = paste(OUT_DIR, 'generations_bar.png', sep=''))
+  gg_generations_bar <- ggplot(data=summaries_avg_dt, aes(x=run_type, y=generations)) +
+    geom_bar(stat='identity') + 
+    geom_text(aes(label=generations), size = 5, nudge_y=100) +
+    labs(x=SERIES_LABEL, y='Generations') +
+    theme_minimal()
+  print(gg_generations_bar)
   dev.off()
 } else{
   # Box plot of each window best, split by run_type
@@ -100,7 +112,6 @@ gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   theme_minimal()
 print(gg_best_test_fit_gens)
 dev.off()
-
 
 # generations over time
 png(filename = paste(OUT_DIR, 'generations_by_time.png', sep=''))

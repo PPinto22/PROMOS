@@ -42,6 +42,10 @@ def parse_args():
     parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
                         type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
+    parser.add_argument('--substrate-width', dest='substrate_width', metavar='N', default=13, type=util.uint,
+                        help='how many layers the grid substrate should have')
+    parser.add_argument('--substrate-length', dest='layer_length', metavar='M', default=45, type=util.uint,
+                        help='how many neurons each layer of the grid substrate should have')
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
                         help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
     parser.add_argument('-E', '--encoder', dest='encoder', metavar='FILE', default=None,
@@ -176,10 +180,10 @@ class Evolver:
         self.ea_time = None  # Time spent in the EA
         self.window_ea_time = None  # Time spent in the EA during the current window
         self.gen_ea_time = None  # Time spent in the EA during the current generation
-        self.gen_connections = None  # List of the number of connections of all individuals in the current generation
-        self.gen_neurons = None  # List of the number of hidden neurons of all individuals in the current generation
-        if printer is None:
-            self.reprint_obj = output()
+        self.evaluations = None  # List of the latest population evaluations
+        if printer is None and not self.options.quiet:
+            self.reprint_obj = output(initial_len=0)
+            self.reprint_obj.no_warning = True
             self.printer = self.reprint_obj.__enter__()
         else:
             self.reprint_obj = None
@@ -232,7 +236,8 @@ class Evolver:
         try:
             substrate = subst.get_substrate(self.options.substrate,
                                             inputs=self.train_data.n_inputs,
-                                            hidden_layers=10, nodes_per_layer=[10] * 10,
+                                            hidden_layers=self.options.substrate_width,
+                                            nodes_per_layer=[self.options.layer_length] * self.options.substrate_width,
                                             outputs=1) \
                 if self.options.method in ['hyperneat', 'eshyperneat'] else None
             return substrate
@@ -246,7 +251,7 @@ class Evolver:
             self.test_data.encode_from_mapping(self.mapping)
 
     def setup_evaluator(self):
-        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes, maxtasksperchild=500)
+        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes)
 
     def clear(self):
         self.initial_time = None
@@ -400,11 +405,14 @@ class Evolver:
         return '{} / {}'.format(self.get_current_window() + 1, self.slider.n_windows)
 
     def print(self, msg, i=None, override=False):
-        if not self.options.quiet or override:
-            if i is None or i >= len(self.printer):
-                self.printer.append(msg)
-            else:
-                self.printer[i] = msg
+        if override:
+            print(msg)
+        else:
+            if not self.options.quiet:
+                if i is None or i >= len(self.printer):
+                    self.printer.append(msg)
+                else:
+                    self.printer[i] = msg
 
     def make_out_dir(self):
         if self.options.out_dir is None:
@@ -432,6 +440,8 @@ class Evolver:
             self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def save_progress(self):
+        if self.options.out_dir is None:
+            return
         self.make_out_dir()
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
@@ -445,10 +455,14 @@ class Evolver:
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
 
     def save_encoder(self):
+        if self.options.out_dir is None:
+            return
         self.make_out_dir()
         self.encoder is not None and self.encoder.save(self.get_out_file_path('encoder.bin', include_window=False))
 
     def save_mapping(self):
+        if self.options.out_dir is None:
+            return
         self.make_out_dir()
         self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
@@ -535,7 +549,7 @@ class Evolver:
                              test_size, test_positives, test_negatives, best.fitness, test_fitness,
                              best.neurons, best.connections])
 
-    def save_evaluations(self, evaluations):
+    def save_evaluations(self):
         if self.options.no_statistics or self.options.out_dir is None:
             return
 
@@ -550,7 +564,7 @@ class Evolver:
                 writer.writerow(header)
         with open(file_path, 'a') as file:
             writer = csv.writer(file, delimiter=',')
-            for e in evaluations:
+            for e in self.evaluations:
                 fitness_test = e.fitness_test if e.fitness_test is not None else -1
                 writer.writerow([e.window, e.generation, e.genome_id, e.fitness, fitness_test, e.fitness_adj,
                                  e.genome_neurons, e.genome_connections, e.neurons, e.connections,
@@ -579,7 +593,7 @@ class Evolver:
     def get_best(self):
         return self.best_list[0]
 
-    def update_best_list(self, evaluations):
+    def update_best_list(self):
         # Penalize individuals older than 20 generations
         if self.generation % 20 == 0:
             for e in self.best_list:
@@ -589,7 +603,7 @@ class Evolver:
         max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most the best 5% of evaluations
         # Evaluations must be sorted by descending fitness
         for i in range(max_updates):
-            e = evaluations[i]
+            e = self.evaluations[i]
             # Break condition (best_list is full and e is worse than the worst evaluation in best_list)
             if len(self.best_list) == self.params.PopulationSize and e.fitness < self.best_list[-1].fitness:
                 break
@@ -655,12 +669,9 @@ class Evolver:
 
     def evaluate_pop(self):
         self.output_update_state('Evaluating')
-        evaluation_list = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
-
-        self.gen_connections = [e.genome_connections for e in evaluation_list]
-        self.gen_neurons = [e.genome_neurons for e in evaluation_list]
-        self.save_evaluations(evaluation_list)
-        self.update_best_list(evaluation_list)
+        self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
+        self.save_evaluations()
+        self.update_best_list()
 
     def epoch(self):
         self.output_update_state('Evolving')
@@ -678,7 +689,7 @@ class Evolver:
         if not self.is_online:
             best_test_str = ' Fitness (test): {:.6f},'.format(
                 self.best_test.fitness) if self.best_test is not None else ''
-            self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
+            self.print("Best result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
                        format(best.fitness, best_test_str, best.genome_neurons, best.genome_connections), override=True)
         else:
             best_tuple = (self.get_current_window() + 1, best.genome_id,
@@ -769,12 +780,15 @@ class Evolver:
     def adjust_mutation_rates(self):
         if self.mutation_rate_controller is not None:
             complex_type = self.bloat_options.mutation_options.complexity_type
+
             if complex_type is bloat.ComplexityType.CONNECTIONS:
-                complexity = avg(self.gen_connections)
+                complexity = avg([e.genome_connections for e in self.evaluations])
             elif complex_type is bloat.ComplexityType.NEURONS:
-                complexity = avg(self.gen_neurons)
+                complexity = avg([e.genome_neurons for e in self.evaluations])
             elif complex_type is bloat.ComplexityType.TIME:
                 complexity = (self.gen_ea_time + self.gen_eval_time).total_seconds()
+            elif complex_type is bloat.ComplexityType.PREDTIME:
+                complexity = avg([e.pred_avg_time for e in self.evaluations])
             else:
                 raise NotImplementedError
             self.mutation_rate_controller.adjust(complexity, generation=self.generation)

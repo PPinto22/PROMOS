@@ -2,7 +2,7 @@
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf.csv"
 id="sw_2wks_idf_balanced_mut"
-options="-P ../params/irace2_balanced.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness"
+options="-P ../params/neat_balanced.txt -o ../results/${id}/ -m neat -g750 -s2500 -p13 -W120 -w24 -S24 --test-fitness"
 runs=8
 parallel=4
 

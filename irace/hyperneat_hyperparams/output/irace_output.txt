@@ -1,0 +1,523 @@
+*******************************************************************************
+* irace: An implementation in R of Iterated Race
+* Version: 2.4.1844
+* Copyright (C) 2010-2017
+* Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+* Jeremie Dubois-Lacoste  
+* Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+*
+* This is free software, and you are welcome to redistribute it under certain
+* conditions.  See the GNU General Public License for details. There is NO
+* WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*
+* irace builds upon previous code from the race package:
+*
+* race: Racing methods for the selection of the best
+* Copyright (C) 2003 Mauro Birattari
+*******************************************************************************
+# installed at: /home/ppinto/R/x86_64-redhat-linux-gnu-library/3.4/irace
+# called with: 
+Warning: A default scenario file './scenario.txt' has been found and will be read
+# 3 expression(s) specifying forbidden configurations read from '/home/ppinto/PROMOS/irace/hyperneat_hyperparams/forbidden.txt'
+## irace scenario:
+scenarioFile = "./scenario.txt" 
+parameterFile = "/home/ppinto/PROMOS/irace/hyperneat_hyperparams/parameters.txt" 
+execDir = "/home/ppinto/PROMOS/irace/arena" 
+logFile = "/home/ppinto/PROMOS/irace/arena/irace.Rdata" 
+recoveryFile = NULL 
+instances = "train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv"
+trainInstancesDir = "" 
+trainInstancesFile = "/home/ppinto/PROMOS/irace/hyperneat_hyperparams/train_instances.txt" 
+configurationsFile = "/home/ppinto/PROMOS/irace/hyperneat_hyperparams/initial_config.txt" 
+forbiddenExps = list(<bytecode>, <bytecode>, <bytecode>) 
+forbiddenFile = "/home/ppinto/PROMOS/irace/hyperneat_hyperparams/forbidden.txt" 
+targetRunner = "/home/ppinto/PROMOS/irace/hyperneat_hyperparams/target-runner.sh" 
+targetRunnerRetries = 0 
+targetRunnerData = "" 
+targetRunnerParallel = NULL 
+targetEvaluator = NULL 
+maxExperiments = 1000 
+maxTime = 0 
+budgetEstimation = 0.02 
+digits = 3 
+debugLevel = 1 
+nbIterations = 0 
+nbExperimentsPerIteration = 0 
+sampleInstances = TRUE 
+testType = "friedman" 
+firstTest = 5 
+eachTest = 1 
+minNbSurvival = 0 
+nbConfigurations = 0 
+mu = 5 
+confidence = 0.9 
+deterministic = FALSE 
+seed = NA_character_ 
+parallel = 7 
+loadBalancing = TRUE 
+mpi = FALSE 
+batchmode = 0 
+softRestart = TRUE 
+softRestartThreshold = 0.001 
+testInstancesDir = "" 
+testInstancesFile = "/home/ppinto/PROMOS/irace/hyperneat_hyperparams/test_instances.txt" 
+testInstances = "test1.0    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.1    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.2    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.4    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.5    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.6    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.7    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.8    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.9    ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.10   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.11   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.12   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.13   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.14   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.15   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.16   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.17   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.18   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv, test1.19   ../../data/2weeks/best_idf_test.csv  ../../data/2weeks/best_idf_test.csv"
+testNbElites = 5 
+testIterationElites = FALSE 
+elitist = TRUE 
+elitistNewInstances = 1 
+elitistLimit = 2 
+repairConfiguration = function (configuration, parameters, digits)  {     mutations = c("addneuron", "remneuron", "addlink", "remlink",          "mutweights", "mutbias", "mutactiv")     mutations = mutations[!is.na(configuration[mutations])]     configuration[mutations] <- configuration[mutations]/sum(configuration[mutations])     return(configuration) } 
+## end of irace scenario
+# --- Hierarchy vector ---
+# Param : Level
+popsize : 1
+minspecies : 1
+maxspecies : 1
+clones : 1
+youngthresh : 2
+youngboost : 1
+oldthresh : 2
+oldpenalty : 1
+survival : 1
+crossover : 1
+interspecies : 1
+mutation : 1
+elitism : 1
+multipoint : 1
+addneuron : 1
+remneuron : 1
+addlink : 1
+remlink : 1
+mutweights : 1
+mutsevere : 1
+mutgene : 1
+replweight : 1
+maxweight : 1
+mutweightmax : 1
+mutbias : 1
+mutactiv : 2
+activation : 1
+compat : 1
+# ------------------------
+# Adding 1 initial configuration(s) from file '/home/ppinto/PROMOS/irace/hyperneat_hyperparams/initial_config.txt' 
+# 2018-08-27 22:35:38 WEST: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 6
+# minNbSurvival: 6
+# nbParameters: 28
+# seed: 1843403423
+# confidence level: 0.9
+# budget: 1000
+# mu: 5
+# deterministic: FALSE
+
+# 2018-08-27 22:35:38 WEST: Iteration 1 of 6
+# experimentsUsedSoFar: 0
+# remainingBudget: 1000
+# currentBudget: 166
+# nbConfigurations: 27
+# 2018-08-27 22:35:38 WEST: Sample 26 configurations from uniform distribution
+# 2018-08-27 22:35:38 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|          1|         27|          4|  -0.7230010000|         27|00:52:16|   NA|  NA|    NA|
+|x|          2|         27|          2|  -0.7212195000|         54|00:51:28|+0.72|0.86|0.2323|
+|x|          3|         27|          4|  -0.7220730000|         81|00:51:11|+0.73|0.82|0.1702|
+|x|          4|         27|          4|  -0.7217135000|        108|00:50:34|+0.74|0.80|0.1887|
+|-|          5|          5|          4|  -0.7218402000|        135|00:52:01|+0.12|0.30|0.7297|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (5) <= minimum number of configurations (6)
+Best configuration:           4    mean value:   -0.7218402000
+Description of the best configuration:
+  .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint addneuron  remneuron   addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh mutactiv .PARENT.
+4    4     247          3          8  false      1.328      0.657    0.297     0.698        0.373    0.495   0.047      0.851 0.0736342 0.07205067 0.1021378 0.03087886  0.6896279     0.116   0.882      0.356        20        0.184 0.03167063          1      7           9        60       NA       NA
+
+# 2018-08-28 02:53:11 WEST: Extracting elites
+# 2018-08-28 02:53:11 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK.   .WEIGHT.
+4     4     247          3          8  false      1.328      0.657    0.297     0.698        0.373    0.495   0.047      0.851 0.07363420 0.07205067 0.10213777 0.03087886  0.6896279     0.116   0.882      0.356        20        0.184 0.03167063          1      7           9        60          NA       NA    TRUE     13 0.33333333
+2     2     175          4         12  false      1.269      0.700    0.546     0.548        0.195    0.768   0.053      0.958 0.08884074 0.04333694 0.08450704 0.07367281  0.6717226     0.174   0.790      0.239        12        0.211 0.02925244          5     10           4        69 0.008667389       NA    TRUE     14 0.26666667
+10   10     158          3         12  false      1.352      0.573    0.356     0.847        0.181    0.382   0.039      0.601 0.10511159 0.09791217 0.05327574 0.03527718  0.6709863     0.164   0.824      0.231        20        0.099 0.03743701          7      8           8        56 0.000000000       NA    TRUE     22 0.20000000
+18   18     251          3         16  false      1.475      0.535    0.322     0.654        0.454    0.775   0.054      0.137 0.11769616 0.02754591 0.10767947 0.04340568  0.6552588     0.249   0.844      0.117        17        0.258 0.04340568          5      6          10        25 0.005008347       NA    TRUE     27 0.13333333
+11   11     280          3         18  false      1.412      0.701    0.466     0.846        0.053    0.464   0.089      0.874 0.10308555 0.03856942 0.10168303 0.05189341  0.6325386     0.201   0.996      0.251        20        0.299 0.06942496         10      9           6        60 0.002805049       NA    TRUE     29 0.06666667
+# 2018-08-28 02:53:11 WEST: Initialise model
+# 2018-08-28 02:53:11 WEST: End of iteration 1
+# 2018-08-28 02:53:11 WEST: Iteration 2 of 6
+# experimentsUsedSoFar: 135
+# remainingBudget: 865
+# currentBudget: 173
+# nbConfigurations: 28
+# 2018-08-28 02:53:11 WEST: Update model
+# 2018-08-28 02:53:11 WEST: Sample 23 configurations from model
+# Computing similarity of configurations ........................... DONE
+# 2018-08-28 02:53:12 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|          6|         28|         46|  -0.7305690000|         28|00:53:40|   NA|  NA|    NA|
+|x|          3|         28|         28|  -0.7266755000|         51|00:48:32|+0.63|0.82|0.7628|
+|x|          5|         28|         28|  -0.7304096667|         74|00:48:34|+0.63|0.75|0.4995|
+|x|          4|         28|         28|  -0.7313417500|         97|00:48:14|+0.63|0.72|0.3842|
+|!|          1|          8|         28|  -0.7292616000|        120|00:47:37|+0.17|0.34|0.6600|
+|-|          2|          2|         28|  -0.7305186667|        123|00:11:10|-0.07|0.11|0.5333|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (2) <= minimum number of configurations (6)
+Best configuration:          28    mean value:   -0.7305186667
+Description of the best configuration:
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh mutactiv .PARENT.
+28   28     117          4          9  false      1.078       0.81    0.382     0.707        0.218    0.753       0      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50       NA        2
+
+# 2018-08-28 07:11:02 WEST: Extracting elites
+# 2018-08-28 07:11:02 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh mutactiv .PARENT. .ALIVE. .RANK.  .WEIGHT.
+28   28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50       NA        2    TRUE     10 0.6666667
+46   46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28       NA        4    TRUE     19 0.3333333
+# 2018-08-28 07:11:02 WEST: End of iteration 2
+# 2018-08-28 07:11:02 WEST: Iteration 3 of 6
+# experimentsUsedSoFar: 258
+# remainingBudget: 742
+# currentBudget: 185
+# nbConfigurations: 24
+# 2018-08-28 07:11:02 WEST: Update model
+# 2018-08-28 07:11:02 WEST: Sample 22 configurations from model
+# Computing similarity of configurations ....................... DONE
+# 2018-08-28 07:11:03 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|          7|         24|         46|  -0.7337580000|         24|00:45:23|   NA|  NA|    NA|
+|x|          5|         24|         28|  -0.7334085000|         46|00:42:29|+0.65|0.82|0.7167|
+|x|          4|         24|         28|  -0.7336516667|         68|00:42:13|+0.62|0.75|0.6229|
+|x|          1|         24|         28|  -0.7304740000|         90|00:41:55|+0.62|0.72|0.6185|
+|-|          6|          4|         28|  -0.7295408000|        112|00:41:47|+0.40|0.52|0.5094|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (4) <= minimum number of configurations (6)
+Best configuration:          28    mean value:   -0.7295408000
+Description of the best configuration:
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh mutactiv .PARENT.
+28   28     117          4          9  false      1.078       0.81    0.382     0.707        0.218    0.753       0      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50       NA        2
+
+# 2018-08-28 10:44:51 WEST: Extracting elites
+# 2018-08-28 10:44:51 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK. .WEIGHT.
+28   28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA        2    TRUE     14      0.4
+46   46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA        4    TRUE     22      0.3
+57   57     151          3         15   true      1.326      0.914    0.537     0.501        0.186    0.424   0.139      0.536 0.05383936 0.04766108 0.09708738 0.03795234  0.7140335     0.146   0.823      0.270        10        0.216 0.04677846          7      6           9        30 0.002647838       46    TRUE     32      0.2
+59   59     263          3          8   true      1.207      0.923    0.592     0.520        0.348    0.461   0.041      0.721 0.10536044 0.01940850 0.12014787 0.05914972  0.6589649     0.248   0.950      0.020        14        0.244 0.03327172          8      6           5        27 0.003696858       28    TRUE     32      0.1
+# 2018-08-28 10:44:51 WEST: End of iteration 3
+# 2018-08-28 10:44:51 WEST: Iteration 4 of 6
+# experimentsUsedSoFar: 370
+# remainingBudget: 630
+# currentBudget: 210
+# nbConfigurations: 26
+# 2018-08-28 10:44:51 WEST: Update model
+# 2018-08-28 10:44:51 WEST: Sample 22 configurations from model
+# Computing similarity of configurations ......................... DONE
+# 2018-08-28 10:44:52 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|          8|         26|         84|  -0.7468720000|         26|00:46:09|   NA|  NA|    NA|
+|x|          5|         26|         28|  -0.7349035000|         48|00:42:11|+0.49|0.75|0.4099|
+|x|          7|         26|         80|  -0.7344383333|         70|00:41:44|+0.47|0.65|0.3841|
+|x|          1|         26|         28|  -0.7299217500|         92|00:42:25|+0.46|0.60|0.3747|
+|!|          4|         10|         28|  -0.7307650000|        114|00:41:41|-0.00|0.20|0.8720|
+|=|          2|         10|         28|  -0.7317715000|        122|00:20:35|+0.01|0.18|0.8180|
+|=|          6|         10|         28|  -0.7309195714|        128|00:12:10|+0.03|0.17|0.8050|
+|=|          3|         10|         28|  -0.7304975000|        136|00:20:41|+0.03|0.15|0.8068|
+|-|          9|          2|         28|  -0.7309228889|        146|00:21:21|+0.00|0.11|0.5000|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (2) <= minimum number of configurations (6)
+Best configuration:          28    mean value:   -0.7309228889
+Description of the best configuration:
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh mutactiv .PARENT.
+28   28     117          4          9  false      1.078       0.81    0.382     0.707        0.218    0.753       0      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50       NA        2
+
+# 2018-08-28 15:33:52 WEST: Extracting elites
+# 2018-08-28 15:33:52 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh mutactiv .PARENT. .ALIVE. .RANK.  .WEIGHT.
+28   28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50       NA        2    TRUE     24 0.6666667
+46   46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28       NA        4    TRUE     41 0.3333333
+# 2018-08-28 15:33:52 WEST: End of iteration 4
+# 2018-08-28 15:33:52 WEST: Iteration 5 of 6
+# experimentsUsedSoFar: 516
+# remainingBudget: 484
+# currentBudget: 242
+# nbConfigurations: 26
+# 2018-08-28 15:33:52 WEST: Update model
+# 2018-08-28 15:33:52 WEST: Sample 24 configurations from model
+# Computing similarity of configurations ......................... DONE
+# 2018-08-28 15:33:53 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         10|         26|         46|  -0.7303260000|         26|00:46:07|   NA|  NA|    NA|
+|x|          6|         26|         46|  -0.7304475000|         50|00:44:48|+0.77|0.89|0.3036|
+|x|          4|         26|         28|  -0.7297083333|         74|00:44:34|+0.62|0.74|0.4525|
+|x|          1|         26|        114|  -0.7324372500|         98|00:44:20|+0.65|0.74|0.4101|
+|-|          3|          4|        114|  -0.7323066000|        122|00:45:20|+0.20|0.36|0.5720|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (4) <= minimum number of configurations (6)
+Best configuration:         114    mean value:   -0.7323066000
+Description of the best configuration:
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink   remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.0465313  0.6463621     0.176   0.848       0.01        15         0.26 0.05837563          5      9           4        60 0.005922166       28
+
+# 2018-08-28 19:19:05 WEST: Extracting elites
+# 2018-08-28 19:19:05 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK. .WEIGHT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166       28    TRUE      9      0.4
+28    28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA        2    TRUE     16      0.3
+46    46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA        4    TRUE     25      0.2
+103  103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112       28    TRUE     29      0.1
+# 2018-08-28 19:19:05 WEST: End of iteration 5
+# 2018-08-28 19:19:05 WEST: Iteration 6 of 6
+# experimentsUsedSoFar: 638
+# remainingBudget: 362
+# currentBudget: 362
+# nbConfigurations: 36
+# 2018-08-28 19:19:05 WEST: Update model
+# 2018-08-28 19:19:05 WEST: Sample 32 configurations from model
+# Computing similarity of configurations ................................... DONE
+# 2018-08-28 19:19:05 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         11|         36|         46|  -0.7345140000|         36|01:03:55|   NA|  NA|    NA|
+|x|          2|         36|        114|  -0.7349075000|         70|00:57:42|+0.51|0.76|0.4814|
+|x|          6|         36|        114|  -0.7332566667|        102|00:56:02|+0.47|0.65|0.4834|
+|x|         10|         36|         46|  -0.7327422500|        134|00:55:33|+0.45|0.59|0.5261|
+|-|          4|         10|        114|  -0.7304826000|        166|00:55:35|+0.04|0.23|0.8898|
+|=|          8|         10|        114|  -0.7295375000|        174|00:20:21|+0.07|0.23|0.8688|
+|=|          1|         10|        114|  -0.7320537143|        180|00:11:42|+0.05|0.19|0.8321|
+|=|          9|         10|        114|  -0.7311190000|        188|00:20:12|+0.05|0.17|0.8145|
+|=|          5|         10|        114|  -0.7320404444|        196|00:20:04|+0.07|0.17|0.7776|
+|!|          7|          4|        114|  -0.7330584000|        204|00:19:52|+0.16|0.24|0.6133|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (4) <= minimum number of configurations (6)
+Best configuration:         114    mean value:   -0.7330584000
+Description of the best configuration:
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink   remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.0465313  0.6463621     0.176   0.848       0.01        15         0.26 0.05837563          5      9           4        60 0.005922166       28
+
+# 2018-08-29 01:40:09 WEST: Extracting elites
+# 2018-08-29 01:40:09 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK. .WEIGHT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166       28    TRUE     29      0.4
+28    28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA        2    TRUE     42      0.3
+46    46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA        4    TRUE     45      0.2
+103  103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112       28    TRUE     62      0.1
+# 2018-08-29 01:40:09 WEST: End of iteration 6
+# 2018-08-29 01:40:09 WEST: Iteration 7 of 7
+# experimentsUsedSoFar: 842
+# remainingBudget: 158
+# currentBudget: 158
+# nbConfigurations: 16
+# 2018-08-29 01:40:09 WEST: Update model
+# 2018-08-29 01:40:09 WEST: Sample 12 configurations from model
+# Computing similarity of configurations ............... DONE
+# 2018-08-29 01:40:09 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         12|         16|        114|  -0.7322400000|         16|00:32:54|   NA|  NA|    NA|
+|x|          2|         16|        114|  -0.7364815000|         28|00:24:25|+0.81|0.90|0.1397|
+|x|          6|         16|        114|  -0.7343060000|         40|00:24:19|+0.75|0.83|0.1747|
+|x|         10|         16|         46|  -0.7319070000|         52|00:24:42|+0.62|0.72|0.3491|
+|-|          5|          4|        114|  -0.7336988000|         64|00:24:23|+0.40|0.52|0.3729|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (4) <= minimum number of configurations (6)
+Best configuration:         114    mean value:   -0.7336988000
+Description of the best configuration:
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink   remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.0465313  0.6463621     0.176   0.848       0.01        15         0.26 0.05837563          5      9           4        60 0.005922166       28
+
+# 2018-08-29 03:50:55 WEST: Extracting elites
+# 2018-08-29 03:50:55 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK. .WEIGHT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166       28    TRUE     11      0.4
+28    28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA        2    TRUE     14      0.3
+46    46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA        4    TRUE     16      0.2
+103  103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112       28    TRUE     24      0.1
+# 2018-08-29 03:50:55 WEST: End of iteration 7
+# 2018-08-29 03:50:55 WEST: Iteration 8 of 8
+# experimentsUsedSoFar: 906
+# remainingBudget: 94
+# currentBudget: 94
+# nbConfigurations: 10
+# 2018-08-29 03:50:55 WEST: Update model
+# 2018-08-29 03:50:55 WEST: Sample 6 configurations from model
+# Computing similarity of configurations ......... DONE
+# 2018-08-29 03:50:55 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         13|         10|        114|  -0.7401730000|         10|00:21:40|   NA|  NA|    NA|
+|x|          9|         10|         28|  -0.7338735000|         16|00:12:03|+0.49|0.75|0.3821|
+|x|         10|         10|         28|  -0.7323086667|         22|00:11:32|+0.60|0.73|0.3265|
+|x|          1|         10|        114|  -0.7345160000|         28|00:11:56|+0.57|0.67|0.3879|
+|-|          7|          5|        114|  -0.7360568000|         34|00:12:00|-0.05|0.16|0.7977|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (5) <= minimum number of configurations (6)
+Best configuration:         114    mean value:   -0.7360568000
+Description of the best configuration:
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink   remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.0465313  0.6463621     0.176   0.848       0.01        15         0.26 0.05837563          5      9           4        60 0.005922166       28
+
+# 2018-08-29 05:00:09 WEST: Extracting elites
+# 2018-08-29 05:00:09 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK.   .WEIGHT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166       28    TRUE     12 0.33333333
+28    28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA        2    TRUE     15 0.26666667
+46    46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA        4    TRUE     16 0.20000000
+164  164     163          4         10  false      1.057      0.821    0.358     0.609        0.178    0.568   0.016      0.965 0.09175162 0.01297498 0.10287303 0.08248378  0.6329935     0.108   0.926      0.012        16        0.276 0.07692308          4     10           7        40          NA      114    TRUE     18 0.13333333
+103  103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112       28    TRUE     21 0.06666667
+# 2018-08-29 05:00:09 WEST: End of iteration 8
+# 2018-08-29 05:00:09 WEST: Iteration 9 of 9
+# experimentsUsedSoFar: 940
+# remainingBudget: 60
+# currentBudget: 60
+# nbConfigurations: 8
+# 2018-08-29 05:00:09 WEST: Update model
+# 2018-08-29 05:00:09 WEST: Sample 3 configurations from model
+# Computing similarity of configurations ....... DONE
+# 2018-08-29 05:00:09 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+|x|         14|          8|         28|  -0.7378030000|          8|00:21:23|   NA|  NA|    NA|
+|x|          8|          8|         28|  -0.7348660000|         12|00:12:17|+0.14|0.57|0.6711|
+|x|          3|          8|         28|  -0.7324250000|         16|00:12:21|+0.32|0.54|0.6431|
+|x|         11|          8|        114|  -0.7306792500|         20|00:12:02|+0.13|0.35|0.7872|
+|=|          1|          8|        114|  -0.7339736000|         23|00:11:51|+0.17|0.34|0.7510|
+|!|          9|          5|        114|  -0.7324073333|         26|00:11:49|+0.10|0.25|0.6640|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# Stopped because number of alive configurations (5) <= minimum number of configurations (6)
+Best configuration:         114    mean value:   -0.7324073333
+Description of the best configuration:
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink   remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.0465313  0.6463621     0.176   0.848       0.01        15         0.26 0.05837563          5      9           4        60 0.005922166       28
+
+# 2018-08-29 06:21:56 WEST: Extracting elites
+# 2018-08-29 06:21:56 WEST: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+    .ID. popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv .PARENT. .ALIVE. .RANK.   .WEIGHT.
+114  114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166       28    TRUE     15 0.33333333
+28    28     117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA        2    TRUE     20 0.26666667
+46    46     136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA        4    TRUE     20 0.20000000
+103  103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112       28    TRUE     28 0.13333333
+164  164     163          4         10  false      1.057      0.821    0.358     0.609        0.178    0.568   0.016      0.965 0.09175162 0.01297498 0.10287303 0.08248378  0.6329935     0.108   0.926      0.012        16        0.276 0.07692308          4     10           7        40          NA      114    TRUE     30 0.06666667
+# 2018-08-29 06:21:56 WEST: End of iteration 9
+# 2018-08-29 06:21:56 WEST: Stopped because there is not enough budget left to race more than the minimum (6)
+# You may either increase the budget or set 'minNbSurvival' to a lower value
+# Iteration: 10
+# nbIterations: 10
+# experimentsUsedSoFar: 966
+# timeUsed: 0
+# remainingBudget: 34
+# currentBudget: 34
+# number of elites: 5
+# nbConfigurations: 6
+# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+    popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv
+114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166
+28      117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA
+46      136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA
+103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112
+164     163          4         10  false      1.057      0.821    0.358     0.609        0.178    0.568   0.016      0.965 0.09175162 0.01297498 0.10287303 0.08248378  0.6329935     0.108   0.926      0.012        16        0.276 0.07692308          4     10           7        40          NA
+# Best configurations as commandlines (first number is the configuration ID; same order as above):
+114  PopulationSize=145 MinSpecies=4 MaxSpecies=11 AllowClones=false YoungAgeThreshold=4 YoungAgeFitnessBoost=1.119 OldAgeThreshold=60 OldAgePenalty=0.996 SurvivalRate=0.344 CrossoverRate=0.741 InterspeciesCrossoverRate=0.227 OverallMutationRate=0.692 Elitism=0.028 MultipointCrossoverRate=0.923 MutateAddNeuronProb=0.0803722504230119 MutateRemSimpleNeuronProb=0.0668358714043993 MutateAddLinkProb=0.0956006768189509 MutateRemLinkProb=0.0465313028764805 MutateWeightsProb=0.646362098138748 MutateWeightsSevereProb=0.176 WeightMutationRate=0.848 WeightReplacementRate=0.01 MaxWeight=15 WeightMutationMaxProportion=0.26 MutateNeuronBiasesProb=0.0583756345177665 MutateNeuronActivationTypeProb=0.00592216582064298 Activation=5 CompatThreshold=9
+28   PopulationSize=117 MinSpecies=4 MaxSpecies=9 AllowClones=false YoungAgeThreshold=4 YoungAgeFitnessBoost=1.078 OldAgeThreshold=50 OldAgePenalty=0.81 SurvivalRate=0.382 CrossoverRate=0.707 InterspeciesCrossoverRate=0.218 OverallMutationRate=0.753 Elitism=0 MultipointCrossoverRate=0.848 MutateAddNeuronProb=0.0552282768777614 MutateRemSimpleNeuronProb=0.0309278350515464 MutateAddLinkProb=0.0986745213549337 MutateRemLinkProb=0.0662739322533137 MutateWeightsProb=0.687776141384389 MutateWeightsSevereProb=0.167 WeightMutationRate=0.796 WeightReplacementRate=0.129 MaxWeight=11 WeightMutationMaxProportion=0.283 MutateNeuronBiasesProb=0.061119293078056 Activation=2 CompatThreshold=9
+46   PopulationSize=136 MinSpecies=4 MaxSpecies=13 AllowClones=true YoungAgeThreshold=10 YoungAgeFitnessBoost=1.248 OldAgeThreshold=28 OldAgePenalty=0.539 SurvivalRate=0.436 CrossoverRate=0.629 InterspeciesCrossoverRate=0.249 OverallMutationRate=0.608 Elitism=0.097 MultipointCrossoverRate=0.453 MutateAddNeuronProb=0.0719656283566058 MutateRemSimpleNeuronProb=0.041890440386681 MutateAddLinkProb=0.126745435016112 MutateRemLinkProb=0.075187969924812 MutateWeightsProb=0.663802363050483 MutateWeightsSevereProb=0.149 WeightMutationRate=0.916 WeightReplacementRate=0.295 MaxWeight=20 WeightMutationMaxProportion=0.265 MutateNeuronBiasesProb=0.0204081632653061 Activation=2 CompatThreshold=5
+103  PopulationSize=130 MinSpecies=3 MaxSpecies=12 AllowClones=false YoungAgeThreshold=3 YoungAgeFitnessBoost=1.048 OldAgeThreshold=35 OldAgePenalty=0.759 SurvivalRate=0.356 CrossoverRate=0.63 InterspeciesCrossoverRate=0.212 OverallMutationRate=0.719 Elitism=0.061 MultipointCrossoverRate=0.72 MutateAddNeuronProb=0.0896414342629482 MutateRemSimpleNeuronProb=0.0468127490039841 MutateAddLinkProb=0.0667330677290837 MutateRemLinkProb=0.0229083665338645 MutateWeightsProb=0.690239043824701 MutateWeightsSevereProb=0.266 WeightMutationRate=0.738 WeightReplacementRate=0.027 MaxWeight=10 WeightMutationMaxProportion=0.245 MutateNeuronBiasesProb=0.0766932270916335 MutateNeuronActivationTypeProb=0.00697211155378486 Activation=8 CompatThreshold=10
+164  PopulationSize=163 MinSpecies=4 MaxSpecies=10 AllowClones=false YoungAgeThreshold=7 YoungAgeFitnessBoost=1.057 OldAgeThreshold=40 OldAgePenalty=0.821 SurvivalRate=0.358 CrossoverRate=0.609 InterspeciesCrossoverRate=0.178 OverallMutationRate=0.568 Elitism=0.016 MultipointCrossoverRate=0.965 MutateAddNeuronProb=0.0917516218721038 MutateRemSimpleNeuronProb=0.0129749768303985 MutateAddLinkProb=0.102873030583874 MutateRemLinkProb=0.082483781278962 MutateWeightsProb=0.632993512511585 MutateWeightsSevereProb=0.108 WeightMutationRate=0.926 WeightReplacementRate=0.012 MaxWeight=16 WeightMutationMaxProportion=0.276 MutateNeuronBiasesProb=0.0769230769230769 Activation=4 CompatThreshold=10
+ 
+
+# 2018-08-29 06:21:56 WEST: Testing configurations (in no particular order): 114 28 46 103 164
+    popsize minspecies maxspecies clones youngboost oldpenalty survival crossover interspecies mutation elitism multipoint  addneuron  remneuron    addlink    remlink mutweights mutsevere mutgene replweight maxweight mutweightmax    mutbias activation compat youngthresh oldthresh    mutactiv
+114     145          4         11  false      1.119      0.996    0.344     0.741        0.227    0.692   0.028      0.923 0.08037225 0.06683587 0.09560068 0.04653130  0.6463621     0.176   0.848      0.010        15        0.260 0.05837563          5      9           4        60 0.005922166
+28      117          4          9  false      1.078      0.810    0.382     0.707        0.218    0.753   0.000      0.848 0.05522828 0.03092784 0.09867452 0.06627393  0.6877761     0.167   0.796      0.129        11        0.283 0.06111929          2      9           4        50          NA
+46      136          4         13   true      1.248      0.539    0.436     0.629        0.249    0.608   0.097      0.453 0.07196563 0.04189044 0.12674544 0.07518797  0.6638024     0.149   0.916      0.295        20        0.265 0.02040816          2      5          10        28          NA
+103     130          3         12  false      1.048      0.759    0.356     0.630        0.212    0.719   0.061      0.720 0.08964143 0.04681275 0.06673307 0.02290837  0.6902390     0.266   0.738      0.027        10        0.245 0.07669323          8     10           3        35 0.006972112
+164     163          4         10  false      1.057      0.821    0.358     0.609        0.178    0.568   0.016      0.965 0.09175162 0.01297498 0.10287303 0.08248378  0.6329935     0.108   0.926      0.012        16        0.276 0.07692308          4     10           7        40          NA
+# Testing of elite configurations: 5 
+# Testing iteration configurations: FALSE 
+# 2018-08-29 08:27:15 WEST: Testing results (column number is configuration ID in no particular order):
+          114        28        46       103       164
+1t  -0.739769 -0.726806 -0.732930 -0.723917 -0.721275
+2t  -0.727093 -0.732872 -0.726336 -0.720128 -0.727626
+3t  -0.735759 -0.729881 -0.726656 -0.737737 -0.731892
+4t  -0.724707 -0.734646 -0.742590 -0.729283 -0.731311
+5t  -0.735375 -0.717699 -0.731299 -0.721894 -0.740872
+6t  -0.725888 -0.740317 -0.721194 -0.727935 -0.720898
+7t  -0.746614 -0.726996 -0.736173 -0.729668 -0.726397
+8t  -0.743155 -0.730028 -0.726685 -0.726829 -0.722639
+9t  -0.741863 -0.726963 -0.723235 -0.745195 -0.725628
+10t -0.741335 -0.735569 -0.724487 -0.725521 -0.722485
+11t -0.719271 -0.739059 -0.726901 -0.728919 -0.737602
+12t -0.717621 -0.740878 -0.746991 -0.725257 -0.744846
+13t -0.720826 -0.726322 -0.732204 -0.725774 -0.726983
+14t -0.741047 -0.728225 -0.722328 -0.726126 -0.726011
+15t -0.721394 -0.732425 -0.726322 -0.732557 -0.727512
+16t -0.724794 -0.727818 -0.723291 -0.722942 -0.723628
+17t -0.720604 -0.725877 -0.723833 -0.714231 -0.723987
+18t -0.729920 -0.722511 -0.730633 -0.728599 -0.722807
+19t -0.725193 -0.738362 -0.728046 -0.725907 -0.729434
+# 2018-08-29 08:27:15 WEST: Finished testing

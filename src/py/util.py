@@ -135,6 +135,16 @@ def time(f, as_microseconds=False):
     return elapsed_time, f_out
 
 
+def try_(f):
+    try:
+        # DEBUG: 10% chance to return None to simulate errors
+        # import random
+        # if random.uniform(0, 1) < 0.1:
+        #     return None
+        return f()
+    except:
+        return None
+
 def serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
 

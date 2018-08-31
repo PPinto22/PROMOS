@@ -108,7 +108,7 @@ namespace NEAT
         MultipointCrossoverRate = 0.75;
 
         // Performing roulette wheel selection or not?
-        RouletteWheelSelection = false;
+        RouletteWheelSelection = true;
 
         // For tournament selection
         TournamentSize = 4;
