@@ -1,0 +1,290 @@
+*******************************************************************************
+* irace: An implementation in R of Iterated Race
+* Version: 2.4.1844
+* Copyright (C) 2010-2017
+* Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+* Jeremie Dubois-Lacoste  
+* Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+*
+* This is free software, and you are welcome to redistribute it under certain
+* conditions.  See the GNU General Public License for details. There is NO
+* WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*
+* irace builds upon previous code from the race package:
+*
+* race: Racing methods for the selection of the best
+* Copyright (C) 2003 Mauro Birattari
+*******************************************************************************
+# installed at: /home/ppinto/R/x86_64-redhat-linux-gnu-library/3.4/irace
+# called with: 
+Warning: A default scenario file './scenario.txt' has been found and will be read
+## irace scenario:
+scenarioFile = "./scenario.txt" 
+parameterFile = "/home/ppinto/PROMOS/irace/substrate/parameters.txt" 
+execDir = "/home/ppinto/PROMOS/irace/arena" 
+logFile = "/home/ppinto/PROMOS/irace/arena/irace.Rdata" 
+recoveryFile = NULL 
+instances = "train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt"
+trainInstancesDir = "" 
+trainInstancesFile = "/home/ppinto/PROMOS/irace/substrate/train_instances.txt" 
+configurationsFile = "/home/ppinto/PROMOS/irace/substrate/initial_config.txt" 
+forbiddenExps = NULL 
+forbiddenFile = "" 
+targetRunner = "/home/ppinto/PROMOS/irace/substrate/target-runner.sh" 
+targetRunnerRetries = 0 
+targetRunnerData = "" 
+targetRunnerParallel = NULL 
+targetEvaluator = NULL 
+maxExperiments = 500 
+maxTime = 0 
+budgetEstimation = 0.02 
+digits = 3 
+debugLevel = 5 
+nbIterations = 0 
+nbExperimentsPerIteration = 0 
+sampleInstances = TRUE 
+testType = "friedman" 
+firstTest = 5 
+eachTest = 1 
+minNbSurvival = 0 
+nbConfigurations = 0 
+mu = 5 
+confidence = 0.9 
+deterministic = FALSE 
+seed = NA_character_ 
+parallel = 8 
+loadBalancing = TRUE 
+mpi = FALSE 
+batchmode = 0 
+softRestart = TRUE 
+softRestartThreshold = 0.001 
+testInstancesDir = "" 
+testInstancesFile = "/home/ppinto/PROMOS/irace/substrate/test_instances.txt" 
+testInstances = "test1.0    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.1    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.2    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.4    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.5    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.6    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.7    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.8    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.9    ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.10   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.11   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.12   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.13   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.14   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.15   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.16   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.17   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.18   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt, test1.19   ../../data/2weeks/best_idf_train.csv  ../../data/2weeks/best_idf_test.csv ../../params/hyperneat.txt"
+testNbElites = 5 
+testIterationElites = FALSE 
+elitist = TRUE 
+elitistNewInstances = 1 
+elitistLimit = 2 
+repairConfiguration = NULL 
+## end of irace scenario
+# --- Hierarchy vector ---
+# Param : Level
+layers : 1
+width : 1
+# ------------------------
+$names
+[1] "layers" "width" 
+
+$types
+layers  width 
+   "i"    "i" 
+
+$switches
+               layers                 width 
+"--substrate-layers="  "--substrate-width=" 
+
+$domain
+$domain$layers
+[1]   1 100
+
+$domain$width
+[1]  1 50
+
+
+$conditions
+$conditions$layers
+[1] TRUE
+
+$conditions$width
+[1] TRUE
+
+
+$isFixed
+layers  width 
+ FALSE  FALSE 
+
+$hierarchy
+layers  width 
+     1      1 
+
+$nbParameters
+[1] 2
+
+$nbFixed
+[1] 0
+
+$nbVariable
+[1] 2
+
+# 2018-08-30 12:34:52 WEST: Parameters have been read
+# Read 1 configurations from file '/home/ppinto/PROMOS/irace/substrate/initial_config.txt'
+  layers width
+1     10    10
+# Adding 1 initial configuration(s) from file '/home/ppinto/PROMOS/irace/substrate/initial_config.txt' 
+# 2018-08-30 12:34:52 WEST: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 3
+# minNbSurvival: 3
+# nbParameters: 2
+# seed: 1011707809
+# confidence level: 0.9
+# budget: 500
+# mu: 5
+# deterministic: FALSE
+
+# 2018-08-30 12:34:52 WEST: Iteration 1 of 3
+# experimentsUsedSoFar: 0
+# remainingBudget: 500
+# currentBudget: 166
+# nbConfigurations: 27
+# 2018-08-30 12:34:52 WEST: Sample 26 configurations from uniform distribution
+# 2018-08-30 12:34:52 WEST: Configurations for the race n 1 (elite configurations listed first, then new configurations):
+   .ID. layers width .PARENT.
+1     1     10    10       NA
+2     2     32    19       NA
+3     3     51     8       NA
+4     4     78    27       NA
+5     5     51    43       NA
+6     6     75    29       NA
+7     7     42    22       NA
+8     8     39    12       NA
+9     9     75     6       NA
+10   10     23     8       NA
+11   11     67     9       NA
+12   12     86    31       NA
+13   13     36    21       NA
+14   14     44    50       NA
+15   15      1    31       NA
+16   16     81    18       NA
+17   17     10    22       NA
+18   18     57    31       NA
+19   19     17    38       NA
+20   20     67    30       NA
+21   21      4    22       NA
+22   22     99     7       NA
+23   23     51    36       NA
+24   24     55    48       NA
+25   25     15     8       NA
+26   26     25    44       NA
+27   27     61    47       NA
+# 2018-08-30 12:34:52 WEST: Launch race
+  Markers:
+     x No test is performed.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+                                                                   
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|      Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+---------------+-----------+--------+-----+----+------+
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 1 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=10 --substrate-width=10
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 2 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=32 --substrate-width=19
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 3 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=51 --substrate-width=8
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 4 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=78 --substrate-width=27
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 5 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=51 --substrate-width=43
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 6 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=75 --substrate-width=29
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 7 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=42 --substrate-width=22
+# 2018-08-30 12:34:52 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 8 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=39 --substrate-width=12
+# 2018-08-30 12:35:28 WEST: DONE (4) Elapsed: 35.92
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=78 --substrate-width=27
+-0.731619
+# 2018-08-30 12:35:28 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 9 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=75 --substrate-width=6
+# 2018-08-30 12:35:29 WEST: DONE (1) Elapsed: 37.08
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=10 --substrate-width=10
+-0.731619
+# 2018-08-30 12:35:29 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 10 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=23 --substrate-width=8
+# 2018-08-30 12:35:30 WEST: DONE (3) Elapsed: 38.26
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=51 --substrate-width=8
+-0.731619
+# 2018-08-30 12:35:30 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 11 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=67 --substrate-width=9
+# 2018-08-30 12:35:30 WEST: DONE (6) Elapsed: 38.41
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=75 --substrate-width=29
+-0.731619
+# 2018-08-30 12:35:30 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 12 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=86 --substrate-width=31
+# 2018-08-30 12:35:31 WEST: DONE (8) Elapsed: 38.87
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=39 --substrate-width=12
+-0.731619
+# 2018-08-30 12:35:31 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 13 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=36 --substrate-width=21
+# 2018-08-30 12:35:31 WEST: DONE (2) Elapsed: 39.13
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=32 --substrate-width=19
+-0.731619
+# 2018-08-30 12:35:31 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 14 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=44 --substrate-width=50
+# 2018-08-30 12:35:31 WEST: DONE (5) Elapsed: 39.41
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=51 --substrate-width=43
+-0.731619
+# 2018-08-30 12:35:31 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 15 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=1 --substrate-width=31
+# 2018-08-30 12:35:33 WEST: DONE (7) Elapsed: 40.54
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=42 --substrate-width=22
+-0.731619
+# 2018-08-30 12:35:33 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 16 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=81 --substrate-width=18
+# 2018-08-30 12:36:05 WEST: DONE (9) Elapsed: 36.99
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=75 --substrate-width=6
+-0.731619
+# 2018-08-30 12:36:05 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 17 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=10 --substrate-width=22
+# 2018-08-30 12:36:07 WEST: DONE (10) Elapsed: 37.54
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=23 --substrate-width=8
+-0.731619
+# 2018-08-30 12:36:07 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 18 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=57 --substrate-width=31
+# 2018-08-30 12:36:07 WEST: DONE (11) Elapsed: 36.58
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=67 --substrate-width=9
+-0.731619
+# 2018-08-30 12:36:07 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 19 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=17 --substrate-width=38
+# 2018-08-30 12:36:09 WEST: DONE (14) Elapsed: 37.49
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=44 --substrate-width=50
+-0.731619
+# 2018-08-30 12:36:09 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 20 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=67 --substrate-width=30
+# 2018-08-30 12:36:09 WEST: DONE (13) Elapsed: 37.95
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=36 --substrate-width=21
+-0.731619
+# 2018-08-30 12:36:09 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 21 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=4 --substrate-width=22
+# 2018-08-30 12:36:09 WEST: DONE (12) Elapsed: 38.54
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=86 --substrate-width=31
+-0.731619
+# 2018-08-30 12:36:09 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 22 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=99 --substrate-width=7
+# 2018-08-30 12:36:09 WEST: DONE (15) Elapsed: 37.68
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=1 --substrate-width=31
+-0.731619
+# 2018-08-30 12:36:09 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 23 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=51 --substrate-width=36
+# 2018-08-30 12:36:10 WEST: DONE (16) Elapsed: 37.81
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=81 --substrate-width=18
+-0.731619
+# 2018-08-30 12:36:10 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 24 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=55 --substrate-width=48
+# 2018-08-30 12:36:44 WEST: DONE (17) Elapsed: 38.90
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=10 --substrate-width=22
+-0.731619
+# 2018-08-30 12:36:44 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 25 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=15 --substrate-width=8
+# 2018-08-30 12:36:46 WEST: DONE (18) Elapsed: 39.03
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=57 --substrate-width=31
+-0.731619
+# 2018-08-30 12:36:46 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 26 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=25 --substrate-width=44
+# 2018-08-30 12:36:46 WEST: DONE (19) Elapsed: 39.02
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=17 --substrate-width=38
+-0.731619
+# 2018-08-30 12:36:46 WEST: /home/ppinto/PROMOS/irace/substrate/target-runner.sh 27 1 1614469909 train1 ../../data/2weeks/best_idf_train.csv ../../data/2weeks/best_idf_val.csv ../../params/hyperneat.txt  --substrate-layers=61 --substrate-width=47
+# 2018-08-30 12:36:46 WEST: DONE (21) Elapsed: 37.42
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=4 --substrate-width=22
+-0.731619
+# 2018-08-30 12:36:47 WEST: DONE (20) Elapsed: 37.88
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=67 --substrate-width=30
+-0.731619
+# 2018-08-30 12:36:47 WEST: DONE (23) Elapsed: 37.90
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=51 --substrate-width=36
+-0.731619
+# 2018-08-30 12:36:48 WEST: DONE (22) Elapsed: 38.85
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=99 --substrate-width=7
+-0.731619
+# 2018-08-30 12:36:48 WEST: DONE (24) Elapsed: 37.65
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=55 --substrate-width=48
+-0.731619
+# 2018-08-30 12:37:16 WEST: DONE (25) Elapsed: 31.69
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=15 --substrate-width=8
+-0.731619
+# 2018-08-30 12:37:17 WEST: DONE (27) Elapsed: 30.72
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=61 --substrate-width=47
+-0.731619
+# 2018-08-30 12:37:18 WEST: DONE (26) Elapsed: 32.46
+python ../../src/py/evolver.py ../../data/2weeks/best_idf_train.csv -t ../../data/2weeks/best_idf_val.csv -P ../../params/hyperneat.txt -s2000 -g8 -p6 -o NULL --quiet --seed 1614469909 --substrate-layers=25 --substrate-width=44
+-0.731619
