@@ -780,7 +780,6 @@ class Evolver:
     def adjust_mutation_rates(self):
         if self.mutation_rate_controller is not None:
             complex_type = self.bloat_options.mutation_options.complexity_type
-
             if complex_type is bloat.ComplexityType.CONNECTIONS:
                 complexity = avg([e.genome_connections for e in self.evaluations])
             elif complex_type is bloat.ComplexityType.NEURONS:
@@ -792,6 +791,8 @@ class Evolver:
             else:
                 raise NotImplementedError
             self.mutation_rate_controller.adjust(complexity, generation=self.generation)
+            self.pop.Parameters = self.mutation_rate_controller.params
+            self.params = self.pop.Parameters
 
     def init_timers(self):
         if not self._keep_timers:
