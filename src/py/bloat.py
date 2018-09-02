@@ -129,8 +129,9 @@ class MutationRateController:
         DEFAULT = 0
         SIMPLIF = 1
 
-    def __init__(self, params, mutation_options):
-        self.params = params
+    def __init__(self, evolver, mutation_options):
+        self.evolver = evolver
+        params = self.evolver.pop.Parameters
         self.base_add_neuron = params.MutateAddNeuronProb
         self.base_rem_neuron = params.MutateRemSimpleNeuronProb
         self.base_mut_neuron = self.base_add_neuron + self.base_rem_neuron
@@ -146,27 +147,17 @@ class MutationRateController:
 
         self.phase = MutationRateController.Phase.DEFAULT
 
-    def set_params(self, params, set_base_probs=True):
-        self.params = params
-        if set_base_probs:
-            self.base_add_neuron = params.MutateAddNeuronProb
-            self.base_rem_neuron = params.MutateRemSimpleNeuronProb
-            self.base_mut_neuron = self.base_add_neuron + self.base_rem_neuron
-            self.base_add_link = params.MutateAddLinkProb
-            self.base_rem_link = params.MutateRemLinkProb
-            self.base_mut_link = self.base_add_link + self.base_rem_link
-
     def reset(self):
-        self.phase = MutationRateController.Phase.DEFAULT
+        self.begin_default_phase()
 
     def simplify(self):
-        neuron_delta = min(self.params.MutateAddNeuronProb, self.mut_neurons_delta)
-        link_delta = min(self.params.MutateAddLinkProb, self.mut_connections_delta)
+        neuron_delta = min(self.evolver.pop.Parameters.MutateAddNeuronProb, self.mut_neurons_delta)
+        link_delta = min(self.evolver.pop.Parameters.MutateAddLinkProb, self.mut_connections_delta)
 
-        self.params.MutateAddNeuronProb -= neuron_delta
-        self.params.MutateRemSimpleNeuronProb += neuron_delta
-        self.params.MutateAddLinkProb -= link_delta
-        self.params.MutateRemLinkProb += link_delta
+        self.evolver.pop.Parameters.MutateAddNeuronProb -= neuron_delta
+        self.evolver.pop.Parameters.MutateRemSimpleNeuronProb += neuron_delta
+        self.evolver.pop.Parameters.MutateAddLinkProb -= link_delta
+        self.evolver.pop.Parameters.MutateRemLinkProb += link_delta
 
     def begin_simplification(self):
         self.phase = MutationRateController.Phase.SIMPLIF
@@ -174,13 +165,14 @@ class MutationRateController:
 
     def begin_default_phase(self):
         self.phase = MutationRateController.Phase.DEFAULT
-        self.params.MutateAddNeuronProb = self.base_add_neuron
-        self.params.MutateRemSimpleNeuronProb = self.base_rem_neuron
-        self.params.MutateAddLinkProb = self.base_add_link
-        self.params.MutateRemLinkProb = self.base_rem_link
+        self.evolver.pop.Parameters.MutateAddNeuronProb = self.base_add_neuron
+        self.evolver.pop.Parameters.MutateRemSimpleNeuronProb = self.base_rem_neuron
+        self.evolver.pop.Parameters.MutateAddLinkProb = self.base_add_link
+        self.evolver.pop.Parameters.MutateRemLinkProb = self.base_rem_link
 
-    def adjust(self, complexity, generation=None):
-        if generation is not None and generation % self.options.frequency != 0:
+    def adjust(self, complexity):
+        generation = self.evolver.generation
+        if generation % self.options.frequency != 0:
             return  # Only adjust every [self.options.frequency] generations
 
         if self.phase is MutationRateController.Phase.DEFAULT:

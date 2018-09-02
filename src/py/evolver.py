@@ -139,16 +139,8 @@ class Evolver:
         # Evaluation function
         self.fitness_func = FitFunction(self.options.evaluator)
 
-        # MultiNEAT parameters
-        self.params = params.get_params(self.options.params)
-
-        # Bloat options
-        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
-            if self.options.bloat_file is not None else None
-        self.mutation_rate_controller = bloat.MutationRateController(self.params, self.bloat_options.mutation_options) \
-            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
-        self.fitness_adjuster = bloat.FitnessAdjuster(self.bloat_options.fitness_options) \
-            if bloat.BloatOptions.has_fitness_options(self.bloat_options) else None
+        # Parameters
+        self.initial_params = params.get_params(self.options.params)
 
         # Sliding window
         self.width = self.options.width if self.options.width is not None else 0
@@ -202,6 +194,7 @@ class Evolver:
             self.output_update_state('Resuming', pre=True)
             self.load_progress(self.options.progress_file)
         # Data
+        self.test_data, self.train_data = None, None
         self.output_update_state('Preparing data', pre=True)
         self._setup_data()
 
@@ -211,8 +204,14 @@ class Evolver:
         self._keep_timers = False
         self.init_timers()
         self.pop = self.init_population()  # C++ Population
-        if self.mutation_rate_controller is not None:
-            self.mutation_rate_controller.set_params(self.params)
+
+        # Bloat options
+        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
+            if self.options.bloat_file is not None else None
+        self.mutation_rate_controller = bloat.MutationRateController(self, self.bloat_options.mutation_options) \
+            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
+        self.fitness_adjuster = bloat.FitnessAdjuster(self.bloat_options.fitness_options) \
+            if bloat.BloatOptions.has_fitness_options(self.bloat_options) else None
 
     def _setup_data(self, window=None):
         if window is not None:
@@ -281,9 +280,7 @@ class Evolver:
             self.pop = neat.Population(file_path)
         except RuntimeError:
             raise AttributeError('Invalid population file \'{}\''.format(file_path))
-        self.params = self.pop.Parameters
         return self.pop
-
 
     def init_population(self):
         if self.options.pop_file is not None:
@@ -295,12 +292,12 @@ class Evolver:
 
         if self.options.method in ['hyperneat', 'eshyperneat']:
             g = neat.Genome(0, self.substrate.GetMinCPPNInputs(), 0, self.substrate.GetMinCPPNOutputs(),
-                            False, output_act_f, hidden_act_f, 0, self.params, 0)
-            pop = neat.Population(g, self.params, True, 1.0, seed)
+                            False, output_act_f, hidden_act_f, 0, self.initial_params, 0)
+            pop = neat.Population(g, self.initial_params, True, 1.0, seed)
         else:
             g = neat.Genome(0, self.train_data.n_inputs, 0, 1, False, output_act_f, hidden_act_f, 0,
-                            self.params, 0)
-            pop = neat.Population(g, self.params, True, 1.0, seed)
+                            self.initial_params, 0)
+            pop = neat.Population(g, self.initial_params, True, 1.0, seed)
 
         return pop
 
@@ -499,7 +496,7 @@ class Evolver:
             best_eval=best_evaluation, best_network=net,
             fitness_test=self.best_test.fitness if self.best_test is not None else None,
             # Other info
-            params=params.ParametersWrapper(self.params), generations=self.generation,
+            params=params.ParametersWrapper(self.pop.Parameters), generations=self.generation,
             run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
 
             ea_time=self.ea_time, processes=self.options.processes,
@@ -587,8 +584,8 @@ class Evolver:
             writer = csv.writer(file, delimiter=',')
             writer.writerow([self.generation, self.gen_eval_time.total_seconds(), self.gen_ea_time.total_seconds(),
                              self.generation_elapsed_time().total_seconds(),
-                             self.params.MutateAddNeuronProb, self.params.MutateRemSimpleNeuronProb,
-                             self.params.MutateAddLinkProb, self.params.MutateRemLinkProb])
+                             self.pop.Parameters.MutateAddNeuronProb, self.pop.Parameters.MutateRemSimpleNeuronProb,
+                             self.pop.Parameters.MutateAddLinkProb, self.pop.Parameters.MutateRemLinkProb])
 
     def get_best(self):
         return self.best_list[0]
@@ -600,19 +597,19 @@ class Evolver:
                 if e.generation < self.generation - 20:
                     e.fitness -= e.fitness * 0.01
 
-        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most the best 5% of evaluations
+        max_updates = math.ceil(0.05 * self.pop.Parameters.PopulationSize)  # Take at most the best 5% of evaluations
         # Evaluations must be sorted by descending fitness
         for i in range(max_updates):
             e = self.evaluations[i]
             # Break condition (best_list is full and e is worse than the worst evaluation in best_list)
-            if len(self.best_list) == self.params.PopulationSize and e.fitness < self.best_list[-1].fitness:
+            if len(self.best_list) == self.pop.Parameters.PopulationSize and e.fitness < self.best_list[-1].fitness:
                 break
             elif e.genome_id in self.best_set:  # Individual already exists in best_list; update
                 self._update_best_list_evaluation(e)
             else:  # Add to best_list
                 self._add_to_best_list(e)
                 # Cap the size of best_list at PopulationSize
-                if len(self.best_list) > self.params.PopulationSize:
+                if len(self.best_list) > self.pop.Parameters.PopulationSize:
                     self._remove_from_best_list(-1)
 
     def _update_best_list_evaluation(self, new_eval):
@@ -790,9 +787,7 @@ class Evolver:
                 complexity = avg([e.pred_avg_time for e in self.evaluations])
             else:
                 raise NotImplementedError
-            self.mutation_rate_controller.adjust(complexity, generation=self.generation)
-            self.pop.Parameters = self.mutation_rate_controller.params
-            self.params = self.pop.Parameters
+            self.mutation_rate_controller.adjust(complexity)
 
     def init_timers(self):
         if not self._keep_timers:
