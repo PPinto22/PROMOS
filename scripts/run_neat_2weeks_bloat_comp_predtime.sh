@@ -19,7 +19,7 @@ for i in $(seq 1 $runs)
 do
 	run "--id=none(${i})"
 	run "-b ../cfg/bloat_fit_step_predtime.cfg --id=step(${i})"
-	run "-b ../cfg/bloat_fit_popmax.cfg --id=popmax(${i})"
+	run "-b ../cfg/bloat_fit_popmax_predtime.cfg --id=popmax(${i})"
 	run "-b ../cfg/bloat_mut_predtime.cfg --id=mut(${i})"
 done
 wait
