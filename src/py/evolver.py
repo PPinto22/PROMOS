@@ -8,11 +8,15 @@ import json
 import math
 import os
 import random
+import threading
+import signal
 from functools import partial
 
 import tabulate
 from reprint import reprint, output
 from sortedcontainers import SortedListWithKey
+
+from collector import DataCollector
 
 tabulate.PRESERVE_WHITESPACE = True
 from tabulate import tabulate
@@ -27,9 +31,18 @@ import substrate as subst
 from data import Data, SlidingWindow
 
 
+def sigint_handler(sig, frame):
+    global force_terminate
+    force_terminate = True
+
+
+force_terminate = False
+signal.signal(signal.SIGINT, sigint_handler)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('data_file', help='path to train data file', metavar='DATA'),
+    parser.add_argument('-d', '--data', dest='data_file', help='path to train data file', metavar='DATA'),
     parser.add_argument('-t', '--test', dest='test_file', default=None,
                         help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
@@ -94,10 +107,11 @@ def parse_args():
                         help='Sliding window shift in hours')
     parser.add_argument('-b,' '--bloat', dest='bloat_file', metavar='FILE', default=None,
                         help='configuration file for limiting the effects of bloat')
+    parser.add_argument('--online', dest='online', action='store_true', help='online mode')
 
     options = parser.parse_args()
 
-    options.id = options.id if options.id is not None else util.get_current_datetime_string()
+    options.id = options.id if options.id is not None else util.datetime_to_string()
     options.out_dir = options.out_dir if options.out_dir != 'NULL' else None
 
     if options.seed is not None:
@@ -127,7 +141,8 @@ class Evolver:
     def __init__(self, options, printer=None):
         self.options = options
 
-        # Sliding window assertions
+        # Assertions
+        assert not (self.options.data_file is None and not self.options.online), 'A data file is required for training'
         assert not all(x is not None for x in (self.options.test_file, self.options.test_width)), \
             'Either specify a static test file (-t) or a test sliding window width (-w); not both'
         assert all(x is not None for x in (self.options.width, self.options.shift)) or \
@@ -135,6 +150,8 @@ class Evolver:
             'Both window width (-W) and window shift (-S) are required'
         if self.options.test_width is not None:
             assert self.options.width is not None, 'The test width option (-w) requires the window width option (-W)'
+        assert not (self.options.online and any(x is not None for x in (self.options.shift, self.options.test_width))), \
+            'The options (-w and -S) cannot be used in online mode (--online)'
 
         # Evaluation function
         self.fitness_func = FitFunction(self.options.evaluator)
@@ -142,13 +159,19 @@ class Evolver:
         # Parameters
         self.initial_params = params.get_params(self.options.params)
 
+        # Online
+        self.is_online = self.options.online
+        self.gen_lock = threading.Lock()
+        self.start_lock = threading.Condition()
+
         # Sliding window
+        self.window = 0
         self.width = self.options.width if self.options.width is not None else 0
         self.test_width = self.options.test_width if self.options.test_width is not None else 0
         self.shift = self.options.shift if self.options.shift is not None else 0
-        self.is_online = self.options.width is not None  # Is sliding window being used
+        self.has_windows = self.options.width is not None or self.options.online
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
-            if self.is_online else None
+            if self.has_windows and not self.is_online else None
         self.n_inputs_diff = 0  # How many existing input columns changed since the last window
         self.inputs_diff = []  # List of tuples of columns which have been replaced (old_input, new_input)
         self.n_inputs_delta = 0  # Difference of inputs between he current window and the previous one
@@ -191,12 +214,21 @@ class Evolver:
         self.mapping = None
         self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
         if self.options.progress_file is not None:
-            self.output_update_state('Resuming', pre=True)
+            self.update_output_state('Resuming', pre=True)
             self.load_progress(self.options.progress_file)
+
         # Data
         self.test_data, self.train_data = None, None
-        self.output_update_state('Preparing data', pre=True)
+        self.update_output_state('Preparing data', pre=True)
         self._setup_data()
+        if self.is_online:
+            with self.start_lock:
+                self.collector = DataCollector(self)
+                self.collector.setDaemon(True)
+                self.collector.start()
+                if self.train_data is None:
+                    self.update_output_state('Waiting for data')
+                    self.start_lock.wait()  # Wait for data to be collected
 
         # Substrate for HyperNEAT
         self.substrate = self._init_substrate()
@@ -214,22 +246,43 @@ class Evolver:
             if bloat.BloatOptions.has_fitness_options(self.bloat_options) else None
 
     def _setup_data(self, window=None):
-        if window is not None:
-            self.train_data, test_data = self.slider.get_window_data(window, update_state=True)
-            self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
-        else:
-            if self.is_online:  # Set the first window
-                if self.slider._window == 0 and not self.slider.has_next():
-                    raise AttributeError('The specified window width (-W) is too large for the available data')
-                if self.slider.has_next():
-                    self.train_data, test_data = next(self.slider)
-                    self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
-            else:  # Use static data
-                self.train_data = Data(self.options.data_file)
+        train_data, test_data = None, None
+        if self.is_online:
+            if self.options.data_file is not None:
+                train_data = Data(self.options.data_file)
+                test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+            else:
                 self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+                # Will wait for train data to be collected later
+                return
+        else:
+            if window is not None:
+                train_data, test_data = self.slider.get_window_data(window, update_state=True)
+                test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
+            else:
+                if self.has_windows:  # Set the first window
+                    if self.slider._window == 0 and not self.slider.has_next():
+                        raise AttributeError('The specified window width (-W) is too large for the available data')
+                    if self.slider.has_next():
+                        train_data, test_data = next(self.slider)
+                        test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
+                else:  # Use static data
+                    train_data = Data(self.options.data_file)
+                    test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+        self.set_data(train_data, test_data)
+
+    def set_data(self, train, test, old_columns=None, keep_old_if_none=False):
+        if not keep_old_if_none:
+            self.train_data = train
+            self.test_data = test
+        else:
+            self.train_data = train if train is not None else self.train_data
+            self.test_data = test if test is not None else self.test_data
         if self.encoder is not None:
-            self.encode_data()
+            self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
+        if old_columns is not None:
+            self._update_inputs(old_columns)
 
     def _init_substrate(self):
         try:
@@ -261,7 +314,7 @@ class Evolver:
         self.ea_time = None
         self.window_ea_time = None
         self.gen_ea_time = None
-        if self.is_online:
+        if self.has_windows:
             self.slider.reset()
             self.train_data, test = next(self.slider)
             if self.test_width is not None:
@@ -298,7 +351,6 @@ class Evolver:
             g = neat.Genome(0, self.train_data.n_inputs, 0, 1, False, output_act_f, hidden_act_f, 0,
                             self.initial_params, 0)
             pop = neat.Population(g, self.initial_params, True, 1.0, seed)
-
         return pop
 
     def get_genome_list(self):
@@ -314,21 +366,23 @@ class Evolver:
         return datetime.datetime.now() - self.gen_initial_time if self.gen_initial_time is not None else None
 
     def is_finished(self):
-        if not self.is_online:
+        if force_terminate:
+            return True
+        if self.is_online or not self.has_windows:
             return self.is_window_finished()  # Assuming no sliding window as equivalent to a single window
         else:
             return not self.slider.has_next() and self.is_window_finished()
 
-    def output_update_state(self, state, pre=False):
+    def update_output_state(self, state, pre=False):
         if self.options.quiet:
             return
 
         if not self.state_header:
             self.state_header += ['Current task', 'Run Time', 'Generation']
-            self.state_header += ['Window'] if self.is_online else []
+            self.state_header += ['Window'] if self.has_windows else []
             self.state_header += ['ID']
-        state = [state.ljust(15), self._get_time_state(pre), self._get_generation_state(pre)]
-        state += [self._get_window_state(pre)] if self.is_online else []
+        state = [state.ljust(20), self._get_time_state(pre), self._get_generation_state(pre)]
+        state += [self._get_window_state(pre)] if self.has_windows else []
         state += [self.options.id]
         table = tabulate([state], headers=self.state_header).split('\n')
 
@@ -360,7 +414,7 @@ class Evolver:
         self.top10_lines = len(table) + 2
 
     def print_windows_best(self):
-        if not self.is_online:
+        if not self.has_windows:
             return
         if not self.windows_header:
             self.windows_header = ['Window', 'ID', 'Spawn Gen', 'Total Gens',
@@ -397,9 +451,10 @@ class Evolver:
     def _get_window_state(self, pre=False):
         if pre:
             return ''
-        if not self.is_online:
+        if not self.has_windows:
             return None
-        return '{} / {}'.format(self.get_current_window() + 1, self.slider.n_windows)
+        total_str = ' / {}'.format(self.slider.n_windows) if self.slider is not None else ''
+        return '{}{}'.format(self.get_current_window() + 1, total_str)
 
     def print(self, msg, i=None, override=False):
         if override:
@@ -422,7 +477,7 @@ class Evolver:
             raise ValueError('out_dir is None')
 
         run = '({})'.format(self.run_i) if self.run_i is not None else ''
-        window = '({})'.format(self.get_current_window()) if include_window and self.is_online else ''
+        window = '({})'.format(self.get_current_window()) if include_window and self.has_windows else ''
 
         # Format: '<OUTDIR>/<ID><(RUN_INDEX)><(WINDOW_INDEX)>_<SUFFIX>
         # Example: 'results/sample1K(0)(0)_summary.json'
@@ -445,7 +500,7 @@ class Evolver:
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
             file.write('population {}\n'.format(os.path.abspath(self.get_out_file_path('population.txt'))))
             self.run_i is not None and file.write('run {}\n'.format(self.run_i))
-            self.is_online and file.write('window {}\n'.format(self.get_current_window()))
+            self.has_windows and file.write('window {}\n'.format(self.get_current_window()))
             file.write('generation {}\n'.format(self.generation))
             file.write('time {}\n'.format(self.elapsed_time().total_seconds()))
             file.write('ea_time {}\n'.format(self.ea_time.total_seconds()))
@@ -464,7 +519,7 @@ class Evolver:
         self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
     def load_progress(self, file_path):
-        self.output_update_state('Resuming')
+        self.update_output_state('Resuming')
         with open(file_path, 'r') as file:
             for line in file:
                 line = line.strip('\n')
@@ -486,7 +541,7 @@ class Evolver:
                 elif key == 'population':
                     self.load_pop(value)
         self._keep_timers = True
-        self.output_update_state('Resuming')
+        self.update_output_state('Resuming')
 
     def get_summary(self):
         best_evaluation = self.get_best()
@@ -501,7 +556,7 @@ class Evolver:
 
             ea_time=self.ea_time, processes=self.options.processes,
             sample_size=self.options.sample_size if self.options.sample_size is not None else len(self.train_data),
-            window=self.get_current_window() if self.is_online else None,
+            window=self.get_current_window() if self.has_windows else None,
             date_begin=date_begin, date_end=date_end, train_size=len(self.train_data),
             train_positives=len(self.train_data.positives), train_negatives=len(self.train_data.negatives),
             test_size=len(self.test_data) if self.test_data is not None else -1,
@@ -514,7 +569,7 @@ class Evolver:
             f.write(json.dumps(self.get_summary().__dict__, default=util.serializer, indent=4))
 
     def save_window_summary(self):
-        if not self.is_online or self.options.out_dir is None:
+        if not self.has_windows or self.options.out_dir is None:
             return
 
         self.make_out_dir()
@@ -665,13 +720,13 @@ class Evolver:
                                   window=self.get_current_window(), initial_time=self.initial_time)
 
     def evaluate_pop(self):
-        self.output_update_state('Evaluating')
+        self.update_output_state('Evaluating')
         self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
         self.save_evaluations()
         self.update_best_list()
 
     def epoch(self):
-        self.output_update_state('Evolving')
+        self.update_output_state('Evolving')
         time_diff, _ = util.time(self.pop.Epoch)
 
         self.ea_time += time_diff
@@ -683,7 +738,7 @@ class Evolver:
 
     def print_best(self):
         best = self.get_best()
-        if not self.is_online:
+        if not self.has_windows:
             best_test_str = ' Fitness (test): {:.6f},'.format(
                 self.best_test.fitness) if self.best_test is not None else ''
             self.print("Best result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
@@ -709,17 +764,17 @@ class Evolver:
         self.windows_final_gens.append(self.generation)
         # Reevaluate the best individuals with full data if sample_size is specified
         if self.options.sample_size != 0 and not self.options.no_reevaluation:
-            self.output_update_state('Full reevaluation')
+            self.update_output_state('Full reevaluation')
             self.reevaluate_best_list()
 
-        self.output_update_state('Saving results')
+        self.update_output_state('Saving results')
         self.evaluate_best_test()  # Test the best individual obtained with the test data-set
         self.print_best()  # Print to stdout the best result
         self.write_results()  # Write run details to files
         self.save_encoder()  # Save encoder
         self.save_mapping()  # Save encoding mapping
 
-    def shift_window(self):
+    def shift_window(self, new_train=None, new_test=None):
         self.termination_sequence()
 
         self.best_list.clear()
@@ -727,17 +782,16 @@ class Evolver:
         self.best_test = None
         self.reset_window_timers()
 
-        self.output_update_state('Shifting window')
-        # Prepare new data
+        self.update_output_state('Shifting window')
         old_columns = self.train_data.input_labels
-        self.train_data, test = next(self.slider)
-        if test is not None:
-            self.test_data = test
-        if self.encoder is not None:
-            self.encode_data(soft_order=old_columns)
-        self.setup_evaluator()
+        if new_train is not None:  # Use data from arguments
+            train_data = new_train
+            test_data = new_test if new_test is not None else None
+        else:  # Apply window shift
+            train_data, test_data = next(self.slider)
 
-        self._update_inputs(old_columns)
+        self.set_data(train_data, test_data, old_columns=old_columns, keep_old_if_none=True)
+        self.window += 1
 
     def _update_inputs(self, old_inputs):
         # Which columns have changed
@@ -759,7 +813,9 @@ class Evolver:
             self.pop.DisconnectInputs(new_inputs)
 
     def should_shift(self):
-        if not self.is_online or not self.slider.has_next():
+        if self.is_online:  # If it's online, the other thread is responsible for updating the data
+            return False
+        if not self.has_windows or not self.slider.has_next():
             return False
         return self.is_window_finished()
 
@@ -772,7 +828,7 @@ class Evolver:
         return generation_limit or time_limit
 
     def get_current_window(self):
-        return self.slider.get_current_window_index() if self.slider is not None else 0
+        return self.window
 
     def adjust_mutation_rates(self):
         if self.mutation_rate_controller is not None:
@@ -822,10 +878,11 @@ class Evolver:
         self.init_timers()
         # Run the EA
         while not self.is_finished():
-            self._gen_start()
-            self.evaluate_pop()
-            self.epoch()
-            self._gen_end()
+            with self.gen_lock:
+                self._gen_start()
+                self.evaluate_pop()
+                self.epoch()
+                self._gen_end()
         self.termination_sequence()
 
     def _multiple_runs(self):

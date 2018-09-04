@@ -15,6 +15,7 @@ evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
   return(run_type_dt)
 }))
 evals_avg_dt$run_type <- factor(evals_avg_dt$run_type, levels = RUN_TYPE_LABELS)
+set_gen_breaks(n=5)
 
 # Read windows/summaries
 read_windows_or_summaries()
@@ -42,13 +43,12 @@ sink()
 if(!has_windows){
   # Boxplot best test fitness by run type
   png(filename = paste(OUT_DIR, 'fitness_best_bp.png', sep=''))
-  # gg_best_testfit <-  
-    ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
+  gg_best_testfit <- ggplot(data=summaries_dt, aes(x=run_type, y=test_fit)) +
     geom_boxplot(fill=gsmooth_fill) +
     geom_shadowtext(data = summaries_avg_dt, aes(x=run_type, y=test_fit, label=sprintf("%.4f", round(test_fit, digits = 4))), size=6) +
     labs(x=SERIES_LABEL, y=FITNESS_FUNC) + 
     theme_minimal()
-  # gg_best_testfit
+  gg_best_testfit
   dev.off()
   
   # Boxplot #connections of the best individual by run type
@@ -119,6 +119,7 @@ gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Set2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  scale_x_continuous(breaks=gen_breaks) +
   theme_minimal()
 print(gg_best_test_fit_gens)
 dev.off()
@@ -143,6 +144,16 @@ gg_mean_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
 gg_mean_connections_gen <- add_window_vlines(gg_mean_connections_gen)
 print(gg_mean_connections_gen)
 dev.off()
+
+# prediction time over gens
+gg_pred_time_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  geom_smooth(aes(y=pred_avg_time, col=run_type), fill=gsmooth_fill) +
+  labs(x="Generation", y="Prediction time (µs)", col=SERIES_LABEL) + 
+  scale_color_brewer(palette = 'Set2') +
+  scale_x_continuous(breaks=gen_breaks) +
+  theme_minimal()
+gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen)
+print(gg_pred_time_gen)
 
 # mean complexity (connections) over time
 png(filename = paste(OUT_DIR, 'connections_mean_by_time.png', sep=''))

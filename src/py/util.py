@@ -19,8 +19,8 @@ def get_network_connections(network):
     return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
 
 
-def get_current_datetime_string():
-    return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.datetime.now())
+def datetime_to_string(date=datetime.datetime.now()):
+    return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=date)
 
 
 def build_network(genome, method='neat', substrate=None, **kwargs):
@@ -137,10 +137,6 @@ def time(f, as_microseconds=False):
 
 def try_(f):
     try:
-        # DEBUG: 10% chance to return None to simulate errors
-        # import random
-        # if random.uniform(0, 1) < 0.1:
-        #     return None
         return f()
     except:
         return None

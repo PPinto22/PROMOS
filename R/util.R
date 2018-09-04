@@ -283,7 +283,9 @@ write_summary_table <- function(){
   }
 }
 
-
+set_gen_breaks <- function(n){
+  gen_breaks <<- seq(0, max(evals_avg_dt$generation)+1, (max(evals_avg_dt$generation)+1)/n)
+}
 
 
 

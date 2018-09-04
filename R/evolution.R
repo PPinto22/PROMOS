@@ -17,7 +17,7 @@ evals_single_dt <- group_evals(evals_dt[run==1], crop=FALSE)
 evals_sample_dt <- get_evals_sample(evals_dt)
 evals_pairs <- evals_sample_dt[,colnames(evals_sample_dt) %in% c('connections','eval_time', 'fitness'), with=FALSE]
 setcolorder(evals_pairs, c('connections', 'eval_time', 'fitness'))
-
+set_gen_breaks(n=5)
 # Read windows
 read_windows_or_summaries()
 
@@ -88,7 +88,8 @@ if(has_windows){
     scale_fill_brewer(palette = 'Oranges') +
     geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
     scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL) +
-    theme_minimal()
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
   print(gg_window_ea_eval)
   dev.off()
 }
@@ -230,7 +231,12 @@ dev.off()
 png(filename = paste(OUT_DIR, 'connections_by_gen_single.png', sep=''))
 gg_connections_gen_single <- ggplot(data=evals_single_dt, aes(generation)) +
   geom_line(aes(y=connections_mean)) +
+  geom_hline(yintercept = 100) +
+  geom_hline(yintercept = 150) +
+  geom_text(aes(500, 100, label = 'lower limit: 100', vjust = -1)) +
+  geom_text(aes(500, 150, label = 'upper limit: 150', vjust = -1)) +
   labs(x="Generation", y="Connections", col='') +
+  scale_x_continuous(breaks=gen_breaks) +
   theme_minimal()
 gg_connections_gen_single <- add_window_vlines(gg_connections_gen_single)
 print(gg_connections_gen_single)
@@ -249,10 +255,11 @@ dev.off()
 # Mutation probs over generations (first)
 if(exists("mutations")){
   png(filename = paste(OUT_DIR, 'mutation_probs_over_gens.png', sep=''))
-  gg_muts <- ggplot(data=mutations, aes(x=generation, y=prob, col=mutation)) +
+  gg_muts <- ggplot(data=mutations, aes(x=generation, y=prob*100, col=mutation)) +
     geom_line(size=.8) +
-    scale_color_brewer(palette = 'Set2') +
+    scale_color_brewer(palette = 'Paired', direction = -1) +
     labs(x='Generation', y='Probability (%)', col='Mutation') +
+    scale_x_continuous(breaks=gen_breaks) +
     theme_minimal()
   gg_muts <- add_window_vlines(gg_muts)
   print(gg_muts)
