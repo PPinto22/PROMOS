@@ -1,7 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-args="../data/2weeks/best_idf_train.csv"
-options="-t ../data/2weeks/best_idf_val.csv -P ../params/neat.txt -o ../results/2wks_bloat_comp -m neat -g7500 -s2000 -p6 --test-fitness --quiet"
+options="-d ../data/2weeks/best_idf_train.csv -t ../data/2weeks/best_idf_val.csv -P ../params/neat.txt -o ../results/2wks_bloat_comp -m neat -g7500 -s2000 -p6 --test-fitness --quiet"
 runs=10 # per run type
 parallel=8
 
@@ -11,8 +10,8 @@ function run() {
 		echo "Waiting: ${children} tasks running..."
 		wait -n;
 	fi
-	echo "Starting: $evolver $args $options $1"
-	( $evolver $args $options $1 ) &
+	echo "Starting: $evolver $options $1"
+	( $evolver $options $1 ) &
 }
 
 for i in $(seq 1 $runs)	
