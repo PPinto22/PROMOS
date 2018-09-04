@@ -1,9 +1,9 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 args="../data/2weeks/best_idf_train.csv"
-options="-t ../data/2weeks/best_idf_val.csv -P ../params/neat.txt -o ../results/2wks_bloat_mut_con -m neat -g7500 -s2000 -p6 --test-fitness --quiet"
-runs=16
-parallel=8
+options="-t ../data/2weeks/best_idf_val.csv -P ../params/neat.txt -o ../results/2wks_mut_con -m neat -g7500 -s2000 -p6 --test-fitness --quiet"
+runs=10 # per run type
+parallel=5
 
 function run() {
 	children=$(pgrep -c -P$$)
