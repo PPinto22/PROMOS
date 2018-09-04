@@ -27,7 +27,7 @@ CONFIG_PARAMS=$*
 
 EXE="python ../../src/py/evolver.py"
 PARAM_WRITER=../hyperneat_hyperparams/param-writer.sh
-FIXED_PARAMS="${TRAIN_DATA} -t ${TEST_DATA} -m hyperneat -T8 -p7 -s2000 -o NULL --quiet"
+FIXED_PARAMS="-d ${TRAIN_DATA} -t ${TEST_DATA} -m hyperneat -T8 -p7 -s2000 -o NULL --quiet"
 
 STDOUT=c${CONFIG_ID}-${INSTANCE_ID}.stdout
 STDERR=c${CONFIG_ID}-${INSTANCE_ID}.stderr
