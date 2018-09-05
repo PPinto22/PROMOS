@@ -2,12 +2,21 @@
 
 library(jsonlite)
 library(data.table)
+library(optparse)
 source('util.R')
 
 # Config
-INPUT <- '../data/2weeks/ColetasPROMOSBESTTreated2018-06-13.json'
-OUT_DIR <- add_trailing_slash('../data/2weeks')
-OUT_ID <- 'best'
+option_list = list(
+  make_option(c("-f", "--file"), type="character", default='../data/2weeks/ColetasPROMOSBESTTreated2018-06-13.json', 
+              help="dataset file name", metavar="FILE"),
+  make_option(c("-o", "--out"), type="character", default="../data/2weeks/best.csv", 
+              help="output file name [default= %default]", metavar="character")
+); 
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
+
+INPUT <- opt$file
+OUT <- opt$out
 TARGET <- "target"
 POSITIVE_CLASS <- "Sale"
 DATE <- "date_added_utc"
@@ -36,4 +45,5 @@ names(dt)[names(dt) == 'date_added_utc'] <- 'timestamp'
 DATE <- "timestamp"
 
 # Save csv
-write.table(dt, file=paste(OUT_DIR, OUT_ID, '.csv', sep=''), sep=',', row.names = FALSE)
+dir.create(file.path(dirname(OUT)), recursive=TRUE, showWarnings=FALSE)
+write.table(dt, file=OUT, sep=',', row.names = FALSE)
