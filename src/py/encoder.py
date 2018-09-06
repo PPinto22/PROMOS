@@ -63,7 +63,7 @@ class Factor(Encoding):
 
     def encode(self, column):
         self.init_column(column.name)
-        factor_col = np.zeros(len(column), dtype=data.INPUTS_DTYPE)
+        factor_col = np.zeros(len(column), dtype=np.uint64)
         for i, raw_value in enumerate(column):
             if self.exists(column.name, raw_value):
                 encoded_value = self.get(column.name, raw_value)
