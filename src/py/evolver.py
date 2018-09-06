@@ -16,7 +16,7 @@ import tabulate
 from reprint import reprint, output
 from sortedcontainers import SortedListWithKey
 
-from collector import DataCollector
+import collector
 
 tabulate.PRESERVE_WHITESPACE = True
 from tabulate import tabulate
@@ -223,7 +223,7 @@ class Evolver:
         self._setup_data()
         if self.is_online:
             with self.start_lock:
-                self.collector = DataCollector(self)
+                self.collector = collector.DataCollector(self)
                 self.collector.setDaemon(True)
                 self.collector.start()
                 if self.train_data is None:

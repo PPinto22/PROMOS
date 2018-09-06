@@ -5,6 +5,7 @@ from threading import Thread
 from time import sleep
 
 import util
+import evolver
 from data import Data
 
 
@@ -57,12 +58,16 @@ class DataCollector(Thread):
 
     def run(self):
         while not self.finished:
-            train, test = self.get_data()
-            with self.evolver.start_lock:
-                if self.evolver.generation == 0:
-                    self.evolver.set_data(train, test, keep_old_if_none=True)
-                else:
-                    self.evolver.shift_window(new_train=train, new_test=test)
-                self.evolver.start_lock.notify()
-            # FIXME!
-            sleep(30)
+            try:
+                train, test = self.get_data()
+                with self.evolver.start_lock:
+                    if self.evolver.generation == 0:
+                        self.evolver.set_data(train, test, keep_old_if_none=True)
+                    else:
+                        self.evolver.shift_window(new_train=train, new_test=test)
+                    self.evolver.start_lock.notify()
+                # FIXME!
+                sleep(30)
+            except Exception as e:
+                print(e)
+                evolver.force_terminate = True

@@ -93,7 +93,7 @@ class FitnessAdjuster:
         elif self.options.complexity_type is ComplexityType.PREDTIME:
             return evaluation.pred_avg_time  # microseconds
         else:
-            raise AttributeError("Invalid bloat type: {}".format(self.options.complexity_type))
+            raise AttributeError("Invalid complexity type: {}".format(self.options.complexity_type))
 
     def get_adjusted_fitness(self, evaluation, pop_max=None):
         if not isinstance(evaluation, evaluator.GenomeEvaluation):
