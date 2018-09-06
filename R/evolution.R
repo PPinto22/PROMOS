@@ -205,6 +205,16 @@ gg_connections_gen <- add_window_vlines(gg_connections_gen)
 print(gg_connections_gen)
 dev.off()
 
+# prediction time over gens
+gg_pred_time_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  geom_smooth(aes(y=pred_avg_time), fill=gsmooth_fill) +
+  labs(x="Generation", y="Prediction time (µs)") + 
+  scale_color_brewer(palette = 'Set2') +
+  scale_x_continuous(breaks=gen_breaks) +
+  theme_minimal()
+gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen)
+print(gg_pred_time_gen)
+
 # Network neurons over generations
 png(filename = paste(OUT_DIR, 'neurons_by_gen.png', sep=''))
 gg_neurons_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
