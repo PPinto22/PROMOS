@@ -122,9 +122,6 @@ class RAW(Encoding):
         super().__init__()
 
     def encode(self, column):
-        # for i in range(len(column)):
-        #     encoded_col = np.zeros(len(column), dtype=data.INPUTS_DTYPE)
-        #     encoded_col[i] = data.INPUTS_DTYPE(column[i])
         encoded_col = column.astype(data.INPUTS_DTYPE)
         return pd.DataFrame({column.name: encoded_col})
 
