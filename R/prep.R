@@ -7,7 +7,7 @@ source('util.R')
 
 # Config
 option_list = list(
-  make_option(c("-f", "--file"), type="character", default='../data/2weeks/ColetasPROMOSBESTTreated2018-06-13.json', 
+  make_option(c("-f", "--file"), type="character", default='../data/2weeks/ColetasPROMOSTESTTreated2018-06-13.json', 
               help="dataset file name", metavar="FILE"),
   make_option(c("-o", "--out"), type="character", default="../data/2weeks/best.csv", 
               help="output file name [default= %default]", metavar="character")
@@ -28,11 +28,13 @@ json_formatted <- paste('[', paste(json_txt, collapse=','), ']', sep='')
 dt <- as.data.table(jsonlite::fromJSON(json_formatted))
 # If data is valid JSON
 # dt <- as.data.table(jsonlite::fromJSON(INPUT))
-
 dt$id <- NULL
 
-# Replace empty cells with the keyword EMPTY
-dt <- dt[, lapply(.SD, function(x) replace(x, which(x==''), 'empty'))]
+# REPLACE empty cells with the keyword EMPTY
+# dt <- dt[, lapply(.SD, function(x) replace(x, which(x==''), 'empty'))]
+# DELETE empty cells
+empty_rows <- apply(dt, 1, function(x) any(x==''))
+dt <- dt[!empty_rows, ]
 
 # Transform TARGET from categorical to numeric
 dt[[TARGET]] <- replace(dt[[TARGET]], dt[[TARGET]]!=POSITIVE_CLASS, 0)
