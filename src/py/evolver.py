@@ -16,7 +16,7 @@ import tabulate
 from reprint import reprint, output
 from sortedcontainers import SortedListWithKey
 
-import collector
+import online
 
 tabulate.PRESERVE_WHITESPACE = True
 from tabulate import tabulate
@@ -29,15 +29,6 @@ import bloat
 from util import avg
 import substrate as subst
 from data import Data, SlidingWindow
-
-
-def sigint_handler(sig, frame):
-    global force_terminate
-    force_terminate = True
-
-
-force_terminate = False
-signal.signal(signal.SIGINT, sigint_handler)
 
 
 def parse_args():
@@ -138,6 +129,8 @@ class Summary:
 
 
 class Evolver:
+    force_terminate = False
+
     def __init__(self, options, printer=None):
         self.options = options
 
@@ -150,8 +143,8 @@ class Evolver:
             'Both window width (-W) and window shift (-S) are required'
         if self.options.test_width is not None:
             assert self.options.width is not None, 'The test width option (-w) requires the window width option (-W)'
-        assert not (self.options.online and any(x is not None for x in (self.options.shift, self.options.test_width))), \
-            'The options (-w and -S) cannot be used in online mode (--online)'
+        assert not (self.options.online and any(x is None for x in (self.options.shift, self.options.width))), \
+            'The options (-W and -S) are required for online mode (--online)'
 
         # Evaluation function
         self.fitness_func = FitFunction(self.options.evaluator)
@@ -209,6 +202,8 @@ class Evolver:
         self.top10_header = []  # Header for the top 10 evaluations
         self.windows_lines = 0  # How many output lines are required for the windows table
         self.windows_header = []  # Header for the windows best table
+        self.running = False
+        self.force_terminate = False
 
         # Encoding and load progress
         self.mapping = None
@@ -223,7 +218,7 @@ class Evolver:
         self._setup_data()
         if self.is_online:
             with self.start_lock:
-                self.collector = collector.DataCollector(self)
+                self.collector = online.Online(self, self.width, self.shift)
                 self.collector.setDaemon(True)
                 self.collector.start()
                 if self.train_data is None:
@@ -305,6 +300,12 @@ class Evolver:
     def setup_evaluator(self):
         Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes)
 
+    def log_error(self, error):
+        if self.options.out_dir is None:
+            return
+        with open(self.get_out_file_path('error_log.txt', False), 'a') as log:
+            log.writelines("[Gen {}] {}".format(self.generation, error))
+
     def clear(self):
         self.initial_time = None
         self.window_initial_time = None
@@ -320,6 +321,8 @@ class Evolver:
             if self.test_width is not None:
                 self.test_data = test
         self.run_i = None
+        self.running = False
+        self.force_terminate = False
         self.pop = self.init_population()
         self.generation = 0
         self.best_list.clear()
@@ -366,7 +369,7 @@ class Evolver:
         return datetime.datetime.now() - self.gen_initial_time if self.gen_initial_time is not None else None
 
     def is_finished(self):
-        if force_terminate:
+        if signal_terminate or self.force_terminate:
             return True
         if self.is_online or not self.has_windows:
             return self.is_window_finished()  # Assuming no sliding window as equivalent to a single window
@@ -875,6 +878,7 @@ class Evolver:
         self.save_progress()
 
     def _run(self):
+        self.running = True
         self.init_timers()
         # Run the EA
         while not self.is_finished():
@@ -930,5 +934,11 @@ class Evolver:
 
 if __name__ == '__main__':
     options = parse_args()
+    signal_terminate = False
+    def sigint_handler(sig, frame):
+        global signal_terminate
+        signal_terminate = True
+    signal.signal(signal.SIGINT, sigint_handler)
+
     with Evolver(options) as evolver:
         evolver.run()
