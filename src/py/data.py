@@ -15,7 +15,7 @@ TIMESTAMPS_DTYPE = 'datetime64[s]'
 
 
 class Data:
-    # If 'file_path' is specified, data is read from the file;
+    # If 'file_path' is specified, data is read from the file(s);
     # otherwise, it's copied from 'inputs', 'targets' and 'timestamps'
     def __init__(self, file_path=None, input_labels=None, target_label='target', positive_class=1,
                  timestamp_label='timestamp', inputs=None, targets=None, timestamps=None, is_sorted=False,
@@ -41,9 +41,17 @@ class Data:
         self.target_idx = None  # Index of the target column in the csv file
         self.timestamp_idx = None  # Index of the timestamp column in the csv file
 
+        if file_path is not None and not isinstance(file_path, str) and len(file_path) == 1:
+            file_path = file_path[0]
         self.file_path = file_path
         if file_path is not None:
-            self._init_from_file(file_path)
+            if isinstance(file_path, str): # single file
+                self._add_data_from_file(file_path)
+            else: # multiple files
+                assert not timestamps_only, 'Multiple files with sliding window is not implemented'
+                for file_ in file_path:
+                    self._add_data_from_file(file_)
+            self._convert_to_numpy()
         else:
             self._init_from_data(inputs, targets, timestamps)
 
@@ -86,7 +94,7 @@ class Data:
     def get_csv_reader(file):
         return csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
 
-    def _init_from_file(self, file_path):
+    def _add_data_from_file(self, file_path):
         with open(file_path, 'r') as file:
             reader = self.get_csv_reader(file)
             # Read fieldnames
@@ -109,7 +117,7 @@ class Data:
             self.target_idx = self.file_labels.index(self.target_label)
             self.timestamp_idx = self.file_labels.index(self.timestamp_label) if self.has_timestamps else None
 
-            for i, row in enumerate(reader):
+            for row in reader:
                 extra_cols = 2 if self.has_timestamps else 1
                 if len(row) != self.n_inputs + extra_cols:
                     raise ValueError('Row length mismatch')
@@ -118,9 +126,7 @@ class Data:
                     self.timestamps.append(datetime.strptime(row[self.timestamp_idx], self.date_format))
                 else:
                     inputs, target, timestamp = self.parse_row(row)
-                    self.add_row(inputs, target, timestamp, i)
-
-        self._convert_to_numpy()
+                    self.add_row(inputs, target, timestamp)
 
     def _init_from_data(self, inputs, targets, timestamps):
         length = len(inputs)
@@ -151,7 +157,10 @@ class Data:
         timestamp = datetime.strptime(row[self.timestamp_idx], self.date_format) if self.has_timestamps else None
         return inputs, target, timestamp
 
-    def add_row(self, input, target, timestamp, row_idx, use_numpy=False):
+    def add_row(self, input, target, timestamp, row_idx=None, use_numpy=False):
+        if row_idx is None:
+            row_idx = len(self.targets)  # or inputs, or timestamps. should be the same
+
         if use_numpy:
             self.inputs[row_idx] = input
             self.targets[row_idx] = target
@@ -427,7 +436,8 @@ class SlidingWindow(Data):
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('data_file', help='path to data file to be encoded and/or sampled', metavar='DATA'),
+    parser.add_argument('data_file', nargs='+',  help='path(s) to data file(s) to be encoded and/or sampled',
+                        metavar='DATA'),
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
                         help='directory where to save output files', metavar='DIR')
     parser.add_argument('-v', '--val', dest='val', type=util.ratio, default=0, metavar='RATIO',
