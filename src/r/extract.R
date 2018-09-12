@@ -5,10 +5,10 @@ library(optparse)
 
 option_list = list(
   make_option(c("-w","--workingdir"), type="character", default=".", help="working directory", metavar="DIR"),
-  make_option(c("-s","--sales", type="character", default=NULL, help="path where to save the extracted sales", metavar="FILE")),
-  make_option(c("-r","--redirects", type="character", default=NULL, help="path where to save the extracted redirects", metavar="FILE")),
+  make_option(c("-s","--sales"), type="character", default="", help="path where to save the extracted sales", metavar="FILE"),
+  make_option(c("-r","--redirects"), type="character", default="", help="path where to save the extracted redirects", metavar="FILE"),
   make_option(c("-t","--time"), type="double", default = 6, help="collection time duration in hours", metavar = "H")
-  );
+);
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
@@ -1184,9 +1184,9 @@ exportTreatedData=function(x = 1,mod = modFilterDates, modef = ModeFecth){
   my_collectionRedi = mongo(collection = STATICREDI, db = NAMEDB)
   my_collectionSales = mongo(collection = STATICSALES , db = NAMEDB)
   print("getting redirects")
-  if(is.null(opt$redirects)){ redis_file = paste(NAMEDB,"Redirects", x , mod, modef,Sys.Date(), sep = "-") }
+  if(opt$redirects == ""){ redis_file = paste(NAMEDB,"Redirects", x , mod, modef,Sys.Date(), sep = "-") }
     else { redis_file = opt$redirects }
-  if(is.null(opt$sales)){ sales_file = paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
+  if(opt$sales == ""){ sales_file = paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
     else { sales_file = opt$sales }
   redi = my_collectionRedi$export(file(redis_file))
   print("getting sales")
