@@ -11,10 +11,15 @@ option_list = list(
 );
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
+  
+workingdir <- opt$workingdir
+sales_file <- opt$sales
+redis_file <- opt$redirects
+exec_time <- opt$time
+remove(option_list, opt_parser, opt)
 
-dir.create(file.path(opt$workingdir), recursive=TRUE, showWarnings=FALSE)
-setwd(opt$workingdir)
-
+dir.create(file.path(workingdir), recursive=TRUE, showWarnings=FALSE)
+setwd(workingdir)
 
 #GLOBAL VARIABLES SETTINGS
 LD = NA #Lower Date Sales
@@ -58,13 +63,12 @@ COLLECTIONREDISTATICCREATIONFILENAME = "collectionredistaticV4PEDRO.js"
 COLLECTIONSALESSTATICCREATIONFILENAME = "collectionsalesstaticV4PEDRO.js"
 
 InicialData = Sys.time() 
-TimeStop = 60*60*opt$time #stops after 24 hours
+TimeStop = 60*60*exec_time #stops after 24 hours
 FinalData = InicialData + TimeStop #when stops the code
 
 thresholdRGLOBAL<- 70 #Folga de 70% de Redirects
 thresholdSGLOBAL<- 70 #Folga de 70% de Sales
-C <-
-  as.list(.GlobalEnv) # saves all variables in a list to add to log files
+C <- as.list(.GlobalEnv) # saves all variables in a list to add to log files
 A <- as.data.frame(C)
 
 filllogs <- function(DataLogs, c = C) {
@@ -1184,10 +1188,8 @@ exportTreatedData=function(x = 1,mod = modFilterDates, modef = ModeFecth){
   my_collectionRedi = mongo(collection = STATICREDI, db = NAMEDB)
   my_collectionSales = mongo(collection = STATICSALES , db = NAMEDB)
   print("getting redirects")
-  if(opt$redirects == ""){ redis_file = paste(NAMEDB,"Redirects", x , mod, modef,Sys.Date(), sep = "-") }
-    else { redis_file = opt$redirects }
-  if(opt$sales == ""){ sales_file = paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
-    else { sales_file = opt$sales }
+  if( redis_file == "" ){ redis_file <- paste(NAMEDB,"Redirects", x , mod, modef,Sys.Date(), sep = "-") }
+  if(sales_file == ""){ sales_file <- paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
   redi = my_collectionRedi$export(file(redis_file))
   print("getting sales")
   sales = my_collectionSales$export(file(sales_file))
