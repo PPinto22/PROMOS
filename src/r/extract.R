@@ -11,7 +11,7 @@ option_list = list(
 );
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
-  
+
 workingdir <- opt$workingdir
 sales_file <- opt$sales
 redis_file <- opt$redirects
@@ -32,13 +32,13 @@ FileNameUR = "date_uppR.txt"
 FileNameLR = "date_lowR.txt"
 FileNameLD = "date_lowS.txt"
 FileNameUD = "date_uppS.txt"
-waitTimeFetchingR = 5*60 #1*60 secs --> 1 minute
-waitTimeFetchingS = 10 #1*60 secs --> 1 minute
+waitTimeFetchingR = 0 #1*60 secs --> 1 minute
+waitTimeFetchingS = 0 #1*60 secs --> 1 minute
 TimeLapse = 1 #hours after the interval of UD
-NR =  5000 #Number of redirects to fetch in the stream
-NS = 700 #Number of sales to fetch in the stream
-NRInitial = 100 #NR Base dos pedidos
-NSInitial = 100 #NS Base dos pedidos
+NR =  2500 #Number of redirects to fetch in the stream
+NS = 350 #Number of sales to fetch in the stream
+NRInitial = 50 #NR Base dos pedidos
+NSInitial = 50 #NS Base dos pedidos
 MDR = 300 * (2 ^ 20) #Number,in bytes, corresponding a 5GB of redirects
 MDFR = 1000 * (2 ^ 20)# 625*2^20/1024 # FIFO SIZE REDIRECTS IGNORAR
 MDFS = 500 * (2 ^ 20)#375*2^20/1024 #FIFO SIZE SALES IGNORAR
@@ -63,12 +63,13 @@ COLLECTIONREDISTATICCREATIONFILENAME = "collectionredistaticV4PEDRO.js"
 COLLECTIONSALESSTATICCREATIONFILENAME = "collectionsalesstaticV4PEDRO.js"
 
 InicialData = Sys.time() 
-TimeStop = 60*60*exec_time #stops after 24 hours
+TimeStop = exec_time * 60 * 60
 FinalData = InicialData + TimeStop #when stops the code
 
 thresholdRGLOBAL<- 70 #Folga de 70% de Redirects
 thresholdSGLOBAL<- 70 #Folga de 70% de Sales
-C <- as.list(.GlobalEnv) # saves all variables in a list to add to log files
+C <-
+  as.list(.GlobalEnv) # saves all variables in a list to add to log files
 A <- as.data.frame(C)
 
 filllogs <- function(DataLogs, c = C) {
@@ -715,11 +716,11 @@ runs <-
            Fcontinent = T,
            Fcountry = T,
            countryN = "Portugal",
-           Continent = "Europe") {
+           Continent = "Europe", Final = FinalData) {
     repeat {
-      if(Sys.time() >= FinalData){
+      if(Sys.time() >= Final){
         print("Maximum time reached stopping data collecting")
-        break;
+        break
       } 
       #verifyTicksR()
       if (Filter) {
@@ -797,10 +798,10 @@ runsales <-
            Fcontinent = T,
            Fcountry = T,
            countryN = "Portugal",
-           Continent = "Europe") {
+           Continent = "Europe", Final = FinalData) {
     repeat {
       # verifyTicksS()
-      if(Sys.time() >= FinalData){
+      if(Sys.time() >= Final){
         print("Maximum time reached stopping data collecting")
         break
       } 
@@ -1189,11 +1190,10 @@ exportTreatedData=function(x = 1,mod = modFilterDates, modef = ModeFecth){
   my_collectionSales = mongo(collection = STATICSALES , db = NAMEDB)
   print("getting redirects")
   if( redis_file == "" ){ redis_file <- paste(NAMEDB,"Redirects", x , mod, modef,Sys.Date(), sep = "-") }
-  if(sales_file == ""){ sales_file <- paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
   redi = my_collectionRedi$export(file(redis_file))
   print("getting sales")
+  if( sales_file == "" ){ sales_file <- paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
   sales = my_collectionSales$export(file(sales_file))
-  
   
 }
 
@@ -1272,9 +1272,8 @@ ajustaFunctionS<-function( S = NSInitial , idsFromTicksS = 0, percentIncrease=0.
 }
 
 
-init()
-# RunProgram(filter = T, FilterSales = T, bestMode = ModeFecth ,FilterContinents = F, FilterCountry = F, Continent = c("Europe"), MultipleFetch = F)
-RunProgram(filter = T, FilterSales = T, bestMode = "Best" ,FilterContinents = F, FilterCountry = F, Continent = c("Europe"), MultipleFetch = F)
+init() 
+RunProgram(filter = T, FilterSales = T, bestMode = "Best", FilterContinents = F, FilterCountry = F, Continent = c("Europe"), MultipleFetch = F)
 
 
 #example of exporting the data
