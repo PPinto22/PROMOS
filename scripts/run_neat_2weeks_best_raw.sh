@@ -1,7 +1,7 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 options="-d ../data/2weeks/best_raw_train.csv -t ../data/2weeks/best_raw_test.csv -P ../params/neat.txt -o ../results/2wks_best_raw -m neat -g10000 -s2000 -p6 --test-fitness --quiet"
-runs=10 # per run type
+runs=5
 parallel=5
 
 function run() {
