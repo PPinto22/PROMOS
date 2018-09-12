@@ -12,8 +12,8 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-dir.create(file.path(opt$dir), recursive=TRUE, showWarnings=FALSE)
-setwd(opt$dir)
+dir.create(file.path(opt$working-dir), recursive=TRUE, showWarnings=FALSE)
+setwd(opt$working-dir)
 
 
 #GLOBAL VARIABLES SETTINGS
