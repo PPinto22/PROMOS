@@ -224,7 +224,7 @@ class Evolver:
                 self.collector.setDaemon(True)
                 self.collector.start()
                 if self.train_data is None:
-                    self.update_output_state('Waiting for data')
+                    self.update_output_state('Waiting for data', pre=True)
                     self.start_lock.wait()  # Wait for data to be collected
 
         # Substrate for HyperNEAT
@@ -438,8 +438,8 @@ class Evolver:
             return ''
         elapsed_time = self.elapsed_time()
         elapsed_str = str(elapsed_time).split('.')[0] if elapsed_time is not None else ''
-        shift = str(self.window_initial_time - self.initial_time
-                    + datetime.timedelta(minutes=self.options.time_limit)).split('.')[0] \
+        shift = str(self.window_initial_time - self.initial_time +
+                    datetime.timedelta(minutes=self.options.time_limit)).split('.')[0] \
             if self.options.time_limit is not None else None
         shift_str = ' / {}'.format(shift) if shift is not None else ''
         return elapsed_str + shift_str
