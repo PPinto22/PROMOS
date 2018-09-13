@@ -79,6 +79,8 @@ class Online(Thread):
                     else:
                         self.evolver.shift_window(new_train=train, new_test=test)
             except Exception as e:
+                with self.evolver.start_lock:
+                    self.evolver.start_lock.notify()
                 self.evolver.force_terminate = True
                 self.finished = True
                 self.evolver.log_error(traceback.format_exc())
