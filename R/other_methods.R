@@ -34,4 +34,7 @@ for (i in 1:length(TRAIN_FILES)) {
   summary_df <- rbind(summary_df, summary_row)
 }
 
-
+# xgboost
+# mlp
+# svm
+# random forest
