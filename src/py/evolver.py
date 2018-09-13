@@ -93,7 +93,8 @@ def parse_args():
     parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.ufloat, default=None,
                         help='Sliding window width (train + test) in hours')
     parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.ufloat, default=None,
-                        help='Test sliding window width in hours')
+                        help='Test sliding window width in hours '
+                             '(or, if in online mode, a percentage of the window data to use for validation)')
     parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.ufloat, default=None,
                         help='Sliding window shift in hours')
     parser.add_argument('-b,' '--bloat', dest='bloat_file', metavar='FILE', default=None,
@@ -219,7 +220,7 @@ class Evolver:
         self._setup_data()
         if self.is_online:
             with self.start_lock:
-                self.collector = online.Online(self, self.width, self.shift)
+                self.collector = online.Online(self, self.width, self.shift, self.test_width)
                 self.collector.setDaemon(True)
                 self.collector.start()
                 if self.train_data is None:
@@ -936,9 +937,13 @@ class Evolver:
 if __name__ == '__main__':
     options = parse_args()
     signal_terminate = False
+
+
     def sigint_handler(sig, frame):
         global signal_terminate
         signal_terminate = True
+
+
     signal.signal(signal.SIGINT, sigint_handler)
 
     with Evolver(options) as evolver:
