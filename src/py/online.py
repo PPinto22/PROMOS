@@ -35,7 +35,7 @@ class Online(Thread):
                                  '-w', self.get_file_path('etl'),
                                  '-s', 'sales.json',
                                  '-r', 'redis.json',
-                                 '-t', self.shift])
+                                 '-t', str(self.shift)])
         end_time = util.datetime_to_string(datetime.datetime.now())
         # Call transform.R
         subprocess.check_output(['Rscript', Online.TRANSFORM_SCRIPT,
@@ -81,6 +81,7 @@ class Online(Thread):
             except Exception as e:
                 self.evolver.force_terminate = True
                 self.finished = True
+                print(e)
                 self.evolver.log_error(traceback.format_exc())
                 with self.evolver.start_lock:
                     self.evolver.start_lock.notify()

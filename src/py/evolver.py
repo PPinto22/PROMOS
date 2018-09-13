@@ -305,6 +305,7 @@ class Evolver:
     def log_error(self, error):
         if self.options.out_dir is None:
             return
+        self.make_out_dir()
         with open(self.get_out_file_path('error_log.txt', False), 'a') as log:
             log.writelines("[Gen {}] {}".format(self.generation, error))
 
