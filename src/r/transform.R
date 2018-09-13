@@ -13,6 +13,7 @@ library(DMwR)
 library(ROSE)
 library(data.table)
 library(caTools)
+library(optparse)
 set.seed(123456789) 
 
 option_list = list(
