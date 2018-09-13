@@ -1190,9 +1190,11 @@ exportTreatedData=function(x = 1,mod = modFilterDates, modef = ModeFecth){
   my_collectionSales = mongo(collection = STATICSALES , db = NAMEDB)
   print("getting redirects")
   if( redis_file == "" ){ redis_file <- paste(NAMEDB,"Redirects", x , mod, modef,Sys.Date(), sep = "-") }
+  dir.create(file.path(dirname(redis_file)), recursive=TRUE, showWarnings=FALSE)
   redi = my_collectionRedi$export(file(redis_file))
   print("getting sales")
   if( sales_file == "" ){ sales_file <- paste(NAMEDB,"Sales", x , mod, modef,Sys.Date(), sep = "-") }
+  dir.create(file.path(dirname(sales_file)), recursive=TRUE, showWarnings=FALSE)
   sales = my_collectionSales$export(file(sales_file))
   
 }

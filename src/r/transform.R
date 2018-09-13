@@ -15,34 +15,49 @@ library(data.table)
 library(caTools)
 set.seed(123456789) 
 
+option_list = list(
+  make_option(c("-w","--workingdir"), type="character", default=".", help="working directory", metavar="DIR"),
+  make_option(c("-s","--sales"), type="character", default="sales.json", help="path to the sales file", metavar="FILE"),
+  make_option(c("-r","--redirects"), type="character", default="redis.json", help="path to the redirects file", metavar="FILE"),
+  make_option(c("-o","--out"), type="character", default = "treated.json", help="out file", metavar = "FILE")
+);
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
+
+workingdir <- opt$workingdir
+PathToFileS <- opt$sales
+PathToFileR <- opt$redirects
+out_file <- opt$out
+dir.create(file.path(workingdir), recursive=TRUE, showWarnings=FALSE)
+setwd(workingdir)
+
 modFilterDates = "Week" #set the type of data you want (day, week....)
 
-get_os <- function(){
-  sysinf <- Sys.info()
-  if (!is.null(sysinf)){
-    os <- sysinf['sysname']
-    if (os == 'Darwin')
-      os <- "osx"
-  } else { ## mystery machine
-    os <- .Platform$OS.type
-    if (grepl("^darwin", R.version$os))
-      os <- "osx"
-    if (grepl("linux-gnu", R.version$os))
-      os <- "linux"
-  }
-  tolower(os)
-  return(os[[1]])
-}
-if(get_os()!="osx"){
-  setwd("C:/Users/luism/Desktop/Dataset2Semanas//")
-  PathToFileR = "ColetasPROMOSBEST-Redirects-2-Week-Best-2018-06-13"
-  PathToFileS = "ColetasPROMOSBEST-Sales-2-Week-Best-2018-06-13"
-}else{
-  setwd("Desktop/Datasets/TestesComParalelismo")
-  PathToFileR = "../ColetasPROMOS-Redirects-1-Week-Best.json"
-  PathToFileS = "../ColetasPROMOS-Sales-1-Week-Best.json"
-}
-
+# get_os <- function(){
+#   sysinf <- Sys.info()
+#   if (!is.null(sysinf)){
+#     os <- sysinf['sysname']
+#     if (os == 'Darwin')
+#       os <- "osx"
+#   } else { ## mystery machine
+#     os <- .Platform$OS.type
+#     if (grepl("^darwin", R.version$os))
+#       os <- "osx"
+#     if (grepl("linux-gnu", R.version$os))
+#       os <- "linux"
+#   }
+#   tolower(os)
+#   return(os[[1]])
+# }
+# if(get_os()!="osx"){
+#   setwd("C:/Users/luism/Desktop/Dataset2Semanas//")
+#   PathToFileR = "ColetasPROMOSBEST-Redirects-2-Week-Best-2018-06-13"
+#   PathToFileS = "ColetasPROMOSBEST-Sales-2-Week-Best-2018-06-13"
+# }else{
+#   setwd("Desktop/Datasets/TestesComParalelismo")
+#   PathToFileR = "../ColetasPROMOS-Redirects-1-Week-Best.json"
+#   PathToFileS = "../ColetasPROMOS-Sales-1-Week-Best.json"
+# }
 
 
 assign("ModeFilt", "BEST", envir = .GlobalEnv)
@@ -506,7 +521,12 @@ stream_in(file(PathToFileS), handler = function(x){
 
 ,pagesize = 10000)
 
-FileTreated = paste(PathToFileRName,"Treated",Sys.Date(),".json", sep="")
+if(out_file == ''){ 
+  FileTreated = paste(PathToFileRName,"Treated",Sys.Date(),".json", sep="") 
+} else{
+  FileTreated = out_file
+}
+dir.create(file.path(dirname(out_file)), recursive=TRUE, showWarnings=FALSE)
 if(file.exists(FileTreated)){
   assign("reditreated", stream_in(file(FileTreated)), envir = .GlobalEnv)
   
