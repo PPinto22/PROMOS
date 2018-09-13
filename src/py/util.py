@@ -19,8 +19,15 @@ def get_network_connections(network):
     return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
 
 
-def datetime_to_string(date=datetime.datetime.now()):
-    return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=date)
+def current_dt_to_string(**kwargs):
+    return datetime_to_string(date=datetime.datetime.now(), **kwargs)
+
+
+def datetime_to_string(date, pretty=False):
+    if pretty:
+        return '{date:%Y-%m-%d %H:%M:%S}'.format(date=date)
+    else:
+        return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=date)
 
 
 def build_network(genome, method='neat', substrate=None, **kwargs):

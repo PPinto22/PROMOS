@@ -180,7 +180,7 @@ class Data:
         if not self.timestamps_only:
             self.inputs = np.array(self.inputs)
             self.targets = np.array(self.targets, dtype=TARGETS_DTYPE)
-        if self.timestamps:
+        if self.timestamps is not None:
             self.timestamps = np.array(self.timestamps)
 
     def sort(self):

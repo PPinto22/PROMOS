@@ -103,7 +103,7 @@ def parse_args():
 
     options = parser.parse_args()
 
-    options.id = options.id if options.id is not None else util.datetime_to_string()
+    options.id = options.id if options.id is not None else util.current_dt_to_string()
     options.out_dir = options.out_dir if options.out_dir != 'NULL' else None
 
     if options.seed is not None:
@@ -147,6 +147,7 @@ class Evolver:
         assert not (self.options.online and any(x is None for x in (self.options.shift, self.options.width))), \
             'The options (-W and -S) are required for online mode (--online)'
         assert not (self.options.online and self.options.out_dir is None), 'Output directory is required in online mode'
+        assert not (self.options.online and self.options.encoder is None), 'An encoder (-E) is required in online mode'
 
         # Evaluation function
         self.fitness_func = FitFunction(self.options.evaluator)
@@ -307,7 +308,14 @@ class Evolver:
             return
         self.make_out_dir()
         with open(self.get_out_file_path('error_log.txt', False), 'a') as log:
-            log.writelines("[Gen {}] {}".format(self.generation, error))
+            log.writelines("[Gen {} ({})] {}".format(self.generation, util.current_dt_to_string(pretty=True), error))
+
+    def log_message(self, msg):
+        if self.options.out_dir is None:
+            return
+        self.make_out_dir()
+        with open(self.get_out_file_path('log.txt', False), 'a') as log:
+            log.writelines("[Gen {} ({})] {}\n".format(self.generation, util.current_dt_to_string(pretty=True), msg))
 
     def clear(self):
         self.initial_time = None
@@ -439,7 +447,8 @@ class Evolver:
             return ''
         elapsed_time = self.elapsed_time()
         elapsed_str = str(elapsed_time).split('.')[0] if elapsed_time is not None else ''
-        shift = str(self.window_initial_time - self.initial_time +
+        window_init_time = self.window_initial_time if not self.is_online else self.initial_time
+        shift = str(window_init_time - self.initial_time +
                     datetime.timedelta(minutes=self.options.time_limit)).split('.')[0] \
             if self.options.time_limit is not None else None
         shift_str = ' / {}'.format(shift) if shift is not None else ''
@@ -796,6 +805,13 @@ class Evolver:
         else:  # Apply window shift
             train_data, test_data = next(self.slider)
 
+        log_message = "Shifting to window #{}:\n" \
+                      "> Rows: {}; Positives: {}; Range: {} -- {} (Train)".format(
+            self.window + 1, len(train_data), len(train_data.positives), *map(str, train_data.get_time_range()))
+        if test_data is not None:
+            log_message += "\n> Rows: {}; Positives: {}; Range: {} -- {} (Validation)".format(
+                len(test_data), len(test_data.positives), *map(str, test_data.get_time_range()))
+        self.log_message(log_message)
         self.set_data(train_data, test_data, old_columns=old_columns, keep_old_if_none=True)
         self.window += 1
 
@@ -826,7 +842,7 @@ class Evolver:
         return self.is_window_finished()
 
     def is_window_finished(self):
-        window = self.get_current_window() + 1
+        window = self.get_current_window() + 1 if not self.is_online else 1
 
         generation_limit = self.options.generations is not None and self.generation >= self.options.generations * window
         time_limit = self.options.time_limit is not None and \
