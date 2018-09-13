@@ -25,14 +25,15 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-workingdir <- opt$workingdir
+# workingdir <- opt$workingdir
+workingdir <- "~/Desktop/temp"
 PathToFileS <- opt$sales
 PathToFileR <- opt$redirects
 out_file <- opt$out
 dir.create(file.path(workingdir), recursive=TRUE, showWarnings=FALSE)
 setwd(workingdir)
 
-modFilterDates = "Week" #set the type of data you want (day, week....)
+modFilterDates = "All" #set the type of data you want (day, week....)
 
 # get_os <- function(){
 #   sysinf <- Sys.info()
@@ -350,13 +351,13 @@ exportTreatedData=function(x = 2,mod = modFilterDates, modef = ModeFilt, reditre
   
   if (mod == "Week"){
     lowerRedi = min(reditreated$date_added_utc)
-    UpperRedi = lowerRedi + (x*60*60*6) # add  6  hours
+    UpperRedi = lowerRedi + (x*60*60*24*7) # a week
     I = which(reditreated$date_added_utc >= lowerRedi &
                 reditreated$date_added_utc <= UpperRedi)
     rediT = reditreated[I, ]
     return (rediT)
   }else{
-    return (NA)
+    return (reditreated)
   }
   
 }
@@ -381,8 +382,8 @@ checkDates = function(redi, sales) {
   
   date_r_min = min(redi$date_added_utc)
   date_r_max = max(redi$date_added_utc)
-  I = which(sales$date_added_utc >= date_r_min &
-              sales$date_added_utc <= date_r_max)
+  # I = which(sales$date_added_utc >= date_r_min & sales$date_added_utc <= date_r_max)
+  I = which(sales$date_added_utc >= date_r_min)
   d2 = sales[I, ]
   if(nrow(d2)>0){
     return(d2)
@@ -528,23 +529,13 @@ if(out_file == ''){
   FileTreated = out_file
 }
 dir.create(file.path(dirname(out_file)), recursive=TRUE, showWarnings=FALSE)
-if(file.exists(FileTreated)){
-  assign("reditreated", stream_in(file(FileTreated)), envir = .GlobalEnv)
-  
-  
-}else{
-  
-  
-  
-  
-  
-  redi$date_added_utc = as.POSIXct(redi$date_added_utc, format = "%Y-%m-%d %H:%M:%S")
-  salesT$date_added_utc = as.POSIXct(sales$date_added_utc, format = "%Y-%m-%d %H:%M:%S")
-  
-  reditreated<-rbind(redi,salesT)
-  
-  reditreated<-reditreated[order(reditreated$date_added_utc),]
-  reditreated2 = exportTreatedData(reditreated = reditreated)
-  
-  stream_out(reditreated2, con=file(FileTreated))
-}
+
+redi$date_added_utc = as.POSIXct(redi$date_added_utc, format = "%Y-%m-%d %H:%M:%S")
+salesT$date_added_utc = as.POSIXct(salesT$date_added_utc, format = "%Y-%m-%d %H:%M:%S")
+
+reditreated<-rbind(redi,salesT)
+
+reditreated<-reditreated[order(reditreated$date_added_utc),]
+reditreated2 = exportTreatedData(reditreated = reditreated)
+
+stream_out(reditreated2, con=file(FileTreated))
