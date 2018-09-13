@@ -25,8 +25,7 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-# workingdir <- opt$workingdir
-workingdir <- "~/Desktop/temp"
+workingdir <- opt$workingdir
 PathToFileS <- opt$sales
 PathToFileR <- opt$redirects
 out_file <- opt$out

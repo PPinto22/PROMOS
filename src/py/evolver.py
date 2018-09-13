@@ -90,11 +90,11 @@ def parse_args():
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
                              'the best individuals with the whole data-set.')
-    parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.uint, default=None,
+    parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.ufloat, default=None,
                         help='Sliding window width (train + test) in hours')
-    parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.uint, default=None,
+    parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.ufloat, default=None,
                         help='Test sliding window width in hours')
-    parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
+    parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.ufloat, default=None,
                         help='Sliding window shift in hours')
     parser.add_argument('-b,' '--bloat', dest='bloat_file', metavar='FILE', default=None,
                         help='configuration file for limiting the effects of bloat')
@@ -145,6 +145,7 @@ class Evolver:
             assert self.options.width is not None, 'The test width option (-w) requires the window width option (-W)'
         assert not (self.options.online and any(x is None for x in (self.options.shift, self.options.width))), \
             'The options (-W and -S) are required for online mode (--online)'
+        assert not (self.options.online and self.options.out_dir is None), 'Output directory is required in online mode'
 
         # Evaluation function
         self.fitness_func = FitFunction(self.options.evaluator)

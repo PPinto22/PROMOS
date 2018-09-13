@@ -1,52 +1,56 @@
 import datetime
 import os
+import subprocess
 import shutil
 import traceback
 from threading import Thread
-from time import sleep
 
 import util
-import evolver
 from data import Data
 
-
 class Online(Thread):
+    R_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/../r')
+    EXTRACT_SCRIPT = 'extract.R'
+    TRANSFORM_SCRIPT = 'transform.R'
+    PREP_SCRIPT = 'prep.R'
+
     def __init__(self, evolver, shift, width, test_ratio=0.3):
         super(Online, self).__init__()
         self.evolver = evolver
         self.shift = shift
         self.width = width
-        self.test_ratio = 0.3
+        self.test_ratio = test_ratio
         self.finished = False
         self.files_per_window = width//shift
         self.window_files = []
 
-    def get_file_path(self, file_name, suffix=None):
+    def get_file_path(self, file_name):
         out_dir = self.evolver.options.out_dir if self.evolver.options.out_dir not in [None, 'NULL'] else '.'
-        suffix = '.' + str(suffix) if suffix is not None else ''
-        return '{}/{}{}'.format(out_dir, file_name, suffix)
+        return os.path.abspath('{}/{}'.format(out_dir, file_name))
 
     def extract_data(self):
         initial_time = util.datetime_to_string(datetime.datetime.now())
-        temp_file_name = self.get_file_path(file_name=initial_time, suffix='tmp')
-        self._extract_data(temp_file_name)
+        # Call extract.R
+        subprocess.check_output(['Rscript', Online.EXTRACT_SCRIPT,
+                                 '-w', self.get_file_path('etl'),
+                                 '-s', 'sales.json',
+                                 '-r', 'redis.json',
+                                 '-t', self.shift])
         end_time = util.datetime_to_string(datetime.datetime.now())
-        data_file_name = self.get_file_path(file_name='collection__{}__{}'.format(initial_time, end_time), suffix='csv')
-        self._prepare_data(temp_file_name, data_file_name)
-        return data_file_name
+        # Call transform.R
+        subprocess.check_output(['Rscript', Online.TRANSFORM_SCRIPT,
+                                 '-w', self.get_file_path('etl'),
+                                 '-s', 'sales.json',
+                                 '-r', 'redis.json',
+                                 '-o', 'treated.json'])
+        # Call prep.R
+        file_name = self.get_file_path('data/collection__{}__{}.csv'.format(initial_time, end_time))
+        subprocess.check_output(['Rscript', Online.PREP_SCRIPT,
+                                 '-f', self.get_file_path('etl/treated.json'),
+                                 '-o', file_name])
+        return file_name
 
-    def _extract_data(self, outfile):
-        # TODO!
-        shutil.copy('../data/2weeks/best_idf_mini.csv', outfile)
-
-    def _prepare_data(self, datafile, newname):
-        # TODO!
-        shutil.copy(datafile, newname)
-        # Cleanup temp file
-        if os.path.isfile(datafile):
-            os.remove(datafile)
-
-    def _split_data(self, data):
+    def split_data(self, data):
         if self.test_ratio == 0:
             return data, None
         else:
@@ -55,11 +59,11 @@ class Online(Thread):
     def add_data(self, file):
         self.window_files.append(file)
         if len(self.window_files) > self.files_per_window:
-            del self.files_per_window[0]
+            del self.window_files[0]
 
     def load_dataset(self):
         data = Data(self.window_files)
-        return self._split_data(data)
+        return self.split_data(data)
 
     def run(self):
         while not self.finished:
@@ -74,8 +78,6 @@ class Online(Thread):
                             self.evolver.start_lock.notify()
                     else:
                         self.evolver.shift_window(new_train=train, new_test=test)
-                # FIXME!
-                sleep(30)
             except Exception as e:
                 self.evolver.force_terminate = True
                 self.finished = True

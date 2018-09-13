@@ -141,6 +141,7 @@ def try_(f):
     except:
         return None
 
+
 def serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
 
@@ -163,6 +164,19 @@ def uint(value):
 
     try:
         ivalue = int(value)
+        if ivalue <= 0:
+            raise_arg_type_error(value)
+        return ivalue
+    except ValueError:
+        raise_arg_type_error(value)
+
+
+def ufloat(value):
+    def raise_arg_type_error(s):
+        raise argparse.ArgumentTypeError("{} is an invalid positive float value".format(value))
+
+    try:
+        ivalue = float(value)
         if ivalue <= 0:
             raise_arg_type_error(value)
         return ivalue
