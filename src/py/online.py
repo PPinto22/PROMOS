@@ -31,28 +31,26 @@ class Online(Thread):
         return os.path.abspath('{}/{}'.format(out_dir, file_name))
 
     def extract_data(self):
-        # initial_time = util.datetime_to_string(datetime.datetime.now())
-        # # Call extract.R
-        # subprocess.check_output(['Rscript', Online.EXTRACT_SCRIPT,
-        #                          '-w', self.get_file_path('etl'),
-        #                          '-s', 'sales.json',
-        #                          '-r', 'redis.json',
-        #                          '-t', str(self.shift)], cwd=Online.R_DIR, stderr=subprocess.STDOUT)
-        # end_time = util.datetime_to_string(datetime.datetime.now())
-        # # Call transform.R
-        # subprocess.check_output(['Rscript', Online.TRANSFORM_SCRIPT,
-        #                          '-w', self.get_file_path('etl'),
-        #                          '-s', 'sales.json',
-        #                          '-r', 'redis.json',
-        #                          '-o', 'treated.json'], cwd=Online.R_DIR, stderr=subprocess.STDOUT)
-        # # Call prep.R
-        # file_name = self.get_file_path('data/collection__{}__{}.csv'.format(initial_time, end_time))
-        # subprocess.check_output(['Rscript', Online.PREP_SCRIPT,
-        #                          '-f', self.get_file_path('etl/treated.json'),
-        #                          '-o', file_name], cwd=Online.R_DIR, stderr=subprocess.STDOUT)
-        # return file_name
-        sleep(0.5)
-        return '/home/pedro/Desktop/temp/treated.csv'
+        initial_time = util.datetime_to_string(datetime.datetime.now())
+        # Call extract.R
+        subprocess.check_output(['Rscript', Online.EXTRACT_SCRIPT,
+                                 '-w', self.get_file_path('etl'),
+                                 '-s', 'sales.json',
+                                 '-r', 'redis.json',
+                                 '-t', str(self.shift)], cwd=Online.R_DIR, stderr=subprocess.STDOUT)
+        end_time = util.datetime_to_string(datetime.datetime.now())
+        # Call transform.R
+        subprocess.check_output(['Rscript', Online.TRANSFORM_SCRIPT,
+                                 '-w', self.get_file_path('etl'),
+                                 '-s', 'sales.json',
+                                 '-r', 'redis.json',
+                                 '-o', 'treated.json'], cwd=Online.R_DIR, stderr=subprocess.STDOUT)
+        # Call prep.R
+        file_name = self.get_file_path('data/collection__{}__{}.csv'.format(initial_time, end_time))
+        subprocess.check_output(['Rscript', Online.PREP_SCRIPT,
+                                 '-f', self.get_file_path('etl/treated.json'),
+                                 '-o', file_name], cwd=Online.R_DIR, stderr=subprocess.STDOUT)
+        return file_name
 
     def split_data(self, data):
         if self.test_ratio == 0:
