@@ -206,6 +206,7 @@ print(gg_connections_gen)
 dev.off()
 
 # prediction time over gens
+png(filename = paste(OUT_DIR, 'pred_time_by_gen.png', sep = ''))
 gg_pred_time_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
   geom_smooth(aes(y=pred_avg_time), fill=gsmooth_fill) +
   labs(x="Generation", y="Prediction time (µs)") + 
@@ -214,6 +215,7 @@ gg_pred_time_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   theme_minimal()
 gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen)
 print(gg_pred_time_gen)
+dev.off()
 
 # Network neurons over generations
 png(filename = paste(OUT_DIR, 'neurons_by_gen.png', sep=''))

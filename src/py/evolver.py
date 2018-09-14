@@ -207,6 +207,7 @@ class Evolver:
         self.windows_header = []  # Header for the windows best table
         self.running = False
         self.force_terminate = False
+        self.first_gen_window = True
 
         # Encoding and load progress
         self.mapping = None
@@ -334,6 +335,7 @@ class Evolver:
         self.run_i = None
         self.running = False
         self.force_terminate = False
+        self.first_gen_window = True
         self.pop = self.init_population()
         self.generation = 0
         self.best_list.clear()
@@ -621,8 +623,8 @@ class Evolver:
             return
 
         self.make_out_dir()
-        file_path = self.get_out_file_path('evaluations.csv', include_window=False)
-        if self.generation == 0:
+        file_path = self.get_out_file_path('evaluations.csv', include_window=True)
+        if self.first_gen_window:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['window', 'generation', 'genome_id', 'fitness', 'fitness_test', 'fitness_adj',
@@ -661,11 +663,12 @@ class Evolver:
         return self.best_list[0]
 
     def update_best_list(self):
-        # Penalize individuals older than 20 generations
-        if self.generation % 20 == 0:
+        # Penalize older individuals
+        if self.generation % self.initial_params.OldAgeThreshold == 0:
             for e in self.best_list:
-                if e.generation < self.generation - 20:
-                    e.fitness -= e.fitness * 0.01
+                if e.generation < self.generation - self.initial_params.OldAgeThreshold:
+                    e.fitness -= e.fitness * 0.001
+                    self._update_best_list_evaluation(e)
 
         max_updates = math.ceil(0.05 * self.pop.Parameters.PopulationSize)  # Take at most the best 5% of evaluations
         # Evaluations must be sorted by descending fitness
@@ -814,6 +817,7 @@ class Evolver:
         self.log_message(log_message)
         self.set_data(train_data, test_data, old_columns=old_columns, keep_old_if_none=True)
         self.window += 1
+        self.first_gen_window = True
 
     def _update_inputs(self, old_inputs):
         # Which columns have changed
@@ -895,6 +899,7 @@ class Evolver:
         if self.should_shift():
             self.shift_window()
         self.save_progress()
+        self.first_gen_window = False
 
     def _run(self):
         self.running = True
