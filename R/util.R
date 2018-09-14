@@ -33,14 +33,15 @@ setup <- function(multi_types=FALSE){
       if(RUNS[i] > 1){
         prefix = paste(prefix, '(', 1:RUNS[i], ')', sep='')
       }
-      
-      evals_file_names[[i]] <<- paste(prefix, '_evaluations.csv', sep='')
-      gens_file_names[[i]] <<- paste(prefix, '_generations.csv', sep='')
       if(has_windows){
         prefix_w_window = CJ(prefix, 0:(WINDOWS[i]-1), sorted = FALSE)[, paste(V1, '(', V2, ')', sep ="")]
+        evals_file_names[[i]] <<- paste(prefix_w_window, '_evaluations.csv', sep='')
+        gens_file_names[[i]] <<- paste(prefix_w_window, '_generations.csv', sep='')
         summs_file_names[[i]] <<- paste(prefix_w_window, '_summary.json', sep='')
         windows_file_names[[i]] <<- paste(prefix, '_windows.csv', sep='') 
       }else{
+        evals_file_names[[i]] <<- paste(prefix, '_evaluations.csv', sep='')
+        gens_file_names[[i]] <<- paste(prefix, '_generations.csv', sep='')
         summs_file_names[[i]] <<- paste(prefix, '_summary.json', sep='')
       }
     }
@@ -48,14 +49,15 @@ setup <- function(multi_types=FALSE){
   else{
     prefix = paste(RESULTS_DIR, RUN_PREFIX, sep='')
     if(RUNS > 1){prefix = paste(prefix, '(', 1:RUNS, ')', sep='')}
-    evals_file_names <<- paste(prefix, '_evaluations.csv', sep='')
-    gens_file_names <<- paste(prefix, '_generations.csv', sep='')
-    windows_file_names <<- paste(prefix, '_windows.csv', sep='')
     if(has_windows){
       prefix_w_window = CJ(prefix, 0:(WINDOWS-1), sorted = FALSE)[, paste(V1, '(', V2, ')', sep ="")]
+      evals_file_names <<- paste(prefix_w_window, '_evaluations.csv', sep='')
+      gens_file_names <<- paste(prefix_w_window, '_generations.csv', sep='')
       summs_file_names <<- paste(prefix_w_window, '_summary.json', sep='')
-      windows_file_names <<- paste(prefix, '_windows.csv', sep='') 
+      windows_file_names <<- paste(prefix, '_windows.csv', sep='')
     }else{
+      evals_file_names <<- paste(prefix, '_evaluations.csv', sep='')
+      gens_file_names <<- paste(prefix, '_generations.csv', sep='')
       summs_file_names <<- paste(prefix, '_summary.json', sep='')
     }
   }
@@ -91,20 +93,20 @@ deviation <- function(vec){
 }
 
 
-read_evaluations <- function(evals_file_names){
+read_evaluations <- function(evals_file_names, windows=1){
   evals_dt = rbindlist(lapply(1:length(evals_file_names), function(i){
     run_dt = data.table(read.csv(file=evals_file_names[i], header=TRUE, sep=','))
     run_dt$eval_time = run_dt$build_time + run_dt$pred_time + run_dt$fit_time
-    run_dt$run = rep(i, nrow(run_dt))
+    run_dt$run = rep(ceiling(i/windows), nrow(run_dt))
     run_dt
   }))
 }
 
-read_generations <- function(gens_file_names){
+read_generations <- function(gens_file_names, windows=1){
   gens_dt = tryCatch(
     rbindlist(lapply(1:length(gens_file_names), function(i){
       run_dt = data.table(read.csv(file=gens_file_names[i], header=TRUE, sep=','))
-      run_dt$run = rep(i, nrow(run_dt))
+      run_dt$run = rep(ceiling(i/windows), nrow(run_dt))
       run_dt
     })),
     error=function(e) NULL

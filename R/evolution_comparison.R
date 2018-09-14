@@ -10,7 +10,7 @@ setup(multi_types=TRUE)
 
 # Read evaluations
 evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
-  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]]), crop=0.2)  # Read all evals; average each run individually; then average the average of every run
+  run_type_dt = group_evals(read_evaluations(evals_file_names[[i]], windows=WINDOWS[[i]]), crop=0.2)  # Read all evals; average each run individually; then average the average of every run
   run_type_dt$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_dt))   # Add "run_type" column
   return(run_type_dt)
 }))

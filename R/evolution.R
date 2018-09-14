@@ -6,12 +6,12 @@ source('util.R')
 setup()
 
 # Read generations
-gens_dt <- read_generations(gens_file_names)
+gens_dt <- read_generations(gens_file_names, windows=WINDOWS)
 gens_avg_dt <- group_gens(gens_dt)
 gens_single_dt <- gens_dt[run==1]
 
 # Read evaluations
-evals_dt <- read_evaluations(evals_file_names)
+evals_dt <- read_evaluations(evals_file_names, windows=WINDOWS)
 evals_avg_dt <- group_evals(evals_dt)
 evals_single_dt <- group_evals(evals_dt[run==1], crop=FALSE)
 evals_sample_dt <- get_evals_sample(evals_dt)
