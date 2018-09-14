@@ -522,6 +522,7 @@ class Evolver:
             file.write('time {}\n'.format(self.elapsed_time().total_seconds()))
             file.write('ea_time {}\n'.format(self.ea_time.total_seconds()))
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
+            file.write('first_gen_window {}\n'.format(self.first_gen_window))
 
     def save_encoder(self):
         if self.options.out_dir is None:
@@ -557,6 +558,8 @@ class Evolver:
                     self.encoder = Encoder.load(value)
                 elif key == 'population':
                     self.load_pop(value)
+                elif key == 'first_gen_window':
+                    self.first_gen_window = util.str_to_bool(value)
         self._keep_timers = True
         self.update_output_state('Resuming')
 
