@@ -648,8 +648,8 @@ class Evolver:
             return
 
         self.make_out_dir()
-        file_path = self.get_out_file_path('generations.csv', include_window=False)
-        if self.generation == 0:
+        file_path = self.get_out_file_path('generations.csv', include_window=True)
+        if self.first_gen_window:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['generation', 'eval_time', 'ea_time', 'run_time',
