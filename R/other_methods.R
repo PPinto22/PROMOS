@@ -29,7 +29,7 @@ for(alg in ALGORITHMS){
     mode = INSTANCES[[i]][3]
     encoding = INSTANCES[[i]][4]
     
-    time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
+    time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'reg'))[[3]]
     predictions <- predict(model, test_dt)
     auc_score <- auc(roc(test_dt$target, predictions))
     summary_row <- list(algorithm=alg, mode=mode, encoding=encoding, auc=auc_score, time=time)
