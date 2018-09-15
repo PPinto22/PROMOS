@@ -75,6 +75,9 @@ class Data:
         inputs_encoded = encoder.encode(inputs_dt, return_mapping=False)
         if soft_order is not None:
             inputs_encoded = self.soft_sort(inputs_encoded, soft_order)
+        elif encoder.input_order is not None:
+            inputs_encoded = self.soft_sort(inputs_encoded, encoder.input_order)
+        encoder.input_order = list(inputs_encoded.columns)
         mapping = encoder.get_mapping(inputs_dt, inputs_encoded)
         self._update_inputs(inputs_encoded)
         return mapping

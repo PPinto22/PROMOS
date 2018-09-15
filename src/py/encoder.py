@@ -262,7 +262,7 @@ class Encoder:
     def __init__(self, cfg_file):
         self.columns = {}
         self.default = None
-
+        self.input_order = None
         self._setup(cfg_file)
 
     @classmethod

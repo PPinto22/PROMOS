@@ -208,6 +208,7 @@ class Evolver:
         self.running = False
         self.force_terminate = False
         self.first_gen_window = True
+        self.online_data = []
 
         # Encoding and load progress
         self.mapping = None
@@ -222,7 +223,8 @@ class Evolver:
         self._setup_data()
         if self.is_online:
             with self.start_lock:
-                self.collector = online.Online(self, self.width, self.shift, self.test_width)
+                self.collector = online.Online(self, self.width, self.shift,
+                                               test_ratio=self.test_width, start_files=self.online_data)
                 self.collector.setDaemon(True)
                 self.collector.start()
                 if self.train_data is None:
@@ -506,6 +508,7 @@ class Evolver:
             self.save_window_summary()
             self.write_summary(self.get_out_file_path('summary.json'))
             self.pop.Save(self.get_out_file_path('population.txt'))
+            self.pop.Save(self.get_out_file_path('population.txt', include_window=False))
             self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def save_progress(self):
@@ -515,7 +518,7 @@ class Evolver:
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
-            file.write('population {}\n'.format(os.path.abspath(self.get_out_file_path('population.txt'))))
+            file.write('population {}\n'.format(os.path.abspath(self.get_out_file_path('population.txt', include_window=False))))
             self.run_i is not None and file.write('run {}\n'.format(self.run_i))
             self.has_windows and file.write('window {}\n'.format(self.get_current_window()))
             file.write('generation {}\n'.format(self.generation))
@@ -523,6 +526,7 @@ class Evolver:
             file.write('ea_time {}\n'.format(self.ea_time.total_seconds()))
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
             file.write('first_gen_window {}\n'.format(self.first_gen_window))
+            file.write('online_data {}\n'.format('::'.join(self.online_data) if self.online_data else 'NA'))
 
     def save_encoder(self):
         if self.options.out_dir is None:
@@ -546,6 +550,7 @@ class Evolver:
                     self.run_i = int(value)
                 elif key == 'window':
                     self._setup_data(window=int(value))
+                    self.window = int(value)
                 elif key == 'generation':
                     self.generation = int(value)
                 elif key == 'time':
@@ -560,6 +565,9 @@ class Evolver:
                     self.load_pop(value)
                 elif key == 'first_gen_window':
                     self.first_gen_window = util.str_to_bool(value)
+                elif key == 'online_data':
+                    if value != 'NA':
+                        self.online_data = value.split('::')
         self._keep_timers = True
         self.update_output_state('Resuming')
 

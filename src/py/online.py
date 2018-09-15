@@ -1,14 +1,14 @@
 import datetime
 import os
 import subprocess
-import shutil
 import sys
 import traceback
+from math import floor
 from threading import Thread
-from time import sleep
 
 import util
 from data import Data
+
 
 class Online(Thread):
     R_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/../r')
@@ -16,15 +16,17 @@ class Online(Thread):
     TRANSFORM_SCRIPT = 'transform.R'
     PREP_SCRIPT = 'prep.R'
 
-    def __init__(self, evolver, width, shift, test_ratio=0.3):
+    def __init__(self, evolver, width, shift, test_ratio=0.3, start_files=None):
         super(Online, self).__init__()
         self.evolver = evolver
         self.shift = shift
         self.width = width
         self.test_ratio = test_ratio
         self.finished = False
-        self.files_per_window = width//shift
+        self.files_per_window = floor(width/shift)
+        self.start_files = start_files if start_files is not None else []
         self.window_files = []
+        self.first_iteration = True
 
     def get_file_path(self, file_name):
         out_dir = self.evolver.options.out_dir if self.evolver.options.out_dir not in [None, 'NULL'] else '.'
@@ -70,8 +72,12 @@ class Online(Thread):
     def run(self):
         while not self.finished:
             try:
-                new_data_file = self.extract_data()
-                self.add_data(new_data_file)
+                if self.first_iteration and self.start_files:
+                    for f in self.start_files:
+                        self.add_data(f)
+                else:
+                    new_data_file = self.extract_data()
+                    self.add_data(new_data_file)
                 train, test = self.load_dataset()
                 with self.evolver.gen_lock:
                     if not self.evolver.running:
@@ -80,6 +86,9 @@ class Online(Thread):
                             self.evolver.start_lock.notify()
                     else:
                         self.evolver.shift_window(new_train=train, new_test=test)
+                    self.evolver.online_data = self.window_files
+                    self.evolver.save_progress()
+                self.first_iteration = False
             except Exception as e:
                 self.evolver.force_terminate = True
                 self.finished = True
