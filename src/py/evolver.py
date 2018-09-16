@@ -10,7 +10,7 @@ import os
 import random
 import threading
 import signal
-from functools import partialook
+from functools import partial
 
 import tabulate
 from reprint import reprint, output
