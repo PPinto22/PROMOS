@@ -547,7 +547,6 @@ class Evolver:
                 if key == 'run':
                     self.run_i = int(value)
                 elif key == 'window':
-                    # self._setup_data(window=int(value)) FIXME
                     self.window = int(value)
                 elif key == 'generation':
                     self.generation = int(value)
