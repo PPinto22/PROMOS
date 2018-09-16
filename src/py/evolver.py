@@ -518,7 +518,8 @@ class Evolver:
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
-            file.write('population {}\n'.format(os.path.abspath(self.get_out_file_path('population.txt', include_window=False))))
+            file.write('population {}\n'.format(
+                os.path.abspath(self.get_out_file_path('population.txt', include_window=False))))
             self.run_i is not None and file.write('run {}\n'.format(self.run_i))
             self.has_windows and file.write('window {}\n'.format(self.get_current_window()))
             file.write('generation {}\n'.format(self.generation))
@@ -829,6 +830,7 @@ class Evolver:
         self.set_data(train_data, test_data, old_columns=old_columns, keep_old_if_none=True)
         self.window += 1
         self.first_gen_window = True
+        self.save_progress()
 
     def _update_inputs(self, old_inputs):
         # Which columns have changed
@@ -909,7 +911,12 @@ class Evolver:
         self.adjust_mutation_rates()
         if self.should_shift():
             self.shift_window()
-        self.save_progress()
+        if self.generation % 10 == 0:
+            log_message = "Generation {} -- Cumulative execution times:\n" \
+                          "> Evaluation: {.5f}m\n" \
+                          "> EA: {.5f}m".format(self.generation, self.eval_time.total_seconds() / 60,
+                                               self.ea_time.total_seconds() / 60)
+            self.log_message(log_message)
         self.first_gen_window = False
 
     def _run(self):
