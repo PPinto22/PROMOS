@@ -10,7 +10,7 @@ import os
 import random
 import threading
 import signal
-from functools import partial
+from functools import partialook
 
 import tabulate
 from reprint import reprint, output
@@ -542,7 +542,6 @@ class Evolver:
         self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
     def load_progress(self, file_path):
-        self.update_output_state('Resuming')
         with open(file_path, 'r') as file:
             for line in file:
                 line = line.strip('\n')
@@ -570,7 +569,6 @@ class Evolver:
                     if value != 'NA':
                         self.online_data = value.split('::')
         self._keep_timers = True
-        self.update_output_state('Resuming')
 
     def get_summary(self):
         best_evaluation = self.get_best()
