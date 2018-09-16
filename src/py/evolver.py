@@ -410,17 +410,17 @@ class Evolver:
 
     def print_top10(self):
         if not self.top10_header:
-            self.top10_header = ['Rank', 'ID', 'Spawn Gen', 'Fitness (Train)']
-            if self.bloat_options is not None:
-                self.top10_header += ['Fitness (Adj)']
-            self.top10_header += ['Fitness (Test)', 'Hidden Neurons', 'Connections']
+            self.top10_header = ['Rank', 'ID', 'Spawn Gen', 'Fit Train']
+            if self.fitness_adjuster is not None:
+                self.top10_header += ['Fit Adj.']
+            self.top10_header += ['Fit Test', 'Hid. Neurons', 'Connections']
 
         start = self.state_lines
         self.print(' ', i=start)
         self.print('[TOP 10]', i=start + 1)
         top10 = [(i + 1, e.genome_id, e.spawn_gen + 1, e.fitness, e.fitness_adj, e.fitness_test, e.genome_neurons,
                   e.genome_connections) for i, e in enumerate(self.best_list[:10])]
-        if self.bloat_options is None:
+        if self.fitness_adjuster is None:
             # Remove adjusted fitness
             top10 = [(e[0], e[1], e[2], e[3], e[5], e[6], e[7]) for e in top10]
 
@@ -434,7 +434,7 @@ class Evolver:
             return
         if not self.windows_header:
             self.windows_header = ['Window', 'ID', 'Spawn Gen', 'Total Gens',
-                                   'Fitness (Train)', 'Fitness (Test)', 'Hidden Neurons', 'Connections']
+                                   'Fit Train', 'Fit Test', 'Hid. Neurons', 'Connections']
 
         start = self.state_lines + self.top10_lines
         self.print(' ', i=start)
