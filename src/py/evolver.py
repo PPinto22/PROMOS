@@ -46,9 +46,9 @@ def parse_args():
     parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
                         type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
-    parser.add_argument('--substrate-width', dest='substrate_width', metavar='N', default=13, type=util.uint,
+    parser.add_argument('--substrate-width', dest='substrate_width', metavar='N', default=8, type=util.uint,
                         help='how many layers the grid substrate should have')
-    parser.add_argument('--substrate-length', dest='layer_length', metavar='M', default=45, type=util.uint,
+    parser.add_argument('--substrate-length', dest='layer_length', metavar='M', default=23, type=util.uint,
                         help='how many neurons each layer of the grid substrate should have')
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
                         help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
@@ -829,8 +829,12 @@ class Evolver:
         self.save_progress()
 
     def _update_inputs(self, old_inputs):
-        # Which columns have changed
+        # Which existing columns have changed
         new_inputs = util.diff_indexes(old_inputs, self.train_data.input_labels)
+        if len(new_inputs) == len(old_inputs) and not new_inputs:
+            # Nothing changed; exit
+            return
+
         self.n_inputs_diff = len(new_inputs)
         self.n_inputs_delta = self.train_data.n_inputs - len(old_inputs)
         self.inputs_diff_old = [old_inputs[i] for i in new_inputs]
@@ -846,6 +850,8 @@ class Evolver:
             self.pop.ResizeInputs(self.train_data.n_inputs)
             # Remove the old connections of the new inputs
             self.pop.DisconnectInputs(new_inputs)
+            # Reassign individuals to species FIXME
+            self.pop.Speciate()
 
     def should_shift(self):
         if self.is_online:  # If it's online, the other thread is responsible for updating the data
@@ -910,13 +916,14 @@ class Evolver:
         self.adjust_mutation_rates()
         if self.should_shift():
             self.shift_window()
+        else:
+            self.first_gen_window = False
         if self.generation % 10 == 0:
             log_message = "Generation {} -- Cumulative execution times:\n" \
                           "> Evaluation: {:.5f}m\n" \
                           "> EA: {:.5f}m".format(self.generation, self.eval_time.total_seconds() / 60,
                                                self.ea_time.total_seconds() / 60)
             self.log_message(log_message)
-        self.first_gen_window = False
 
     def _run(self):
         self.running = True

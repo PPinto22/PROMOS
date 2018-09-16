@@ -295,6 +295,19 @@ void Population::Speciate()
     // at least 1 genome must be present
     ASSERT(m_Genomes.size() > 0);
 
+    int popsize = m_Genomes.size();
+    if(m_Species.size() != 0){
+    	// Copy the population to m_Genomes
+    	m_Genomes.clear();
+    	for(Species& specie: m_Species){
+    		for(Genome g: specie.m_Individuals){
+    			m_Genomes.push_back(g);
+    			if(m_Genomes.size() == popsize) break;
+    		}
+    		if(m_Genomes.size() == popsize) break;
+    	}
+    }
+
     // first clear out the species
     m_Species.clear();
 

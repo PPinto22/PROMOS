@@ -65,9 +65,6 @@ private:
     // The base MPC (for switching between complexifying/simplifying phase)
     double m_BaseMPC;
 
-    // Separates the population into species based on compatibility distance
-    void Speciate();
-
     // Adjusts each species's fitness
     void AdjustFitness();
 
@@ -150,6 +147,9 @@ public:
     #ifdef USE_BOOST_PYTHON
     void DisconnectInputs_py(const py::list &input_idxs);
     #endif
+
+    // Separates the population into species based on compatibility distance
+    void Speciate();
 
     ////////////////////////////
     // Island methods

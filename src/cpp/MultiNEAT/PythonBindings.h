@@ -336,6 +336,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def("AccessGenomeByID", &Population::AccessGenomeByID, return_value_policy<reference_existing_object>())
             .def("NumGenomes", &Population::NumGenomes)
 
+            .def("Speciate", &Population::Speciate)
             .def("ResizeInputs", &Population::ResizeInputs)
             .def("DisconnectInputs", &Population::DisconnectInputs)
             .def("DisconnectInputs", &Population::DisconnectInputs_py)
