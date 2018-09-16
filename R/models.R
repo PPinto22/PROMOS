@@ -46,7 +46,7 @@ summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
     summary_row = tryCatch({
       time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
       predictions <- as.vector(predict(model, test_dt)[,2])
-      auc_score <- auc(roc(test_dt$target, predictions))
+      auc_score <- as.double(auc(roc(test_dt$target, predictions)))
       summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, auc=auc_score, time=time, error='')
       return(summary_row)
     }, error = function(e){
@@ -57,14 +57,14 @@ summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
   }))
 }))
 
-# # FIXME: DEBUG
+# FIXME: DEBUG
 # train_dt = train_dts[[1]]
 # test_dt = test_dts[[1]]
 # mode = INSTANCES[[1]][3]
 # encoding = INSTANCES[[1]][4]
 # time <- system.time(model <- fit(target ~ ., train_dt,  model = 'naivebayes', task = 'prob'))[[3]]
 # predictions <- as.vector(predict(model, test_dt)[,2])
-# auc(roc(test_dt$target, predictions))
+# auc_score <- as.double(auc(roc(test_dt$target, predictions)))
 
 dir.create(file.path(dirname(OUT)), recursive=TRUE, showWarnings=FALSE)
 write.table(summary_df, file=OUT, sep=',', row.names = FALSE)
