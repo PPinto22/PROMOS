@@ -911,8 +911,8 @@ class Evolver:
             self.shift_window()
         if self.generation % 10 == 0:
             log_message = "Generation {} -- Cumulative execution times:\n" \
-                          "> Evaluation: {.5f}m\n" \
-                          "> EA: {.5f}m".format(self.generation, self.eval_time.total_seconds() / 60,
+                          "> Evaluation: {:.5f}m\n" \
+                          "> EA: {:.5f}m".format(self.generation, self.eval_time.total_seconds() / 60,
                                                self.ea_time.total_seconds() / 60)
             self.log_message(log_message)
         self.first_gen_window = False
