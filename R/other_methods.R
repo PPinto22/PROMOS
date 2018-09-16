@@ -33,7 +33,7 @@ options(digits=5)
 
 train_dts <- lapply(INSTANCES, function(x) read_data(x[1]))
 test_dts <- lapply(INSTANCES, function(x) read_data(x[2]))
-  
+
 summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
   rbindlist(lapply(1:length(INSTANCES), function(i){
     train_dt = train_dts[[i]]
@@ -43,10 +43,16 @@ summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
     
     print(paste('[ALGORITHM]', alg, '[MODE]', mode, '[ENCODING]', encoding, '...'))
     
-    time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
-    predictions <- as.vector(predict(model, test_dt)[,2])
-    auc_score <- auc(roc(test_dt$target, predictions))
-    summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, auc=auc_score, time=time)
+    summary_row = tryCatch({
+      time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
+      predictions <- as.vector(predict(model, test_dt)[,2])
+      auc_score <- auc(roc(test_dt$target, predictions))
+      summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, auc=auc_score, time=time, error='')
+      return(summary_row)
+    }, error = function(e){
+      summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, auc=NA, time=NA, error=as.character(e))
+      return(summary_row)
+    })
     return(summary_row)
   }))
 }))
