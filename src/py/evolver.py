@@ -211,6 +211,7 @@ class Evolver:
         self.online_data = []
 
         # Encoding and load progress
+        self.test_data, self.train_data = None, None
         self.mapping = None
         self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
         if self.options.progress_file is not None:
@@ -218,9 +219,8 @@ class Evolver:
             self.load_progress(self.options.progress_file)
 
         # Data
-        self.test_data, self.train_data = None, None
         self.update_output_state('Preparing data', pre=True)
-        self._setup_data()
+        self._setup_data(window=self.window if self.window > 0 else None)
         if self.is_online:
             with self.start_lock:
                 self.collector = online.Online(self, self.width, self.shift,
@@ -233,10 +233,8 @@ class Evolver:
 
         # Substrate for HyperNEAT
         self.substrate = self._init_substrate()
-
-        self._keep_timers = False
-        self.init_timers()
-        self.pop = self.init_population()  # C++ Population
+        # C++ Population
+        self.pop = self.init_population()
 
         # Bloat options
         self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
@@ -549,7 +547,7 @@ class Evolver:
                 if key == 'run':
                     self.run_i = int(value)
                 elif key == 'window':
-                    self._setup_data(window=int(value))
+                    # self._setup_data(window=int(value)) FIXME
                     self.window = int(value)
                 elif key == 'generation':
                     self.generation = int(value)
@@ -568,7 +566,6 @@ class Evolver:
                 elif key == 'online_data':
                     if value != 'NA':
                         self.online_data = value.split('::')
-        self._keep_timers = True
 
     def get_summary(self):
         best_evaluation = self.get_best()
@@ -784,7 +781,7 @@ class Evolver:
         if self.test_data is not None:
             self.best_test = self.evaluate_test(best.genome)
 
-    def termination_sequence(self):
+    def termination_sequence(self, save_progress=False):
         if not self.best_list:
             self.print('Warning: no solution found')
             return
@@ -801,6 +798,8 @@ class Evolver:
         self.write_results()  # Write run details to files
         self.save_encoder()  # Save encoder
         self.save_mapping()  # Save encoding mapping
+        if save_progress:
+            self.save_progress()
 
     def shift_window(self, new_train=None, new_test=None):
         self.termination_sequence()
@@ -882,14 +881,17 @@ class Evolver:
                 raise NotImplementedError
             self.mutation_rate_controller.adjust(complexity)
 
-    def init_timers(self):
-        if not self._keep_timers:
+    def init_timers(self, preserve_previous_progress=False):
+        if preserve_previous_progress:
+            self.initial_time = self.initial_time if self.initial_time is not None else datetime.datetime.now()
+            self.ea_time = self.ea_time if self.ea_time is not None else datetime.timedelta()
+            self.eval_time = self.eval_time if self.eval_time is not None else datetime.timedelta()
+        else:
             self.initial_time = datetime.datetime.now()
             self.ea_time = datetime.timedelta()
             self.eval_time = datetime.timedelta()
-            self.reset_window_timers()
-            self.reset_generation_timers()
-        self._keep_timers = True
+        self.reset_window_timers()
+        self.reset_generation_timers()
 
     def reset_window_timers(self):
         self.window_initial_time = datetime.datetime.now()
@@ -919,7 +921,7 @@ class Evolver:
 
     def _run(self):
         self.running = True
-        self.init_timers()
+        self.init_timers(preserve_previous_progress=self.options.progress_file is not None)
         # Run the EA
         while not self.is_finished():
             with self.gen_lock:
@@ -927,7 +929,7 @@ class Evolver:
                 self.evaluate_pop()
                 self.epoch()
                 self._gen_end()
-        self.termination_sequence()
+        self.termination_sequence(save_progress=True)
 
     def _multiple_runs(self):
         class Summary:
