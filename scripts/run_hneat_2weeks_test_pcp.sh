@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/test_pcp_train.csv -t ../data/2weeks/test_pcp_test.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_test_pcp -m hyperneat -g10000 -s2000 -p6 --test-fitness --quiet"
+options="-d ../data/2weeks/test_pcp_train.csv -t ../data/2weeks/test_pcp_test.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_test_pcp -m hyperneat -g1000 -s2000 -p6 --test-fitness --quiet"
 runs=3
 parallel=3
 
