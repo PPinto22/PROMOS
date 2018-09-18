@@ -575,9 +575,9 @@ class Evolver:
             fitness_test=self.best_test.fitness if self.best_test is not None else None,
             # Other info
             params=params.ParametersWrapper(self.pop.Parameters), generations=self.generation,
-            run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
+            run_time=self.elapsed_time().total_seconds()/60, eval_time=self.eval_time.total_seconds()/60,
 
-            ea_time=self.ea_time, processes=self.options.processes,
+            ea_time=self.ea_time.total_seconds()/60, processes=self.options.processes,
             sample_size=self.options.sample_size if self.options.sample_size is not None else len(self.train_data),
             window=self.get_current_window() if self.has_windows else None,
             date_begin=date_begin, date_end=date_end, train_size=len(self.train_data),
