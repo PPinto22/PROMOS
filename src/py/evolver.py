@@ -28,7 +28,8 @@ import util
 import bloat
 from util import avg
 import substrate as subst
-from data import Data, SlidingWindow
+from data import Data
+from sliding_window import SlidingWindow
 
 
 def parse_args():
