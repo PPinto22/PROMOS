@@ -849,10 +849,8 @@ class Evolver:
         else:
             # Resize the number of inputs of each individual in the population
             self.pop.ResizeInputs(self.train_data.n_inputs)
-            # Remove the old connections of the new inputs
-            self.pop.DisconnectInputs(new_inputs)
-            # Reassign individuals to species FIXME
-            # self.pop.Speciate()
+            # Random weights of connections outgoing from new inputs
+            self.pop.RandomizeOutgoingWeights(new_inputs)
 
     def should_shift(self):
         if self.is_online:  # If it's online, the other thread is responsible for updating the data

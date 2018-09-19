@@ -189,6 +189,8 @@ namespace NEAT
 
         void DisconnectInputs(const std::vector<int> &input_idxs);
         void DisconnectInputByID(int a_ID);
+        void RandomizeOutgoingWeights(const std::vector<int> &input_idxs, const Parameters &a_Parameters, RNG &a_RNG);
+        void RandomizeOutgoingWeightsByID(int a_ID, const Parameters &a_Parameters, RNG &a_RNG);
 
         ////////////////////
         // Accessor methods

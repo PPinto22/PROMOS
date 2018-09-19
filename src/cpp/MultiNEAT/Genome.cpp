@@ -482,6 +482,23 @@ namespace NEAT {
         [a_ID](LinkGene& g){return g.FromNeuronID() == a_ID;}), m_LinkGenes.end());
     }
 
+    void Genome::RandomizeOutgoingWeights(const std::vector<int> &input_idxs, const Parameters &a_Parameters, RNG &a_RNG){
+        for(int i: input_idxs){
+            if(i >= m_NumInputs) throw std::out_of_range(std::string("Input index out of range: " + to_string(i)));
+            int id = m_NeuronGenes[i].m_ID;
+            RandomizeOutgoingWeightsByID(id, a_Parameters, a_RNG);
+        }
+    }
+
+    void Genome::RandomizeOutgoingWeightsByID(int a_ID, const Parameters &a_Parameters, RNG &a_RNG){
+        ASSERT(a_ID >= 0 && a_ID <= m_NumInputs)
+        for(LinkGene& g: m_LinkGenes){
+            if(g.FromNeuronID() == a_ID){
+                g.SetWeight( a_RNG.RandFloatSigned() * a_Parameters.WeightReplacementMaxPower );
+            }
+        }
+    }
+
     void Genome::SetDepth(unsigned int a_d) {
         m_Depth = a_d;
     }

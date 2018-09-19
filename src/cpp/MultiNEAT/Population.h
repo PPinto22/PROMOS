@@ -144,8 +144,10 @@ public:
     ////////////////////////////
     int ResizeInputs(int a_Size);
     void DisconnectInputs(const std::vector<int> &input_idxs);
+    void RandomizeOutgoingWeights(const std::vector<int> &input_idxs);
     #ifdef USE_BOOST_PYTHON
     void DisconnectInputs_py(const py::list &input_idxs);
+    void RandomizeOutgoingWeights_py(const py::list &input_idxs);
     #endif
 
     // Separates the population into species based on compatibility distance

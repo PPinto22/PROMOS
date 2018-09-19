@@ -193,6 +193,14 @@ void Population::DisconnectInputs(const std::vector<int> &input_idxs){
     }
 }
 
+void Population::RandomizeOutgoingWeights(const std::vector<int> &input_idxs){
+    for(Species &s: m_Species){
+        for(Genome &g: s.m_Individuals){
+            g.RandomizeOutgoingWeights(input_idxs, m_Parameters, m_RNG);
+        }
+    }
+}
+
 #ifdef USE_BOOST_PYTHON
 void Population::DisconnectInputs_py(const py::list &input_idxs) {
     std::vector<int> t_input_idxs;
@@ -200,6 +208,14 @@ void Population::DisconnectInputs_py(const py::list &input_idxs) {
         t_input_idxs.push_back(py::extract<int>(input_idxs[i]));
     }
     DisconnectInputs(t_input_idxs);
+}
+
+void Population::RandomizeOutgoingWeights_py(const py::list &input_idxs){
+    std::vector<int> t_input_idxs;
+    for (int i = 0; i < py::len(input_idxs); ++i) {
+        t_input_idxs.push_back(py::extract<int>(input_idxs[i]));
+    }
+    RandomizeOutgoingWeights(t_input_idxs);
 }
 #endif
 
