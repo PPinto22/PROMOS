@@ -851,7 +851,7 @@ class Evolver:
             # Remove the old connections of the new inputs
             self.pop.DisconnectInputs(new_inputs)
             # Reassign individuals to species FIXME
-            self.pop.Speciate()
+            # self.pop.Speciate()
 
     def should_shift(self):
         if self.is_online:  # If it's online, the other thread is responsible for updating the data
