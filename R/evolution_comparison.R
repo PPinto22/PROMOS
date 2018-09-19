@@ -15,6 +15,16 @@ evals_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
   return(run_type_dt)
 }))
 evals_avg_dt$run_type <- factor(evals_avg_dt$run_type, levels = RUN_TYPE_LABELS)
+
+
+# Read generations
+gens_avg_dt <- rbindlist(lapply(1:n_run_types, function(i){
+  run_type_dt = group_gens(read_generations(gens_file_names[[i]], windows=WINDOWS[[i]]))
+  run_type_dt$run_type = rep(RUN_TYPE_LABELS[i], nrow(run_type_dt))
+  return(run_type_dt)
+}))
+gens_avg_dt$run_type <- factor(gens_avg_dt$run_type, levels = RUN_TYPE_LABELS)
+
 set_gen_breaks(n=5)
 
 # Read windows/summaries
@@ -118,10 +128,22 @@ gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill) +
   labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Set2') +
-  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   scale_x_continuous(breaks=gen_breaks) +
   theme_minimal()
 print(gg_best_test_fit_gens)
+dev.off()
+
+# best test fitness over gens (zoomed)
+png(filename = paste(OUT_DIR, 'best_test_fit_by_gens_zoom.png', sep=''))
+gg_best_test_fit_gens_zoom <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill) +
+  labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
+  scale_color_brewer(palette = 'Set2') +
+  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  scale_x_continuous(breaks=gen_breaks) +
+  theme_minimal()
+print(gg_best_test_fit_gens_zoom)
 dev.off()
 
 # generations over time
@@ -132,6 +154,17 @@ gg_generations_time <- ggplot(data=evals_avg_dt, aes(run_time)) +
   scale_color_brewer(palette = 'Set2') +
   theme_minimal()
 print(gg_generations_time)
+dev.off()
+
+# times by generation
+png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
+gg_times_by_gen <- ggplot(data=gens_avg_dt, aes(generation)) +
+  facet_wrap(~run_type) +
+  geom_line(aes(y=ea_time, col='ea_time')) +
+  geom_line(aes(y=eval_time, col='eval_time')) +
+  scale_color_brewer(palette = 'Set2') +
+  theme_minimal()
+print(gg_times_by_gen)
 dev.off()
 
 # mean complexity (connections) over generations

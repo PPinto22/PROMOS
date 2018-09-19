@@ -1,6 +1,5 @@
 library(data.table)
 library(RJSONIO)
-library(chron)
 library(ggplot2)
 library(ggpubr)
 library(RColorBrewer)
@@ -113,13 +112,13 @@ read_generations <- function(gens_file_names, windows=1){
   )
 }
 
-group_gens <- function(gens_dt){
+group_gens <- function(gens_dt, crop=0.8){
   if( is.null(gens_dt) ) return(NULL)
   
   # Count how many times each generation occurs
   generation_count = table(gens_dt$generation)
   # Crop outlier generations that appear in less than 80% of runs
-  gens_dt = gens_dt[gens_dt$generation %in% names(generation_count)[generation_count>=0.8*RUNS],]
+  gens_dt = gens_dt[gens_dt$generation %in% names(generation_count)[generation_count>=crop*max(generation_count)],]
   
   gens_dt[ , .(eval_time=mean(eval_time), ea_time=mean(ea_time), run_time=mean(run_time), 
                add_neuron=mean(add_neuron), rem_neuron=mean(rem_neuron), add_link=mean(add_link), rem_link=mean(rem_link)), by=generation]
@@ -170,8 +169,8 @@ read_summaries <- function(summs_file_names){
   
   run_summaries = lapply(1:length(summs_file_names), function(i){
     summary_json = fromJSON(summs_file_names[i], nullValue = -1)
-    summary_dt = data.table(run=i, time_ea=chron(time=summary_json$ea_time), time_eval=chron(time=summary_json$eval_time),
-                            time_total=chron(time=summary_json$run_time), generations=summary_json$generations, train_fit=summary_json$best$fitness,
+    summary_dt = data.table(run=i, time_ea=summary_json$ea_time, time_eval=summary_json$eval_time,
+                            time_total=summary_json$run_time, generations=summary_json$generations, train_fit=summary_json$best$fitness,
                             test_fit=summary_json$best$fitness_test, neurons=summary_json$best$neurons_qty, connections=summary_json$best$connections_qty)
   })
   run_summaries = rbindlist(run_summaries)

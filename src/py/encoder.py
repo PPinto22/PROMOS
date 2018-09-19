@@ -133,7 +133,7 @@ class PCP(Encoding):
     OTHERS_STR = 'Other'
     SEP = '__'
 
-    def __init__(self, percentage=0.05):
+    def __init__(self, percentage=0.1):
         super().__init__()
         self.percentage = float(percentage)
 

@@ -37,14 +37,14 @@ prop_dt = data.table(prop.table(sort(table(dt$idoperator), decreasing = T)))
 prop_dt$ID <- seq.int(nrow(prop_dt))
 # ggplot(prop_dt, aes(x=reorder(V1, -N), y=N)) + geom_bar(stat='identity')
 
-cut = first(which(cumsum(prop_dt$N) >= 0.95))
+cut = first(which(cumsum(prop_dt$N) >= 0.9))
 freq_plot <- ggplot(prop_dt, aes(x=ID, y=N*100)) + 
   geom_bar(stat='identity', lwd=.1, colour='black') + 
   geom_vline(xintercept = cut, color='red') +
   labs(x = 'Rank', y='Relative frequency (%)') +
   theme_minimal()
 freq_plot <- freq_plot +
-  scale_x_continuous(breaks = sort(c(ggplot_build(freq_plot)$layout$panel_ranges[[1]]$x.major_source, cut)), minor_breaks = F)
+  scale_x_continuous(breaks = c(cut, max(prop_dt$ID)), minor_breaks = F)
 print(freq_plot)
 
 
