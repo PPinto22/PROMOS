@@ -347,6 +347,7 @@ class Evolver:
     def load_pop(self, file_path):
         try:
             self.pop = neat.Population(file_path)
+            self.pop.Parameters = self.initial_params
         except RuntimeError:
             raise AttributeError('Invalid population file \'{}\''.format(file_path))
         return self.pop

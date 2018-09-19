@@ -1091,7 +1091,7 @@ namespace NEAT {
                 t_weight = t_temp_phenotype.Output()[1];
             }
 
-            if (((t_link > 0.5) && (!subst.m_query_weights_only)) || (subst.m_query_weights_only)) {
+            if (std::abs(t_weight) > 0.1) {
                 // now this weight will be scaled
                 t_weight *= subst.m_max_weight_and_bias;
 
