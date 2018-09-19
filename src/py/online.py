@@ -60,9 +60,11 @@ class Online(Thread):
         else:
             return data.split((1-self.test_ratio, self.test_ratio))
 
-    def add_data(self, file):
+    def add_data(self, file, clean_disk=False):
         self.window_files.append(file)
         if len(self.window_files) > self.files_per_window:
+            if clean_disk:
+                os.remove(self.window_files[0])
             del self.window_files[0]
 
     def load_dataset(self):
