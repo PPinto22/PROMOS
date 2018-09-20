@@ -16,55 +16,68 @@ read_data <- function(path){
   return(dt)
 }
 
-# Train; test; encoding; mode
+set_paths <- function(instances){
+  ret = lapply(instances, function(instance){
+    windows = instance[[5]]
+    if(windows <= 1){
+      instance[[1]] <- list(paste(instance[[1]], '.csv', sep=''))
+      instance[[2]] <- list(paste(instance[[2]], '.csv', sep=''))
+    }
+    else{
+      instance[[1]] <- as.list(CJ(instance[[1]], 0:(windows-1), sorted = FALSE)[, paste(V1, '(', V2, ')', '.csv', sep ="")])
+      instance[[2]] <- as.list(CJ(instance[[2]], 0:(windows-1), sorted = FALSE)[, paste(V1, '(', V2, ')', '.csv', sep ="")])
+    }
+    return(instance)
+  })
+  return(ret)
+}
+
+# Train; test; encoding; mode; windows
 OUT <- opt$out
-INSTANCES <- list(
-  # c('../data/2weeks/best_idf_mini.csv', '../data/2weeks/best_idf_mini.csv', 'idf', 'best')
+INSTANCES <- set_paths(list(
+  list('../data/2weeks/sw/best_idf_train', '../data/2weeks/sw/best_idf_test', 'idf', 'best', 10),
+  list('../data/2weeks/sw/best_raw_train', '../data/2weeks/sw/best_raw_test', 'raw', 'best', 10),
+  list('../data/2weeks/sw/best_pcp_train', '../data/2weeks/sw/best_pcp_test', 'pcp', 'best', 10)
 
-  c('../data/2weeks/best_idf_train.csv', '../data/2weeks/best_idf_test.csv', 'idf', 'best'),
-  c('../data/2weeks/best_raw_train.csv', '../data/2weeks/best_raw_test.csv', 'raw', 'best'),
-  c('../data/2weeks/best_pcp_train.csv', '../data/2weeks/best_pcp_test.csv', 'pcp', 'best'),
-  c('../data/2weeks/test_idf_train.csv', '../data/2weeks/test_idf_test.csv', 'idf', 'test'),
-  c('../data/2weeks/test_raw_train.csv', '../data/2weeks/test_raw_test.csv', 'raw', 'test'),
-  c('../data/2weeks/test_pcp_train.csv', '../data/2weeks/test_pcp_test.csv', 'pcp', 'test')
-)
-ALGORITHMS <- c('lr', 'naivebayes', 'mlp', 'xgboost')
+  # list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best'),
+  # list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best'),
+  # list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best'),
+  # list('../data/2weeks/test_idf_train', '../data/2weeks/test_idf_test', 'idf', 'test'),
+  # list('../data/2weeks/test_raw_train', '../data/2weeks/test_raw_test', 'raw', 'test'),
+  # list('../data/2weeks/test_pcp_train', '../data/2weeks/test_pcp_test', 'pcp', 'test')
+))
+# str(INSTANCES)
+# ALGORITHMS <- c('lr', 'naivebayes', 'mlp', 'xgboost')
+ALGORITHMS <- list('xgboost')
 options(digits=5)
-
-train_dts <- lapply(INSTANCES, function(x) read_data(x[1]))
-test_dts <- lapply(INSTANCES, function(x) read_data(x[2]))
 
 summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
   rbindlist(lapply(1:length(INSTANCES), function(i){
-    train_dt = train_dts[[i]]
-    test_dt = test_dts[[i]]
-    mode = INSTANCES[[i]][3]
-    encoding = INSTANCES[[i]][4]
+    train_files = INSTANCES[[i]][[1]]
+    test_files = INSTANCES[[i]][[2]]
+    encoding = INSTANCES[[i]][[3]]
+    mode = INSTANCES[[i]][[4]]
     
-    print(paste('[ALGORITHM]', alg, '[MODE]', mode, '[ENCODING]', encoding, '...'))
-    
-    summary_row = tryCatch({
-      time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
-      predictions <- as.vector(predict(model, test_dt)[,2])
-      auc_score <- as.double(auc(roc(test_dt$target, predictions)))
-      summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, auc=auc_score, time=time, error='')
+    rbindlist(lapply(1:length(train_files), function(j){
+      print(paste('[ALGORITHM]', alg, '[MODE]', mode, '[ENCODING]', encoding, '[WINDOW]', j, '...'))
+      
+      train_dt = read_data(train_files[[j]])
+      test_dt = read_data(test_files[[j]])
+      
+      summary_row = tryCatch({
+        time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
+        predictions <- as.vector(predict(model, test_dt)[,2])
+        auc_score <- as.double(auc(roc(test_dt$target, predictions)))
+        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=auc_score, time=time, error='')
+        return(summary_row)
+      }, error = function(e){
+        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=NA, time=NA, error=as.character(e))
+        return(summary_row)
+      })
       return(summary_row)
-    }, error = function(e){
-      summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, auc=NA, time=NA, error=as.character(e))
-      return(summary_row)
-    })
-    return(summary_row)
-  }))
-}))
-
-# FIXME: DEBUG
-# train_dt = train_dts[[1]]
-# test_dt = test_dts[[1]]
-# mode = INSTANCES[[1]][3]
-# encoding = INSTANCES[[1]][4]
-# time <- system.time(model <- fit(target ~ ., train_dt,  model = 'naivebayes', task = 'prob'))[[3]]
-# predictions <- as.vector(predict(model, test_dt)[,2])
-# auc_score <- as.double(auc(roc(test_dt$target, predictions)))
+    })) # /windows
+  })) # /instances
+})) # /algorithms
 
 dir.create(file.path(dirname(OUT)), recursive=TRUE, showWarnings=FALSE)
 write.table(summary_df, file=OUT, sep=',', row.names = FALSE)
