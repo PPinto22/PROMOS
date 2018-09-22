@@ -9,10 +9,10 @@ option_list = list(make_option(c("-o", "--out"), type="character", default="out/
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-read_data <- function(path){
+read_data <- function(path, to_factor=F){
   dt = data.table(read.csv(path, header=TRUE, sep=','))
   dt$timestamp <- NULL
-  dt$target <- as.factor(dt$target)
+  if(to_factor) dt$target <- as.factor(dt$target)
   return(dt)
 }
 
@@ -35,10 +35,10 @@ set_paths <- function(instances){
 # Train; test; encoding; mode; windows
 OUT <- opt$out
 INSTANCES <- set_paths(list(
-  list('../data/2weeks/sw/best_idf_train', '../data/2weeks/sw/best_idf_test', 'idf', 'best', 10),
-  list('../data/2weeks/sw/best_raw_train', '../data/2weeks/sw/best_raw_test', 'raw', 'best', 10),
+  # list('../data/2weeks/sw/best_idf_train', '../data/2weeks/sw/best_idf_test', 'idf', 'best', 10),
+  # list('../data/2weeks/sw/best_raw_train', '../data/2weeks/sw/best_raw_test', 'raw', 'best', 10),
   list('../data/2weeks/sw/best_pcp_train', '../data/2weeks/sw/best_pcp_test', 'pcp', 'best', 10)
-
+  
   # list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best'),
   # list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best'),
   # list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best'),
@@ -48,7 +48,7 @@ INSTANCES <- set_paths(list(
 ))
 # str(INSTANCES)
 # ALGORITHMS <- c('lr', 'naivebayes', 'mlp', 'xgboost')
-ALGORITHMS <- list('xgboost')
+ALGORITHMS <- list('mlp')
 options(digits=5)
 
 summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
@@ -63,14 +63,17 @@ summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
       
       train_dt = read_data(train_files[[j]])
       test_dt = read_data(test_files[[j]])
-      
+
       summary_row = tryCatch({
-        time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob'))[[3]]
-        predictions <- as.vector(predict(model, test_dt)[,2])
+        time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob', MaxNWts=5000))[[3]] # MaxNWts is for MLP
+        predictions <- predict(model, test_dt)
+        if(alg != 'mlp') { predictions <- predictions[,2] }
+        predictions <- as.vector(predictions)
         auc_score <- as.double(auc(roc(test_dt$target, predictions)))
-        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=auc_score, time=time, error='')
+        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=auc_score, time=time/60, error=' ')
         return(summary_row)
       }, error = function(e){
+        print(e)
         summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=NA, time=NA, error=as.character(e))
         return(summary_row)
       })
