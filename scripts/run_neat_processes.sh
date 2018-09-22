@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_idf_train.csv -P ../params/neat.txt -o ../results/processes -m neat -g10 --no-statistics"
+options="-d ../data/2weeks/best_idf_train.csv -P ../params/neat.txt -o ../results/processes -m neat -g100 --no-statistics"
 runs=1
 
 for i in $(seq 1 $runs)

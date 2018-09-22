@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
 options="-d ../data/2weeks/test_raw_train.csv -t ../data/2weeks/test_raw_test.csv -P ../params/neat.txt -o ../results/2wks_test_raw -m neat -g10000 -s2000 -p6 --test-fitness --quiet"
-runs=10 # per run type
-parallel=5
+runs=3
+parallel=3
 
 function run() {
 	children=$(pgrep -c -P$$)

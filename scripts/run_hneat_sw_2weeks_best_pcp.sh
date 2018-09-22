@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_sw_best_pcp -E ../cfg/encoder_pcp.cfg -m hyperneat -g1000 -s2000 -p4 --test-fitness -W120 -w24 -S24"
+options="-d ../data/2weeks/best.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_sw_best_pcp -E ../cfg/encoder_pcp.cfg -m hyperneat -g1000 -s2000 -p4 --test-fitness -W120 -w24 -S24 --substrate-width=4 --substrate-length=8"
 runs=1
 parallel=1
 

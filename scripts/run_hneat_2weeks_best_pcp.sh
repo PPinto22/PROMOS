@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_pcp_train.csv -t ../data/2weeks/best_pcp_test.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_best_pcp -m hyperneat -g1000 -s2000 -p6 --test-fitness --quiet"
-runs=3
-parallel=3
+options="-d ../data/2weeks/best_pcp_train.csv -t ../data/2weeks/best_pcp_test.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_best_pcp -m hyperneat -g10000 -s2000 -p6 --test-fitness --substrate-width=4 --substrate-length=8"
+runs=1
+parallel=1
 
 function run() {
 	children=$(pgrep -c -P$$)
