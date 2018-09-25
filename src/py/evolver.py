@@ -398,7 +398,7 @@ class Evolver:
         if not self.state_header:
             self.state_header += ['Current task', 'Time', 'Generation']
             self.state_header += ['Window'] if self.has_windows else []
-            self.state_header += ['Hid. N', 'Cons', 'Pred']
+            self.state_header += ['Hidden', 'Cons', 'Pred']
             self.state_header += ['ID']
         state = [state.ljust(20), self._get_time_state(pre), self._get_generation_state(pre)]
         state += [self._get_window_state(pre)] if self.has_windows else []
@@ -416,10 +416,10 @@ class Evolver:
 
     def print_top10(self):
         if not self.top10_header:
-            self.top10_header = ['Rank', 'ID', 'Spawn Gen', 'Fit Train']
+            self.top10_header = ['Rank', 'ID', 'Spawn', 'Fit Train']
             if self.fitness_adjuster is not None:
                 self.top10_header += ['Fit Adj.']
-            self.top10_header += ['Fit Test', 'Hid. N', 'Cons', 'Pred']
+            self.top10_header += ['Fit Test', 'Hidden', 'Cons', 'Pred']
 
         start = self.state_lines
         self.print(' ', i=start)
@@ -439,8 +439,8 @@ class Evolver:
         if not self.has_windows:
             return
         if not self.windows_header:
-            self.windows_header = ['Window', 'ID', 'Spawn Gen', 'Total Gens',
-                                   'Fit Train', 'Fit Test', 'Hid. Neurons', 'Connections']
+            self.windows_header = ['Window', 'Gens', 'Spawn', 'ID',
+                                   'Fit Train', 'Fit Test', 'Hidden', 'Cons', 'Pred']
 
         start = self.state_lines + self.top10_lines
         self.print(' ', i=start)
@@ -774,10 +774,10 @@ class Evolver:
             self.print("Best result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
                        format(best.fitness, best_test_str, best.genome_neurons, best.genome_connections), override=True)
         else:
-            best_tuple = (self.get_current_window() + 1, best.genome_id,
-                          best.spawn_gen + 1, self.windows_final_gens[-1], best.fitness,
+            best_tuple = (self.get_current_window() + 1, self.windows_final_gens[-1],
+                          best.spawn_gen + 1, best.genome_id, best.fitness,
                           self.best_test.fitness if self.best_test is not None else None,
-                          best.genome_neurons, best.genome_connections)
+                          best.genome_neurons, best.genome_connections, int(best.pred_avg_time))
             self.windows_best.append(best_tuple)
             self.print_windows_best()
 
