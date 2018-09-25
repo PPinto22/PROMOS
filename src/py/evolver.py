@@ -396,11 +396,15 @@ class Evolver:
             return
 
         if not self.state_header:
-            self.state_header += ['Current task', 'Run Time', 'Generation']
+            self.state_header += ['Current task', 'Time', 'Generation']
             self.state_header += ['Window'] if self.has_windows else []
+            self.state_header += ['Hid. N', 'Cons', 'Pred']
             self.state_header += ['ID']
         state = [state.ljust(20), self._get_time_state(pre), self._get_generation_state(pre)]
         state += [self._get_window_state(pre)] if self.has_windows else []
+        state += [int(avg([e.genome_neurons for e in self.evaluations])) if self.evaluations is not None else '',
+                  int(avg([e.genome_connections for e in self.evaluations])) if self.evaluations is not None else '',
+                  int(avg([e.pred_avg_time for e in self.evaluations])) if self.evaluations is not None else '']
         state += [self.options.id]
         table = tabulate([state], headers=self.state_header).split('\n')
 
@@ -415,16 +419,16 @@ class Evolver:
             self.top10_header = ['Rank', 'ID', 'Spawn Gen', 'Fit Train']
             if self.fitness_adjuster is not None:
                 self.top10_header += ['Fit Adj.']
-            self.top10_header += ['Fit Test', 'Hid. Neurons', 'Connections']
+            self.top10_header += ['Fit Test', 'Hid. N', 'Cons', 'Pred']
 
         start = self.state_lines
         self.print(' ', i=start)
         self.print('[TOP 10]', i=start + 1)
         top10 = [(i + 1, e.genome_id, e.spawn_gen + 1, e.fitness, e.fitness_adj, e.fitness_test, e.genome_neurons,
-                  e.genome_connections) for i, e in enumerate(self.best_list[:10])]
+                  e.genome_connections, int(e.pred_avg_time)) for i, e in enumerate(self.best_list[:10])]
         if self.fitness_adjuster is None:
             # Remove adjusted fitness
-            top10 = [(e[0], e[1], e[2], e[3], e[5], e[6], e[7]) for e in top10]
+            top10 = [(e[0], e[1], e[2], e[3], e[5], e[6], e[7], e[8]) for e in top10]
 
         table = tabulate(top10, self.top10_header, floatfmt='.5f').split('\n')
         for i, line in enumerate(table):
