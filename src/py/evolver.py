@@ -210,6 +210,7 @@ class Evolver:
         self.force_terminate = False
         self.first_gen_window = True
         self.online_data = []
+        self.pop = None
 
         # Encoding and load progress
         self.test_data, self.train_data = None, None
@@ -235,7 +236,7 @@ class Evolver:
         # Substrate for HyperNEAT
         self.substrate = self._init_substrate()
         # C++ Population
-        self.pop = self.init_population()
+        self.pop is None and self.init_population()
 
         # Bloat options
         self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
@@ -337,7 +338,7 @@ class Evolver:
         self.running = False
         self.force_terminate = False
         self.first_gen_window = True
-        self.pop = self.init_population()
+        self.init_population()
         self.generation = 0
         self.best_list.clear()
         self.best_set.clear()
@@ -351,7 +352,6 @@ class Evolver:
             self.pop.Parameters = self.initial_params
         except RuntimeError:
             raise AttributeError('Invalid population file \'{}\''.format(file_path))
-        return self.pop
 
     def init_population(self):
         if self.options.pop_file is not None:
@@ -364,12 +364,11 @@ class Evolver:
         if self.options.method in ['hyperneat', 'eshyperneat']:
             g = neat.Genome(0, self.substrate.GetMinCPPNInputs(), 0, self.substrate.GetMinCPPNOutputs(),
                             False, output_act_f, hidden_act_f, 0, self.initial_params, 0)
-            pop = neat.Population(g, self.initial_params, True, 1.0, seed)
+            self.pop = neat.Population(g, self.initial_params, True, 1.0, seed)
         else:
             g = neat.Genome(0, self.train_data.n_inputs, 0, 1, False, output_act_f, hidden_act_f, 0,
                             self.initial_params, 0)
-            pop = neat.Population(g, self.initial_params, True, 1.0, seed)
-        return pop
+            self.pop = neat.Population(g, self.initial_params, True, 1.0, seed)
 
     def get_genome_list(self):
         return [individual for species in self.pop.Species for individual in species.Individuals]

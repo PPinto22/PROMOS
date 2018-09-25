@@ -23,6 +23,7 @@ from bloat import FitnessAdjuster
 from data import Data
 from sliding_window import SlidingWindow
 
+
 class GenomeEvaluation:
     def __init__(self, fitness, genome=None, fitness_adj=None, fitness_test=None,
                  genome_neurons=None, genome_connections=None,
