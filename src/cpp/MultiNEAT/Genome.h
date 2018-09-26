@@ -224,6 +224,20 @@ namespace NEAT
         unsigned int NumOutputs() const
         { return m_NumOutputs; }
 
+        void RecalculateNeurons() {
+            m_NumInputs = 0;
+            m_NumOutputs = 0;
+            for (unsigned int i = 0; i < NumNeurons(); i++) {
+                if ((m_NeuronGenes[i].Type() == INPUT) || (m_NeuronGenes[i].Type() == BIAS)) {
+                    m_NumInputs++;
+                }
+
+                if (m_NeuronGenes[i].Type() == OUTPUT) {
+                    m_NumOutputs++;
+                }
+            }
+        }
+
         void SetNeuronXY(unsigned int a_idx, int a_x, int a_y);
 
         void SetNeuronX(unsigned int a_idx, int a_x);

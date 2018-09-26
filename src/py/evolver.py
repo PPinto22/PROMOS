@@ -518,6 +518,7 @@ class Evolver:
         if self.options.out_dir is None:
             return
         self.make_out_dir()
+        self.pop.Save(self.get_out_file_path('population.txt', include_window=False))
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
@@ -756,6 +757,7 @@ class Evolver:
 
     def epoch(self):
         self.update_output_state('Evolving')
+
         time_diff, _ = util.time(self.pop.Epoch)
 
         self.ea_time += time_diff

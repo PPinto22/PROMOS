@@ -447,7 +447,7 @@ namespace NEAT {
             t_neuron_genes[i] = t_gene;
         }
 
-        // If the old last input was a bias, move it to new the last input position
+        // If the old last input was a bias, move it to the new last input position
         if(last_old_input.Type() == BIAS){
             t_neuron_genes[a_size - 1] = last_old_input;
         }
@@ -457,14 +457,19 @@ namespace NEAT {
             t_neuron_genes[a_size + i] = m_NeuronGenes[NumInputs() + i];
         }
 
-        // Cleanup: remove all connections coming from any inputs that will be removed, due to a smaller size
+        // Cleanup: remove all connections coming from any inputs that will be removed due to a smaller size
         for(int i = a_size; i < NumInputs(); i++){
             NeuronGene& t_to_be_removed = m_NeuronGenes[i];
             DisconnectInputByID(t_to_be_removed.m_ID);
         }
 
-        m_NeuronGenes = t_neuron_genes;
+
         m_NumInputs = static_cast<unsigned int>(a_size);
+        m_NeuronGenes.resize(static_cast<unsigned int>(new_total_size));
+        for(int i = n_common_inputs-1; i < new_total_size; i++){
+            m_NeuronGenes[i] = t_neuron_genes[i];
+        }
+
         return size_diff;
     }
 
@@ -2674,7 +2679,19 @@ namespace NEAT {
     // Sorts the genes of the genome
     // The neurons by IDs and the links by innovation numbers.
     bool neuron_compare(NeuronGene a_ls, NeuronGene a_rs) {
-        return a_ls.ID() < a_rs.ID();
+        int ls_type = a_ls.Type();
+        int rs_type = a_rs.Type();
+        // Neuron order goes: INPUT (1), BIAS (2), OUTPUT (4), HIDDEN (3)
+        // Because the order of OUTPUT and HIDDEN is switched,
+        // temporarily increase the value of HIDDEN to an arbitrary high number so the order matches the integer order
+        if(ls_type == 3) ls_type = 100;
+        if(rs_type == 3) rs_type = 100;
+
+        if(ls_type == rs_type) { // Same type, compare IDs
+            return a_ls.ID() < a_rs.ID();
+        } else{ // Different types, return natural order
+            return ls_type < rs_type;
+        }
     }
 
     bool link_compare(LinkGene a_ls, LinkGene a_rs) {
