@@ -8,11 +8,15 @@ import json
 import math
 import os
 import random
+import threading
+import signal
 from functools import partial
 
 import tabulate
 from reprint import reprint, output
 from sortedcontainers import SortedListWithKey
+
+import online
 
 tabulate.PRESERVE_WHITESPACE = True
 from tabulate import tabulate
@@ -24,12 +28,13 @@ import util
 import bloat
 from util import avg
 import substrate as subst
-from data import Data, SlidingWindow
+from data import Data
+from sliding_window import SlidingWindow
 
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('data_file', help='path to train data file', metavar='DATA'),
+    parser.add_argument('-d', '--data', dest='data_file', help='path to train data file', metavar='DATA'),
     parser.add_argument('-t', '--test', dest='test_file', default=None,
                         help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
@@ -42,6 +47,10 @@ def parse_args():
     parser.add_argument('-x', '--substrate', dest='substrate', metavar='X', default=0,
                         type=partial(util.range_int, lower=0, upper=len(subst.substrates) - 1),
                         help='which substrate to use, 0 <= X <= {}'.format(len(subst.substrates) - 1))
+    parser.add_argument('--substrate-width', dest='substrate_width', metavar='N', default=8, type=util.uint,
+                        help='how many layers the grid substrate should have')
+    parser.add_argument('--substrate-length', dest='layer_length', metavar='M', default=23, type=util.uint,
+                        help='how many neurons each layer of the grid substrate should have')
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
                         help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
     parser.add_argument('-E', '--encoder', dest='encoder', metavar='FILE', default=None,
@@ -82,18 +91,20 @@ def parse_args():
                         help='applicable if a sample size is specified. '
                              'If set, there will be no final reevaluation of '
                              'the best individuals with the whole data-set.')
-    parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.uint, default=None,
+    parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.ufloat, default=None,
                         help='Sliding window width (train + test) in hours')
-    parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.uint, default=None,
-                        help='Test sliding window width in hours')
-    parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
+    parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.ufloat, default=None,
+                        help='Test sliding window width in hours '
+                             '(or, if in online mode, a percentage of the window data to use for validation)')
+    parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.ufloat, default=None,
                         help='Sliding window shift in hours')
     parser.add_argument('-b,' '--bloat', dest='bloat_file', metavar='FILE', default=None,
                         help='configuration file for limiting the effects of bloat')
+    parser.add_argument('--online', dest='online', action='store_true', help='online mode')
 
     options = parser.parse_args()
 
-    options.id = options.id if options.id is not None else util.get_current_datetime_string()
+    options.id = options.id if options.id is not None else util.current_dt_to_string()
     options.out_dir = options.out_dir if options.out_dir != 'NULL' else None
 
     if options.seed is not None:
@@ -120,10 +131,13 @@ class Summary:
 
 
 class Evolver:
+    force_terminate = False
+
     def __init__(self, options, printer=None):
         self.options = options
 
-        # Sliding window assertions
+        # Assertions
+        assert not (self.options.data_file is None and not self.options.online), 'A data file is required for training'
         assert not all(x is not None for x in (self.options.test_file, self.options.test_width)), \
             'Either specify a static test file (-t) or a test sliding window width (-w); not both'
         assert all(x is not None for x in (self.options.width, self.options.shift)) or \
@@ -131,28 +145,30 @@ class Evolver:
             'Both window width (-W) and window shift (-S) are required'
         if self.options.test_width is not None:
             assert self.options.width is not None, 'The test width option (-w) requires the window width option (-W)'
+        assert not (self.options.online and any(x is None for x in (self.options.shift, self.options.width))), \
+            'The options (-W and -S) are required for online mode (--online)'
+        assert not (self.options.online and self.options.out_dir is None), 'Output directory is required in online mode'
+        assert not (self.options.online and self.options.encoder is None), 'An encoder (-E) is required in online mode'
 
         # Evaluation function
         self.fitness_func = FitFunction(self.options.evaluator)
 
-        # MultiNEAT parameters
-        self.params = params.get_params(self.options.params)
+        # Parameters
+        self.initial_params = params.get_params(self.options.params)
 
-        # Bloat options
-        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
-            if self.options.bloat_file is not None else None
-        self.mutation_rate_controller = bloat.MutationRateController(self.params, self.bloat_options.mutation_options) \
-            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
-        self.fitness_adjuster = bloat.FitnessAdjuster(self.bloat_options.fitness_options) \
-            if bloat.BloatOptions.has_fitness_options(self.bloat_options) else None
+        # Online
+        self.is_online = self.options.online
+        self.gen_lock = threading.Lock()
+        self.start_lock = threading.Condition()
 
         # Sliding window
+        self.window = 0
         self.width = self.options.width if self.options.width is not None else 0
         self.test_width = self.options.test_width if self.options.test_width is not None else 0
         self.shift = self.options.shift if self.options.shift is not None else 0
-        self.is_online = self.options.width is not None  # Is sliding window being used
+        self.has_windows = self.options.width is not None or self.options.online
         self.slider = SlidingWindow(self.width, self.shift, self.test_width, file_path=self.options.data_file) \
-            if self.is_online else None
+            if self.has_windows and not self.is_online else None
         self.n_inputs_diff = 0  # How many existing input columns changed since the last window
         self.inputs_diff = []  # List of tuples of columns which have been replaced (old_input, new_input)
         self.n_inputs_delta = 0  # Difference of inputs between he current window and the previous one
@@ -176,10 +192,10 @@ class Evolver:
         self.ea_time = None  # Time spent in the EA
         self.window_ea_time = None  # Time spent in the EA during the current window
         self.gen_ea_time = None  # Time spent in the EA during the current generation
-        self.gen_connections = None  # List of the number of connections of all individuals in the current generation
-        self.gen_neurons = None  # List of the number of hidden neurons of all individuals in the current generation
-        if printer is None:
-            self.reprint_obj = output()
+        self.evaluations = None  # List of the latest population evaluations
+        if printer is None and not self.options.quiet:
+            self.reprint_obj = output(initial_len=0)
+            self.reprint_obj.no_warning = True
             self.printer = self.reprint_obj.__enter__()
         else:
             self.reprint_obj = None
@@ -190,49 +206,91 @@ class Evolver:
         self.top10_header = []  # Header for the top 10 evaluations
         self.windows_lines = 0  # How many output lines are required for the windows table
         self.windows_header = []  # Header for the windows best table
+        self.running = False
+        self.force_terminate = False
+        self.first_gen_window = True
+        self.online_data = []
+        self.pop = None
 
         # Encoding and load progress
+        self.test_data, self.train_data = None, None
         self.mapping = None
         self.encoder = Encoder(self.options.encoder) if self.options.encoder is not None else None
         if self.options.progress_file is not None:
-            self.output_update_state('Resuming', pre=True)
+            self.update_output_state('Resuming', pre=True)
             self.load_progress(self.options.progress_file)
+
         # Data
-        self.output_update_state('Preparing data', pre=True)
-        self._setup_data()
+        self.update_output_state('Preparing data', pre=True)
+        self._setup_data(window=self.window if self.window > 0 else None)
+        if self.is_online:
+            with self.start_lock:
+                self.collector = online.Online(self, self.width, self.shift,
+                                               test_ratio=self.test_width, start_files=self.online_data)
+                self.collector.setDaemon(True)
+                self.collector.start()
+                if self.train_data is None:
+                    self.update_output_state('Waiting for data', pre=True)
+                    self.start_lock.wait()  # Wait for data to be collected
 
         # Substrate for HyperNEAT
         self.substrate = self._init_substrate()
+        # C++ Population
+        self.pop is None and self.init_population()
 
-        self._keep_timers = False
-        self.init_timers()
-        self.pop = self.init_population()  # C++ Population
-        if self.mutation_rate_controller is not None:
-            self.mutation_rate_controller.set_params(self.params)
+        # Bloat options
+        self.bloat_options = bloat.BloatOptions(self.options.bloat_file) \
+            if self.options.bloat_file is not None else None
+        self.mutation_rate_controller = bloat.MutationRateController(self, self.bloat_options.mutation_options) \
+            if bloat.BloatOptions.has_mutation_options(self.bloat_options) else None
+        self.fitness_adjuster = bloat.FitnessAdjuster(self.bloat_options.fitness_options) \
+            if bloat.BloatOptions.has_fitness_options(self.bloat_options) else None
 
     def _setup_data(self, window=None):
-        if window is not None:
-            self.train_data, test_data = self.slider.get_window_data(window, update_state=True)
-            self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
-        else:
-            if self.is_online:  # Set the first window
-                if self.slider._window == 0 and not self.slider.has_next():
-                    raise AttributeError('The specified window width (-W) is too large for the available data')
-                if self.slider.has_next():
-                    self.train_data, test_data = next(self.slider)
-                    self.test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
-            else:  # Use static data
-                self.train_data = Data(self.options.data_file)
+        train_data, test_data = None, None
+        if self.is_online:
+            if self.options.data_file is not None:
+                train_data = Data(self.options.data_file)
+                test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+            else:
                 self.test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+                # Will wait for train data to be collected later
+                return
+        else:
+            if window is not None:
+                train_data, test_data = self.slider.get_window_data(window, update_state=True)
+                test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
+            else:
+                if self.has_windows:  # Set the first window
+                    if self.slider._window == 0 and not self.slider.has_next():
+                        raise AttributeError('The specified window width (-W) is too large for the available data')
+                    if self.slider.has_next():
+                        train_data, test_data = next(self.slider)
+                        test_data = Data(self.options.test_file) if self.options.test_file is not None else test_data
+                else:  # Use static data
+                    train_data = Data(self.options.data_file)
+                    test_data = Data(self.options.test_file) if self.options.test_file is not None else None
+        self.set_data(train_data, test_data)
+
+    def set_data(self, train, test, old_columns=None, keep_old_if_none=False):
+        if not keep_old_if_none:
+            self.train_data = train
+            self.test_data = test
+        else:
+            self.train_data = train if train is not None else self.train_data
+            self.test_data = test if test is not None else self.test_data
         if self.encoder is not None:
-            self.encode_data()
+            self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
+        if old_columns is not None:
+            self._update_inputs(old_columns)
 
     def _init_substrate(self):
         try:
             substrate = subst.get_substrate(self.options.substrate,
                                             inputs=self.train_data.n_inputs,
-                                            hidden_layers=10, nodes_per_layer=[10] * 10,
+                                            hidden_layers=self.options.substrate_width,
+                                            nodes_per_layer=[self.options.layer_length] * self.options.substrate_width,
                                             outputs=1) \
                 if self.options.method in ['hyperneat', 'eshyperneat'] else None
             return substrate
@@ -246,7 +304,21 @@ class Evolver:
             self.test_data.encode_from_mapping(self.mapping)
 
     def setup_evaluator(self):
-        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes, maxtasksperchild=500)
+        Evaluator.setup(self.train_data, self.test_data, processes=self.options.processes)
+
+    def log_error(self, error):
+        if self.options.out_dir is None:
+            return
+        self.make_out_dir()
+        with open(self.get_out_file_path('error_log.txt', False), 'a') as log:
+            log.writelines("[Gen {} ({})] {}".format(self.generation, util.current_dt_to_string(pretty=True), error))
+
+    def log_message(self, msg):
+        if self.options.out_dir is None:
+            return
+        self.make_out_dir()
+        with open(self.get_out_file_path('log.txt', False), 'a') as log:
+            log.writelines("[Gen {} ({})] {}\n".format(self.generation, util.current_dt_to_string(pretty=True), msg))
 
     def clear(self):
         self.initial_time = None
@@ -257,13 +329,16 @@ class Evolver:
         self.ea_time = None
         self.window_ea_time = None
         self.gen_ea_time = None
-        if self.is_online:
+        if self.has_windows:
             self.slider.reset()
             self.train_data, test = next(self.slider)
             if self.test_width is not None:
                 self.test_data = test
         self.run_i = None
-        self.pop = self.init_population()
+        self.running = False
+        self.force_terminate = False
+        self.first_gen_window = True
+        self.init_population()
         self.generation = 0
         self.best_list.clear()
         self.best_set.clear()
@@ -274,11 +349,9 @@ class Evolver:
     def load_pop(self, file_path):
         try:
             self.pop = neat.Population(file_path)
+            self.pop.Parameters = self.initial_params
         except RuntimeError:
             raise AttributeError('Invalid population file \'{}\''.format(file_path))
-        self.params = self.pop.Parameters
-        return self.pop
-
 
     def init_population(self):
         if self.options.pop_file is not None:
@@ -290,14 +363,12 @@ class Evolver:
 
         if self.options.method in ['hyperneat', 'eshyperneat']:
             g = neat.Genome(0, self.substrate.GetMinCPPNInputs(), 0, self.substrate.GetMinCPPNOutputs(),
-                            False, output_act_f, hidden_act_f, 0, self.params, 0)
-            pop = neat.Population(g, self.params, True, 1.0, seed)
+                            False, output_act_f, hidden_act_f, 0, self.initial_params, 0)
+            self.pop = neat.Population(g, self.initial_params, True, 1.0, seed)
         else:
             g = neat.Genome(0, self.train_data.n_inputs, 0, 1, False, output_act_f, hidden_act_f, 0,
-                            self.params, 0)
-            pop = neat.Population(g, self.params, True, 1.0, seed)
-
-        return pop
+                            self.initial_params, 0)
+            self.pop = neat.Population(g, self.initial_params, True, 1.0, seed)
 
     def get_genome_list(self):
         return [individual for species in self.pop.Species for individual in species.Individuals]
@@ -312,21 +383,27 @@ class Evolver:
         return datetime.datetime.now() - self.gen_initial_time if self.gen_initial_time is not None else None
 
     def is_finished(self):
-        if not self.is_online:
+        if signal_terminate or self.force_terminate:
+            return True
+        if self.is_online or not self.has_windows:
             return self.is_window_finished()  # Assuming no sliding window as equivalent to a single window
         else:
             return not self.slider.has_next() and self.is_window_finished()
 
-    def output_update_state(self, state, pre=False):
+    def update_output_state(self, state, pre=False):
         if self.options.quiet:
             return
 
         if not self.state_header:
-            self.state_header += ['Current task', 'Run Time', 'Generation']
-            self.state_header += ['Window'] if self.is_online else []
+            self.state_header += ['Current task', 'Time', 'Generation']
+            self.state_header += ['Window'] if self.has_windows else []
+            self.state_header += ['Hidden', 'Cons', 'Pred']
             self.state_header += ['ID']
-        state = [state.ljust(15), self._get_time_state(pre), self._get_generation_state(pre)]
-        state += [self._get_window_state(pre)] if self.is_online else []
+        state = [state.ljust(20), self._get_time_state(pre), self._get_generation_state(pre)]
+        state += [self._get_window_state(pre)] if self.has_windows else []
+        state += [int(avg([e.genome_neurons for e in self.evaluations])) if self.evaluations is not None else '',
+                  int(avg([e.genome_connections for e in self.evaluations])) if self.evaluations is not None else '',
+                  int(avg([e.pred_avg_time for e in self.evaluations])) if self.evaluations is not None else '']
         state += [self.options.id]
         table = tabulate([state], headers=self.state_header).split('\n')
 
@@ -338,19 +415,19 @@ class Evolver:
 
     def print_top10(self):
         if not self.top10_header:
-            self.top10_header = ['Rank', 'ID', 'Spawn Gen', 'Fitness (Train)']
-            if self.bloat_options is not None:
-                self.top10_header += ['Fitness (Adj)']
-            self.top10_header += ['Fitness (Test)', 'Hidden Neurons', 'Connections']
+            self.top10_header = ['Rank', 'ID', 'Spawn', 'Fit Train']
+            if self.fitness_adjuster is not None:
+                self.top10_header += ['Fit Adj.']
+            self.top10_header += ['Fit Test', 'Hidden', 'Cons', 'Pred']
 
         start = self.state_lines
         self.print(' ', i=start)
         self.print('[TOP 10]', i=start + 1)
         top10 = [(i + 1, e.genome_id, e.spawn_gen + 1, e.fitness, e.fitness_adj, e.fitness_test, e.genome_neurons,
-                  e.genome_connections) for i, e in enumerate(self.best_list[:10])]
-        if self.bloat_options is None:
+                  e.genome_connections, int(e.pred_avg_time)) for i, e in enumerate(self.best_list[:10])]
+        if self.fitness_adjuster is None:
             # Remove adjusted fitness
-            top10 = [(e[0], e[1], e[2], e[3], e[5], e[6], e[7]) for e in top10]
+            top10 = [(e[0], e[1], e[2], e[3], e[5], e[6], e[7], e[8]) for e in top10]
 
         table = tabulate(top10, self.top10_header, floatfmt='.5f').split('\n')
         for i, line in enumerate(table):
@@ -358,11 +435,11 @@ class Evolver:
         self.top10_lines = len(table) + 2
 
     def print_windows_best(self):
-        if not self.is_online:
+        if not self.has_windows:
             return
         if not self.windows_header:
-            self.windows_header = ['Window', 'ID', 'Spawn Gen', 'Total Gens',
-                                   'Fitness (Train)', 'Fitness (Test)', 'Hidden Neurons', 'Connections']
+            self.windows_header = ['Window', 'Gens', 'Spawn', 'ID',
+                                   'Fit Train', 'Fit Test', 'Hidden', 'Cons', 'Pred']
 
         start = self.state_lines + self.top10_lines
         self.print(' ', i=start)
@@ -377,8 +454,9 @@ class Evolver:
             return ''
         elapsed_time = self.elapsed_time()
         elapsed_str = str(elapsed_time).split('.')[0] if elapsed_time is not None else ''
-        shift = str(self.window_initial_time - self.initial_time
-                    + datetime.timedelta(minutes=self.options.time_limit)).split('.')[0] \
+        window_init_time = self.window_initial_time if not self.is_online else self.initial_time
+        shift = str(window_init_time - self.initial_time +
+                    datetime.timedelta(minutes=self.options.time_limit)).split('.')[0] \
             if self.options.time_limit is not None else None
         shift_str = ' / {}'.format(shift) if shift is not None else ''
         return elapsed_str + shift_str
@@ -395,16 +473,20 @@ class Evolver:
     def _get_window_state(self, pre=False):
         if pre:
             return ''
-        if not self.is_online:
+        if not self.has_windows:
             return None
-        return '{} / {}'.format(self.get_current_window() + 1, self.slider.n_windows)
+        total_str = ' / {}'.format(self.slider.n_windows) if self.slider is not None else ''
+        return '{}{}'.format(self.get_current_window() + 1, total_str)
 
     def print(self, msg, i=None, override=False):
-        if not self.options.quiet or override:
-            if i is None or i >= len(self.printer):
-                self.printer.append(msg)
-            else:
-                self.printer[i] = msg
+        if override:
+            print(msg)
+        else:
+            if not self.options.quiet:
+                if i is None or i >= len(self.printer):
+                    self.printer.append(msg)
+                else:
+                    self.printer[i] = msg
 
     def make_out_dir(self):
         if self.options.out_dir is None:
@@ -417,7 +499,7 @@ class Evolver:
             raise ValueError('out_dir is None')
 
         run = '({})'.format(self.run_i) if self.run_i is not None else ''
-        window = '({})'.format(self.get_current_window()) if include_window and self.is_online else ''
+        window = '({})'.format(self.get_current_window()) if include_window and self.has_windows else ''
 
         # Format: '<OUTDIR>/<ID><(RUN_INDEX)><(WINDOW_INDEX)>_<SUFFIX>
         # Example: 'results/sample1K(0)(0)_summary.json'
@@ -429,28 +511,41 @@ class Evolver:
             self.save_window_summary()
             self.write_summary(self.get_out_file_path('summary.json'))
             self.pop.Save(self.get_out_file_path('population.txt'))
+            self.pop.Save(self.get_out_file_path('population.txt', include_window=False))
             self.get_best().genome.Save(self.get_out_file_path('best.txt'))
 
     def save_progress(self):
+        if self.options.out_dir is None:
+            return
+        self.make_out_dir()
+        self.pop.Save(self.get_out_file_path('population.txt', include_window=False))
         with open(self.get_out_file_path('progress.txt', include_window=False), 'w') as file:
             self.encoder is not None and file.write(
                 'encoder {}\n'.format(os.path.abspath(self.get_out_file_path('encoder.bin', include_window=False))))
-            file.write('population {}\n'.format(os.path.abspath(self.get_out_file_path('population.txt'))))
+            file.write('population {}\n'.format(
+                os.path.abspath(self.get_out_file_path('population.txt', include_window=False))))
             self.run_i is not None and file.write('run {}\n'.format(self.run_i))
-            self.is_online and file.write('window {}\n'.format(self.get_current_window()))
+            self.has_windows and file.write('window {}\n'.format(self.get_current_window()))
             file.write('generation {}\n'.format(self.generation))
             file.write('time {}\n'.format(self.elapsed_time().total_seconds()))
             file.write('ea_time {}\n'.format(self.ea_time.total_seconds()))
             file.write('eval_time {}\n'.format(self.eval_time.total_seconds()))
+            file.write('first_gen_window {}\n'.format(self.first_gen_window))
+            file.write('online_data {}\n'.format('::'.join(self.online_data) if self.online_data else 'NA'))
 
     def save_encoder(self):
+        if self.options.out_dir is None:
+            return
+        self.make_out_dir()
         self.encoder is not None and self.encoder.save(self.get_out_file_path('encoder.bin', include_window=False))
 
     def save_mapping(self):
+        if self.options.out_dir is None:
+            return
+        self.make_out_dir()
         self.mapping is not None and self.mapping.save(self.get_out_file_path('mapping.bin'))
 
     def load_progress(self, file_path):
-        self.output_update_state('Resuming')
         with open(file_path, 'r') as file:
             for line in file:
                 line = line.strip('\n')
@@ -458,7 +553,7 @@ class Evolver:
                 if key == 'run':
                     self.run_i = int(value)
                 elif key == 'window':
-                    self._setup_data(window=int(value))
+                    self.window = int(value)
                 elif key == 'generation':
                     self.generation = int(value)
                 elif key == 'time':
@@ -471,8 +566,11 @@ class Evolver:
                     self.encoder = Encoder.load(value)
                 elif key == 'population':
                     self.load_pop(value)
-        self._keep_timers = True
-        self.output_update_state('Resuming')
+                elif key == 'first_gen_window':
+                    self.first_gen_window = util.str_to_bool(value)
+                elif key == 'online_data':
+                    if value != 'NA':
+                        self.online_data = value.split('::')
 
     def get_summary(self):
         best_evaluation = self.get_best()
@@ -482,12 +580,12 @@ class Evolver:
             best_eval=best_evaluation, best_network=net,
             fitness_test=self.best_test.fitness if self.best_test is not None else None,
             # Other info
-            params=params.ParametersWrapper(self.params), generations=self.generation,
-            run_time=datetime.datetime.now() - self.initial_time, eval_time=self.eval_time,
+            params=params.ParametersWrapper(self.pop.Parameters), generations=self.generation,
+            run_time=self.elapsed_time().total_seconds()/60, eval_time=self.eval_time.total_seconds()/60,
 
-            ea_time=self.ea_time, processes=self.options.processes,
+            ea_time=self.ea_time.total_seconds()/60, processes=self.options.processes,
             sample_size=self.options.sample_size if self.options.sample_size is not None else len(self.train_data),
-            window=self.get_current_window() if self.is_online else None,
+            window=self.get_current_window() if self.has_windows else None,
             date_begin=date_begin, date_end=date_end, train_size=len(self.train_data),
             train_positives=len(self.train_data.positives), train_negatives=len(self.train_data.negatives),
             test_size=len(self.test_data) if self.test_data is not None else -1,
@@ -500,7 +598,7 @@ class Evolver:
             f.write(json.dumps(self.get_summary().__dict__, default=util.serializer, indent=4))
 
     def save_window_summary(self):
-        if not self.is_online or self.options.out_dir is None:
+        if not self.has_windows or self.options.out_dir is None:
             return
 
         self.make_out_dir()
@@ -532,13 +630,13 @@ class Evolver:
                              test_size, test_positives, test_negatives, best.fitness, test_fitness,
                              best.neurons, best.connections])
 
-    def save_evaluations(self, evaluations):
+    def save_evaluations(self):
         if self.options.no_statistics or self.options.out_dir is None:
             return
 
         self.make_out_dir()
-        file_path = self.get_out_file_path('evaluations.csv', include_window=False)
-        if self.generation == 0:
+        file_path = self.get_out_file_path('evaluations.csv', include_window=True)
+        if self.first_gen_window:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['window', 'generation', 'genome_id', 'fitness', 'fitness_test', 'fitness_adj',
@@ -547,7 +645,7 @@ class Evolver:
                 writer.writerow(header)
         with open(file_path, 'a') as file:
             writer = csv.writer(file, delimiter=',')
-            for e in evaluations:
+            for e in self.evaluations:
                 fitness_test = e.fitness_test if e.fitness_test is not None else -1
                 writer.writerow([e.window, e.generation, e.genome_id, e.fitness, fitness_test, e.fitness_adj,
                                  e.genome_neurons, e.genome_connections, e.neurons, e.connections,
@@ -559,8 +657,8 @@ class Evolver:
             return
 
         self.make_out_dir()
-        file_path = self.get_out_file_path('generations.csv', include_window=False)
-        if self.generation == 0:
+        file_path = self.get_out_file_path('generations.csv', include_window=True)
+        if self.first_gen_window:
             with open(file_path, 'w') as file:
                 writer = csv.writer(file, delimiter=',')
                 header = ['generation', 'eval_time', 'ea_time', 'run_time',
@@ -570,32 +668,33 @@ class Evolver:
             writer = csv.writer(file, delimiter=',')
             writer.writerow([self.generation, self.gen_eval_time.total_seconds(), self.gen_ea_time.total_seconds(),
                              self.generation_elapsed_time().total_seconds(),
-                             self.params.MutateAddNeuronProb, self.params.MutateRemSimpleNeuronProb,
-                             self.params.MutateAddLinkProb, self.params.MutateRemLinkProb])
+                             self.pop.Parameters.MutateAddNeuronProb, self.pop.Parameters.MutateRemSimpleNeuronProb,
+                             self.pop.Parameters.MutateAddLinkProb, self.pop.Parameters.MutateRemLinkProb])
 
     def get_best(self):
         return self.best_list[0]
 
-    def update_best_list(self, evaluations):
-        # Penalize individuals older than 20 generations
-        if self.generation % 20 == 0:
+    def update_best_list(self):
+        # Penalize older individuals
+        if self.generation % self.initial_params.OldAgeThreshold == 0:
             for e in self.best_list:
-                if e.generation < self.generation - 20:
-                    e.fitness -= e.fitness * 0.01
+                if e.generation < self.generation - self.initial_params.OldAgeThreshold:
+                    e.fitness -= e.fitness * 0.001
+                    self._update_best_list_evaluation(e)
 
-        max_updates = math.ceil(0.05 * self.params.PopulationSize)  # Take at most the best 5% of evaluations
+        max_updates = math.ceil(0.05 * self.pop.Parameters.PopulationSize)  # Take at most the best 5% of evaluations
         # Evaluations must be sorted by descending fitness
         for i in range(max_updates):
-            e = evaluations[i]
+            e = self.evaluations[i]
             # Break condition (best_list is full and e is worse than the worst evaluation in best_list)
-            if len(self.best_list) == self.params.PopulationSize and e.fitness < self.best_list[-1].fitness:
+            if len(self.best_list) == self.pop.Parameters.PopulationSize and e.fitness < self.best_list[-1].fitness:
                 break
             elif e.genome_id in self.best_set:  # Individual already exists in best_list; update
                 self._update_best_list_evaluation(e)
             else:  # Add to best_list
                 self._add_to_best_list(e)
                 # Cap the size of best_list at PopulationSize
-                if len(self.best_list) > self.params.PopulationSize:
+                if len(self.best_list) > self.pop.Parameters.PopulationSize:
                     self._remove_from_best_list(-1)
 
     def _update_best_list_evaluation(self, new_eval):
@@ -616,21 +715,28 @@ class Evolver:
         del self.best_list[index]
 
     def reevaluate_best_list(self):
-        evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0)
+        evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0, time=True)
         original_gens = [e.generation for e in self.best_list]
         self.best_list.clear()
         for i, e in enumerate(evaluation_list):
             e.generation = original_gens[i]
             self.best_list.add(e)
 
-    def evaluate_list(self, genome_list, sample_size=None, adjuster=None):
+    def evaluate_list(self, genome_list, sample_size=None, adjuster=None, time=True):
         sample_size = sample_size if sample_size is not None else self.options.sample_size
         test_data = self.test_data if self.options.test_fitness and not self.options.no_statistics else None
-        return Evaluator.evaluate_genome_list(
+        time_diff, evaluation_list = util.time(lambda: Evaluator.evaluate_genome_list(
             genome_list, self.fitness_func, data=self.train_data, sample_size=sample_size,
             test_data=test_data, adjuster=adjuster, method=self.options.method, substrate=self.substrate,
             generation=self.generation, window=self.get_current_window(), initial_time=self.initial_time
-        )
+        ))
+
+        if time:
+            self.eval_time += time_diff
+            self.window_eval_time += time_diff
+            self.gen_eval_time = time_diff
+
+        return evaluation_list
 
     def evaluate(self, genome):
         return self._evaluate(genome, self.train_data)
@@ -644,21 +750,14 @@ class Evolver:
                                   window=self.get_current_window(), initial_time=self.initial_time)
 
     def evaluate_pop(self):
-        self.output_update_state('Evaluating')
-        time_diff, evaluation_list = util.time(
-            lambda: self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster))
-
-        self.eval_time += time_diff
-        self.window_eval_time += time_diff
-        self.gen_eval_time = time_diff
-
-        self.gen_connections = [e.genome_connections for e in evaluation_list]
-        self.gen_neurons = [e.genome_neurons for e in evaluation_list]
-        self.save_evaluations(evaluation_list)
-        self.update_best_list(evaluation_list)
+        self.update_output_state('Evaluating')
+        self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
+        self.save_evaluations()
+        self.update_best_list()
 
     def epoch(self):
-        self.output_update_state('Evolving')
+        self.update_output_state('Evolving')
+
         time_diff, _ = util.time(self.pop.Epoch)
 
         self.ea_time += time_diff
@@ -670,16 +769,16 @@ class Evolver:
 
     def print_best(self):
         best = self.get_best()
-        if not self.is_online:
+        if not self.has_windows:
             best_test_str = ' Fitness (test): {:.6f},'.format(
                 self.best_test.fitness) if self.best_test is not None else ''
-            self.print("\nBest result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
+            self.print("Best result> Fitness (train): {:.6f},{} Neurons: {}, Connections: {}".
                        format(best.fitness, best_test_str, best.genome_neurons, best.genome_connections), override=True)
         else:
-            best_tuple = (self.get_current_window() + 1, best.genome_id,
-                          best.spawn_gen + 1, self.windows_final_gens[-1], best.fitness,
+            best_tuple = (self.get_current_window() + 1, self.windows_final_gens[-1],
+                          best.spawn_gen + 1, best.genome_id, best.fitness,
                           self.best_test.fitness if self.best_test is not None else None,
-                          best.genome_neurons, best.genome_connections)
+                          best.genome_neurons, best.genome_connections, int(best.pred_avg_time))
             self.windows_best.append(best_tuple)
             self.print_windows_best()
 
@@ -688,7 +787,7 @@ class Evolver:
         if self.test_data is not None:
             self.best_test = self.evaluate_test(best.genome)
 
-    def termination_sequence(self):
+    def termination_sequence(self, save_progress=False):
         if not self.best_list:
             self.print('Warning: no solution found')
             return
@@ -696,17 +795,19 @@ class Evolver:
         self.windows_final_gens.append(self.generation)
         # Reevaluate the best individuals with full data if sample_size is specified
         if self.options.sample_size != 0 and not self.options.no_reevaluation:
-            self.output_update_state('Full reevaluation')
+            self.update_output_state('Full reevaluation')
             self.reevaluate_best_list()
 
-        self.output_update_state('Saving results')
+        self.update_output_state('Saving results')
         self.evaluate_best_test()  # Test the best individual obtained with the test data-set
         self.print_best()  # Print to stdout the best result
         self.write_results()  # Write run details to files
         self.save_encoder()  # Save encoder
         self.save_mapping()  # Save encoding mapping
+        if save_progress:
+            self.save_progress()
 
-    def shift_window(self):
+    def shift_window(self, new_train=None, new_test=None):
         self.termination_sequence()
 
         self.best_list.clear()
@@ -714,21 +815,33 @@ class Evolver:
         self.best_test = None
         self.reset_window_timers()
 
-        self.output_update_state('Shifting window')
-        # Prepare new data
+        self.update_output_state('Shifting window')
         old_columns = self.train_data.input_labels
-        self.train_data, test = next(self.slider)
-        if test is not None:
-            self.test_data = test
-        if self.encoder is not None:
-            self.encode_data(soft_order=old_columns)
-        self.setup_evaluator()
+        if new_train is not None:  # Use data from arguments
+            train_data = new_train
+            test_data = new_test if new_test is not None else None
+        else:  # Apply window shift
+            train_data, test_data = next(self.slider)
 
-        self._update_inputs(old_columns)
+        log_message = "Shifting to window #{}:\n" \
+                      "> Rows: {}; Positives: {}; Range: {} -- {} (Train)".format(
+            self.window + 1, len(train_data), len(train_data.positives), *map(str, train_data.get_time_range()))
+        if test_data is not None:
+            log_message += "\n> Rows: {}; Positives: {}; Range: {} -- {} (Validation)".format(
+                len(test_data), len(test_data.positives), *map(str, test_data.get_time_range()))
+        self.log_message(log_message)
+        self.set_data(train_data, test_data, old_columns=old_columns, keep_old_if_none=True)
+        self.window += 1
+        self.first_gen_window = True
+        self.save_progress()
 
     def _update_inputs(self, old_inputs):
-        # Which columns have changed
+        # Which existing columns have changed
         new_inputs = util.diff_indexes(old_inputs, self.train_data.input_labels)
+        if len(new_inputs) == len(old_inputs) and not new_inputs:
+            # Nothing changed; exit
+            return
+
         self.n_inputs_diff = len(new_inputs)
         self.n_inputs_delta = self.train_data.n_inputs - len(old_inputs)
         self.inputs_diff_old = [old_inputs[i] for i in new_inputs]
@@ -742,16 +855,18 @@ class Evolver:
         else:
             # Resize the number of inputs of each individual in the population
             self.pop.ResizeInputs(self.train_data.n_inputs)
-            # Remove the old connections of the new inputs
-            self.pop.DisconnectInputs(new_inputs)
+            # Random weights of connections outgoing from new inputs
+            self.pop.RandomizeOutgoingWeights(new_inputs)
 
     def should_shift(self):
-        if not self.is_online or not self.slider.has_next():
+        if self.is_online:  # If it's online, the other thread is responsible for updating the data
+            return False
+        if not self.has_windows or not self.slider.has_next():
             return False
         return self.is_window_finished()
 
     def is_window_finished(self):
-        window = self.get_current_window() + 1
+        window = self.get_current_window() + 1 if not self.is_online else 1
 
         generation_limit = self.options.generations is not None and self.generation >= self.options.generations * window
         time_limit = self.options.time_limit is not None and \
@@ -759,29 +874,34 @@ class Evolver:
         return generation_limit or time_limit
 
     def get_current_window(self):
-        return self.slider.get_current_window_index() if self.slider is not None else 0
+        return self.window
 
     def adjust_mutation_rates(self):
         if self.mutation_rate_controller is not None:
             complex_type = self.bloat_options.mutation_options.complexity_type
             if complex_type is bloat.ComplexityType.CONNECTIONS:
-                complexity = avg(self.gen_connections)
+                complexity = avg([e.genome_connections for e in self.evaluations])
             elif complex_type is bloat.ComplexityType.NEURONS:
-                complexity = avg(self.gen_neurons)
+                complexity = avg([e.genome_neurons for e in self.evaluations])
             elif complex_type is bloat.ComplexityType.TIME:
                 complexity = (self.gen_ea_time + self.gen_eval_time).total_seconds()
+            elif complex_type is bloat.ComplexityType.PREDTIME:
+                complexity = avg([e.pred_avg_time for e in self.evaluations])
             else:
                 raise NotImplementedError
-            self.mutation_rate_controller.adjust(complexity, generation=self.generation)
+            self.mutation_rate_controller.adjust(complexity)
 
-    def init_timers(self):
-        if not self._keep_timers:
+    def init_timers(self, preserve_previous_progress=False):
+        if preserve_previous_progress:
+            self.initial_time = self.initial_time if self.initial_time is not None else datetime.datetime.now()
+            self.ea_time = self.ea_time if self.ea_time is not None else datetime.timedelta()
+            self.eval_time = self.eval_time if self.eval_time is not None else datetime.timedelta()
+        else:
             self.initial_time = datetime.datetime.now()
             self.ea_time = datetime.timedelta()
             self.eval_time = datetime.timedelta()
-            self.reset_window_timers()
-            self.reset_generation_timers()
-        self._keep_timers = True
+        self.reset_window_timers()
+        self.reset_generation_timers()
 
     def reset_window_timers(self):
         self.window_initial_time = datetime.datetime.now()
@@ -801,17 +921,26 @@ class Evolver:
         self.adjust_mutation_rates()
         if self.should_shift():
             self.shift_window()
-        self.save_progress()
+        else:
+            self.first_gen_window = False
+        if self.generation % 10 == 0:
+            log_message = "Generation {} -- Cumulative execution times:\n" \
+                          "> Evaluation: {:.5f}m\n" \
+                          "> EA: {:.5f}m".format(self.generation, self.eval_time.total_seconds() / 60,
+                                               self.ea_time.total_seconds() / 60)
+            self.log_message(log_message)
 
     def _run(self):
-        self.init_timers()
+        self.running = True
+        self.init_timers(preserve_previous_progress=self.options.progress_file is not None)
         # Run the EA
         while not self.is_finished():
-            self._gen_start()
-            self.evaluate_pop()
-            self.epoch()
-            self._gen_end()
-        self.termination_sequence()
+            with self.gen_lock:
+                self._gen_start()
+                self.evaluate_pop()
+                self.epoch()
+                self._gen_end()
+        self.termination_sequence(save_progress=True)
 
     def _multiple_runs(self):
         class Summary:
@@ -858,5 +987,15 @@ class Evolver:
 
 if __name__ == '__main__':
     options = parse_args()
+    signal_terminate = False
+
+
+    def sigint_handler(sig, frame):
+        global signal_terminate
+        signal_terminate = True
+
+
+    signal.signal(signal.SIGINT, sigint_handler)
+
     with Evolver(options) as evolver:
         evolver.run()

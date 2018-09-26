@@ -15,7 +15,7 @@ TIMESTAMPS_DTYPE = 'datetime64[s]'
 
 
 class Data:
-    # If 'file_path' is specified, data is read from the file;
+    # If 'file_path' is specified, data is read from the file(s);
     # otherwise, it's copied from 'inputs', 'targets' and 'timestamps'
     def __init__(self, file_path=None, input_labels=None, target_label='target', positive_class=1,
                  timestamp_label='timestamp', inputs=None, targets=None, timestamps=None, is_sorted=False,
@@ -41,9 +41,17 @@ class Data:
         self.target_idx = None  # Index of the target column in the csv file
         self.timestamp_idx = None  # Index of the timestamp column in the csv file
 
+        if file_path is not None and not isinstance(file_path, str) and len(file_path) == 1:
+            file_path = file_path[0]
         self.file_path = file_path
         if file_path is not None:
-            self._init_from_file(file_path)
+            if isinstance(file_path, str):  # single file
+                self._add_data_from_file(file_path)
+            else:  # multiple files
+                assert not timestamps_only, 'Multiple files with sliding window is not implemented'
+                for file_ in file_path:
+                    self._add_data_from_file(file_)
+            self._convert_to_numpy()
         else:
             self._init_from_data(inputs, targets, timestamps)
 
@@ -67,6 +75,9 @@ class Data:
         inputs_encoded = encoder.encode(inputs_dt, return_mapping=False)
         if soft_order is not None:
             inputs_encoded = self.soft_sort(inputs_encoded, soft_order)
+        elif encoder.input_order is not None:
+            inputs_encoded = self.soft_sort(inputs_encoded, encoder.input_order)
+        encoder.input_order = list(inputs_encoded.columns)
         mapping = encoder.get_mapping(inputs_dt, inputs_encoded)
         self._update_inputs(inputs_encoded)
         return mapping
@@ -86,7 +97,7 @@ class Data:
     def get_csv_reader(file):
         return csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
 
-    def _init_from_file(self, file_path):
+    def _add_data_from_file(self, file_path):
         with open(file_path, 'r') as file:
             reader = self.get_csv_reader(file)
             # Read fieldnames
@@ -109,7 +120,7 @@ class Data:
             self.target_idx = self.file_labels.index(self.target_label)
             self.timestamp_idx = self.file_labels.index(self.timestamp_label) if self.has_timestamps else None
 
-            for i, row in enumerate(reader):
+            for row in reader:
                 extra_cols = 2 if self.has_timestamps else 1
                 if len(row) != self.n_inputs + extra_cols:
                     raise ValueError('Row length mismatch')
@@ -118,9 +129,7 @@ class Data:
                     self.timestamps.append(datetime.strptime(row[self.timestamp_idx], self.date_format))
                 else:
                     inputs, target, timestamp = self.parse_row(row)
-                    self.add_row(inputs, target, timestamp, i)
-
-        self._convert_to_numpy()
+                    self.add_row(inputs, target, timestamp)
 
     def _init_from_data(self, inputs, targets, timestamps):
         length = len(inputs)
@@ -151,7 +160,10 @@ class Data:
         timestamp = datetime.strptime(row[self.timestamp_idx], self.date_format) if self.has_timestamps else None
         return inputs, target, timestamp
 
-    def add_row(self, input, target, timestamp, row_idx, use_numpy=False):
+    def add_row(self, input, target, timestamp, row_idx=None, use_numpy=False):
+        if row_idx is None:
+            row_idx = len(self.targets)  # or inputs, or timestamps. should be the same
+
         if use_numpy:
             self.inputs[row_idx] = input
             self.targets[row_idx] = target
@@ -171,7 +183,7 @@ class Data:
         if not self.timestamps_only:
             self.inputs = np.array(self.inputs)
             self.targets = np.array(self.targets, dtype=TARGETS_DTYPE)
-        if self.timestamps:
+        if self.timestamps is not None:
             self.timestamps = np.array(self.timestamps)
 
     def sort(self):
@@ -336,98 +348,10 @@ class Data:
                 writer.writerow(row)
 
 
-class SlidingWindow(Data):
-    # Widths and shift in hours
-    def __init__(self, width, shift, test_width, **kwargs):
-        self.test_width = test_width if test_width is not None else 0
-        assert test_width >= 0
-        assert all(x > 0 for x in (width, shift))
-        assert test_width <= width
-
-        super().__init__(timestamps_only=True, **kwargs)
-
-        assert self.has_timestamps
-
-        self.has_test = test_width > 0
-        self.width = timedelta(hours=width)
-        self.shift = timedelta(hours=shift)
-        self.test_width = timedelta(hours=test_width)
-        self.train_width = self.width - self.test_width
-
-        # List of index tuples: (train_begin, train_end, test_begin, test_end)
-        # or (train_begin, train_end), if there is no test data
-        self.windows = list()
-        self.setup_windows()
-        self.n_windows = len(self.windows)
-        self._window = 0  # Current window
-
-    def setup_windows(self):
-        global_start, global_end = self.get_time_range()  # Start and end datetimes
-
-        t_start = global_start  # Trial window start time
-        t_end = min(t_start + self.width, global_end)  # Trial window end time
-        t_width = t_end - t_start  # Trial window width
-        # While the trial window's width is at least 80% of the regular width, accept it
-        while t_width > 0.8 * self.width:
-            # Find indexes based on the datetime limits
-            train_start = self.find_first_datetime(t_start)
-            if self.has_test:
-                train_end_dt = t_end - self.test_width
-                train_end = self.find_last_datetime(train_end_dt, start=train_start)
-                test_start = train_end + 1
-                test_end = self.find_last_datetime(t_end, start=test_start)
-                window = (train_start, train_end, test_start, test_end)
-            else:
-                train_end = self.find_last_datetime(t_end, start=train_start)
-                window = (train_start, train_end)
-            self.windows.append(window)
-
-            # Next window
-            t_start = t_start + self.shift
-            t_end = min(t_start + self.width, global_end)
-            t_width = t_end - t_start
-
-    def get_window_data(self, window_i, update_state=False):
-        if window_i < 0 or window_i > len(self.windows):
-            raise IndexError('Invalid window index: {}'.format(window_i))
-        window = self.windows[window_i]
-        train = self.get_subset_by_time_interval(window[0], window[1])
-        test = self.get_subset_by_time_interval(window[2], window[3]) if self.has_test else None
-
-        if update_state:
-            self._window = window_i + 1
-        return train, test
-
-    def get_current_window_data(self):
-        return self.get_window_data(self._window)
-
-    def get_current_window_index(self):
-        return self._window - 1
-
-    def __getitem__(self, item):
-        return self.get_window_data(item)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            train, test = self.get_current_window_data()
-        except IndexError:
-            raise StopIteration
-        self._window += 1
-        return train, test
-
-    def has_next(self):
-        return self._window < self.n_windows
-
-    def reset(self):
-        self._window = 0
-
-
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('data_file', help='path to data file to be encoded and/or sampled', metavar='DATA'),
+    parser.add_argument('data_file', nargs='+', help='path(s) to data file(s) to be encoded and/or sampled',
+                        metavar='DATA'),
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
                         help='directory where to save output files', metavar='DIR')
     parser.add_argument('-v', '--val', dest='val', type=util.ratio, default=0, metavar='RATIO',

@@ -19,8 +19,15 @@ def get_network_connections(network):
     return [Connection(c.source_neuron_idx, c.target_neuron_idx, c.weight) for c in network.connections]
 
 
-def get_current_datetime_string():
-    return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.datetime.now())
+def current_dt_to_string(**kwargs):
+    return datetime_to_string(date=datetime.datetime.now(), **kwargs)
+
+
+def datetime_to_string(date, pretty=False):
+    if pretty:
+        return '{date:%Y-%m-%d %H:%M:%S}'.format(date=date)
+    else:
+        return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=date)
 
 
 def build_network(genome, method='neat', substrate=None, **kwargs):
@@ -135,6 +142,13 @@ def time(f, as_microseconds=False):
     return elapsed_time, f_out
 
 
+def try_(f):
+    try:
+        return f()
+    except:
+        return None
+
+
 def serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
 
@@ -157,6 +171,19 @@ def uint(value):
 
     try:
         ivalue = int(value)
+        if ivalue <= 0:
+            raise_arg_type_error(value)
+        return ivalue
+    except ValueError:
+        raise_arg_type_error(value)
+
+
+def ufloat(value):
+    def raise_arg_type_error(s):
+        raise argparse.ArgumentTypeError("{} is an invalid positive float value".format(value))
+
+    try:
+        ivalue = float(value)
         if ivalue <= 0:
             raise_arg_type_error(value)
         return ivalue

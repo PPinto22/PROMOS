@@ -76,3 +76,7 @@ logs/
 # iRace
 irace/arena/*
 !irace/arena/.gitkeep
+
+# ETL auxiliary stuff
+src/r/temp/
+src/r/temp.R

@@ -4,9 +4,11 @@ import ctypes
 import datetime
 import multiprocessing as mp
 import multiprocessing.sharedctypes
+import concurrent.futures
 import random
 from enum import Enum
 from functools import partial
+
 try:
     import matplotlib.pyplot as plt
 except:
@@ -18,7 +20,8 @@ from sklearn.metrics import roc_curve, auc, f1_score
 import substrate
 import util
 from bloat import FitnessAdjuster
-from data import Data, SlidingWindow
+from data import Data
+from sliding_window import SlidingWindow
 
 
 class GenomeEvaluation:
@@ -77,13 +80,16 @@ class FitFunction(Enum):
 class Evaluator:
     _inputs, _targets, _test_inputs, _test_targets = [None] * 4
     _pool = None
+    _maxtasks = None
+    _tasks = 0
+    _processes = 1
     multiprocessing = False
 
     @staticmethod
-    def setup(data, test_data=None, processes=1, maxtasksperchild=500):
+    def setup(data, test_data=None, processes=1, maxtasks=10000):
         Evaluator.close()
         max_train_size = data.size()
-        max_test_size = test_data.size() if test_data is not None else (0,0)
+        max_test_size = test_data.size() if test_data is not None else (0, 0)
         max_size = max_train_size if util.mult(max_train_size) > util.mult(max_test_size) else max_test_size
         Evaluator._inputs = mp.sharedctypes.RawArray(ctypes.c_double, util.mult(max_size))
         Evaluator._targets = mp.sharedctypes.RawArray(ctypes.c_double, max_size[0])
@@ -92,8 +98,11 @@ class Evaluator:
         Evaluator._test_targets = mp.sharedctypes.RawArray(ctypes.c_double, max_test_size[0]) \
             if test_data is not None else None
         Evaluator.multiprocessing = processes > 1
-        Evaluator._pool = mp.Pool(processes=processes, maxtasksperchild=maxtasksperchild) \
+        Evaluator._pool = concurrent.futures.ProcessPoolExecutor(max_workers=processes) \
             if Evaluator.multiprocessing else None
+        Evaluator._maxtasks = maxtasks
+        Evaluator._tasks = 0
+        Evaluator._processes = processes
 
     def __init__(self):
         raise NotImplementedError
@@ -101,22 +110,24 @@ class Evaluator:
     @staticmethod
     def close():
         if Evaluator._pool is not None:
-            Evaluator._pool.terminate()
+            Evaluator._pool.shutdown()
         Evaluator._multiprocessing = False
         Evaluator._inputs, Evaluator._targets, Evaluator._test_inputs, Evaluator._test_targets = [None] * 4
 
     @staticmethod
     def create_genome_evaluation(genome, fitness, net=None, fitness_test=None, window=None, generation=None,
-                                 initial_time=None, build_time=None, pred_time=None, pred_avg_time=None, fit_time=None,
+                                 initial_time=None, build_time=0, pred_time=0, pred_avg_time=0, fit_time=0,
                                  include_genome=False, extra={}, **kwargs):
+        if net is None:
+            net = util.build_network(genome, **kwargs)
         global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
 
         return GenomeEvaluation(genome=genome if include_genome else None,
                                 fitness=fitness, fitness_test=fitness_test,
-                                genome_neurons=genome.NumHiddenNeurons() if genome is not None else None,
-                                genome_connections=genome.NumLinks() if genome is not None else None,
-                                neurons=net.NumHiddenNeurons() if net is not None else None,
-                                connections=net.NumConnections() if net is not None else None,
+                                genome_neurons=genome.NumHiddenNeurons(),
+                                genome_connections=genome.NumLinks(),
+                                neurons=net.NumHiddenNeurons(),
+                                connections=net.NumConnections(),
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time, **extra)
 
@@ -193,8 +204,8 @@ class Evaluator:
         fit_time, fitness = util.time(lambda: evaluator(Evaluator._targets, predictions, size[0], **kwargs),
                                       as_microseconds=True)
         if isinstance(fitness, tuple):
-            extra = fitness[1]
             fitness = fitness[0]
+            extra = fitness[1]
         else:
             extra = {}
 
@@ -256,10 +267,17 @@ class Evaluator:
             evaluation_list = [evaluator(genome) for genome in genome_list]
         else:
             assert Evaluator._pool is not None
-            evaluation_list = Evaluator._pool.map(evaluator, genome_list)
+            Evaluator._update_tasks(len(genome_list))
+            futures = [Evaluator._pool.submit(evaluator, genome) for genome in genome_list]
+            concurrent.futures.wait(futures)
+            evaluation_list = [util.try_(future.result) for future in futures]
 
-        for genome, eval, fitness_adj in zip(genome_list, evaluation_list,
-                                             FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list)):
+        for i, (genome, eval, fitness_adj) in \
+                enumerate(zip(genome_list, evaluation_list,
+                              FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list))):
+            if eval is None:
+                eval = Evaluator.create_genome_evaluation(genome, 0, **kwargs)
+                evaluation_list[i] = eval
             genome.SetFitness(fitness_adj)
             genome.SetEvaluated()
             eval.fitness_adj = fitness_adj
@@ -269,6 +287,18 @@ class Evaluator:
             evaluation_list.sort(key=lambda e: e.fitness, reverse=True)
 
         return evaluation_list
+
+    # This is a workaround for a memory leak -- periodically restarts the processes
+    @staticmethod
+    def _update_tasks(n):
+        if not Evaluator.multiprocessing or Evaluator._maxtasks is None:
+            return
+        if Evaluator._tasks > Evaluator._maxtasks:
+            Evaluator._pool.shutdown()
+            Evaluator._pool = concurrent.futures.ProcessPoolExecutor(max_workers=Evaluator._processes)
+            Evaluator._tasks = n
+        else:
+            Evaluator._tasks += n
 
 
 def parse_args():

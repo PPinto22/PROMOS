@@ -189,6 +189,8 @@ namespace NEAT
 
         void DisconnectInputs(const std::vector<int> &input_idxs);
         void DisconnectInputByID(int a_ID);
+        void RandomizeOutgoingWeights(const std::vector<int> &input_idxs, const Parameters &a_Parameters, RNG &a_RNG);
+        void RandomizeOutgoingWeightsByID(int a_ID, const Parameters &a_Parameters, RNG &a_RNG);
 
         ////////////////////
         // Accessor methods
@@ -221,6 +223,20 @@ namespace NEAT
 
         unsigned int NumOutputs() const
         { return m_NumOutputs; }
+
+        void RecalculateNeurons() {
+            m_NumInputs = 0;
+            m_NumOutputs = 0;
+            for (unsigned int i = 0; i < NumNeurons(); i++) {
+                if ((m_NeuronGenes[i].Type() == INPUT) || (m_NeuronGenes[i].Type() == BIAS)) {
+                    m_NumInputs++;
+                }
+
+                if (m_NeuronGenes[i].Type() == OUTPUT) {
+                    m_NumOutputs++;
+                }
+            }
+        }
 
         void SetNeuronXY(unsigned int a_idx, int a_x, int a_y);
 

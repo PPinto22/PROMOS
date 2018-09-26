@@ -1,0 +1,16 @@
+## Template for specifying initial parameter configurations, for
+## example, the default configuration, in irace.
+##
+## This filename must be specified via the --candidates-file command-line option
+## (or candidatesFile in scenario.txt).
+##
+## The format is one parameter configuration per line, and one parameter per
+## column. The first line gives the parameter name corresponding to
+## each column (names must match those given in the parameters
+## file). Each configuration must satisfy the
+## parameter conditions (NA should be used for those parameters that
+## are not enabled for a given configuration) and, if given, the
+## constraints that describe forbidden configurations.
+
+popsize minspecies maxspecies clones youngthresh youngboost oldthresh oldpenalty survival crossover interspecies mutation elitism multipoint addneuron remneuron addlink remlink mutweights mutsevere mutgene replweight maxweight mutweightmax mutbias mutactiv activation compat
+100     5          10         true   5           1.1        30        0.8        0.3      0.7       0.01         0.25     0.05    0.75       0.05      0.03      0.1     0.05    0.7        0.20      0.9     0.2        10        0.15         0.05    NA       0          5

@@ -193,6 +193,14 @@ void Population::DisconnectInputs(const std::vector<int> &input_idxs){
     }
 }
 
+void Population::RandomizeOutgoingWeights(const std::vector<int> &input_idxs){
+    for(Species &s: m_Species){
+        for(Genome &g: s.m_Individuals){
+            g.RandomizeOutgoingWeights(input_idxs, m_Parameters, m_RNG);
+        }
+    }
+}
+
 #ifdef USE_BOOST_PYTHON
 void Population::DisconnectInputs_py(const py::list &input_idxs) {
     std::vector<int> t_input_idxs;
@@ -200,6 +208,14 @@ void Population::DisconnectInputs_py(const py::list &input_idxs) {
         t_input_idxs.push_back(py::extract<int>(input_idxs[i]));
     }
     DisconnectInputs(t_input_idxs);
+}
+
+void Population::RandomizeOutgoingWeights_py(const py::list &input_idxs){
+    std::vector<int> t_input_idxs;
+    for (int i = 0; i < py::len(input_idxs); ++i) {
+        t_input_idxs.push_back(py::extract<int>(input_idxs[i]));
+    }
+    RandomizeOutgoingWeights(t_input_idxs);
 }
 #endif
 
@@ -294,6 +310,19 @@ void Population::Speciate()
     // iterate through the genome list and speciate
     // at least 1 genome must be present
     ASSERT(m_Genomes.size() > 0);
+
+    int popsize = m_Genomes.size();
+    if(m_Species.size() != 0){
+    	// Copy the population to m_Genomes
+    	m_Genomes.clear();
+    	for(Species& specie: m_Species){
+    		for(Genome g: specie.m_Individuals){
+    			m_Genomes.push_back(g);
+    			if(m_Genomes.size() == popsize) break;
+    		}
+    		if(m_Genomes.size() == popsize) break;
+    	}
+    }
 
     // first clear out the species
     m_Species.clear();

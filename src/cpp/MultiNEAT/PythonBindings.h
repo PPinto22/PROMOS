@@ -183,6 +183,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def_readwrite("Bias", &NeuronGene::m_Bias)
             .def_readwrite("ActFunction", &NeuronGene::m_ActFunction)
             .def_readwrite("Type", &NeuronGene::m_Type)
+            .def_readonly("ID", &NeuronGene::m_ID)
             ;
 
     class_<Genome, Genome*>("Genome", init<>())
@@ -336,9 +337,12 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def("AccessGenomeByID", &Population::AccessGenomeByID, return_value_policy<reference_existing_object>())
             .def("NumGenomes", &Population::NumGenomes)
 
+            .def("Speciate", &Population::Speciate)
             .def("ResizeInputs", &Population::ResizeInputs)
             .def("DisconnectInputs", &Population::DisconnectInputs)
             .def("DisconnectInputs", &Population::DisconnectInputs_py)
+            .def("RandomizeOutgoingWeights", &Population::RandomizeOutgoingWeights)
+            .def("RandomizeOutgoingWeights", &Population::RandomizeOutgoingWeights_py)
 
             .def_readwrite("Species", &Population::m_Species)
             .def_readwrite("Parameters", &Population::m_Parameters)

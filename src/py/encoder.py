@@ -63,7 +63,7 @@ class Factor(Encoding):
 
     def encode(self, column):
         self.init_column(column.name)
-        factor_col = np.zeros(len(column), dtype=data.INPUTS_DTYPE)
+        factor_col = np.zeros(len(column), dtype=np.uint64)
         for i, raw_value in enumerate(column):
             if self.exists(column.name, raw_value):
                 encoded_value = self.get(column.name, raw_value)
@@ -122,9 +122,8 @@ class RAW(Encoding):
         super().__init__()
 
     def encode(self, column):
-        for i in range(len(column)):
-            column[i] = data.INPUTS_DTYPE(column[i])
-        return pd.DataFrame({column.name: column})
+        encoded_col = column.astype(data.INPUTS_DTYPE)
+        return pd.DataFrame({column.name: encoded_col})
 
     def missing_value(self, column_name, value):
         return float(value)
@@ -134,7 +133,7 @@ class PCP(Encoding):
     OTHERS_STR = 'Other'
     SEP = '__'
 
-    def __init__(self, percentage=0.05):
+    def __init__(self, percentage=0.1):
         super().__init__()
         self.percentage = float(percentage)
 
@@ -263,7 +262,7 @@ class Encoder:
     def __init__(self, cfg_file):
         self.columns = {}
         self.default = None
-
+        self.input_order = None
         self._setup(cfg_file)
 
     @classmethod

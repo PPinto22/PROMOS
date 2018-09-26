@@ -1,9 +1,0 @@
-
-	Pairwise comparisons using paired t tests 
-
-data:  windows_dt$test_fitness and windows_dt$run_type 
-
-       flat  
-normal <2e-16
-
-P value adjustment method: holm 
