@@ -307,30 +307,33 @@ class Data:
         length = end - start + 1
 
         if not self.timestamps_only:
-            inputs = self.inputs[start:end]
-            targets = self.targets[start:end]
-            timestamps = self.timestamps[start:end]
+            inputs = np.array(self.inputs[start:end])
+            targets = np.array(self.targets[start:end])
+            timestamps = np.array(self.timestamps[start:end])
         else:
-            inputs, targets, timestamps = list(), list(), list()
+            # inputs, targets, timestamps = list(), list(), list()
+            inputs = np.zeros(shape=(length, self.n_inputs), dtype=np.object)
+            targets = np.zeros(length, dtype=TARGETS_DTYPE)
+            timestamps = np.zeros(length, dtype=TIMESTAMPS_DTYPE)
 
             # Get file line numbers
-            lines = set()
+            lines = dict() # Map line number to its order by timestamp
             for i in range(start, end + 1):
-                lines.add(self.order[i])
+                lines[self.order[i]] = i - start
 
             with open(self.file_path, 'r') as file:
                 reader = self.get_csv_reader(file)
                 count = 0
                 for i, row in enumerate(reader):
                     if i in lines:
+                        index = lines[i]
                         line_inputs, line_target, line_timestamp = self.parse_row(row)
-                        inputs.append(line_inputs)
-                        targets.append(line_target)
-                        timestamps.append(line_timestamp)
+                        inputs[index] = np.array(line_inputs)
+                        targets[index] = line_target
+                        timestamps[index] = line_timestamp
                         count += 1
                     if count >= len(lines):
                         break
-            inputs, targets, timestamps = (np.array(x) for x in (inputs, targets, timestamps))
 
         return Data(inputs=inputs, targets=targets, timestamps=timestamps,
                     input_labels=self.input_labels, target_label=self.target_label,
