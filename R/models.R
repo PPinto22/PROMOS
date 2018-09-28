@@ -39,20 +39,12 @@ INSTANCES <- set_paths(list(
   # list('../data/2weeks/sw/best_raw_train', '../data/2weeks/sw/best_raw_test', 'raw', 'best', 10),
   # list('../data/2weeks/sw/best_pcp_train', '../data/2weeks/sw/best_pcp_test', 'pcp', 'best', 10)
   
-  list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best', 1)
-<<<<<<< HEAD
+  list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best', 1),
   list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best', 1),
   list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best', 1),
   list('../data/2weeks/test_idf_train', '../data/2weeks/test_idf_test', 'idf', 'test', 1),
   list('../data/2weeks/test_raw_train', '../data/2weeks/test_raw_test', 'raw', 'test', 1),
   list('../data/2weeks/test_pcp_train', '../data/2weeks/test_pcp_test', 'pcp', 'test', 1)
-=======
-  # list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best', 1),
-  # list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best', 1),
-  # list('../data/2weeks/test_idf_train', '../data/2weeks/test_idf_test', 'idf', 'test', 1),
-  # list('../data/2weeks/test_raw_train', '../data/2weeks/test_raw_test', 'raw', 'test', 1),
-  # list('../data/2weeks/test_pcp_train', '../data/2weeks/test_pcp_test', 'pcp', 'test', 1)
->>>>>>> 271a7ce544ed54b920b540a3f50a83e107ddd188
 ))
 # str(INSTANCES)
 # ALGORITHMS <- c('lr', 'naivebayes', 'mlp', 'xgboost')
