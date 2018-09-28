@@ -39,7 +39,7 @@ INSTANCES <- set_paths(list(
   # list('../data/2weeks/sw/best_raw_train', '../data/2weeks/sw/best_raw_test', 'raw', 'best', 10),
   # list('../data/2weeks/sw/best_pcp_train', '../data/2weeks/sw/best_pcp_test', 'pcp', 'best', 10)
   
-  list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best', 1),
+  list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best', 1)
   list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best', 1),
   list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best', 1),
   list('../data/2weeks/test_idf_train', '../data/2weeks/test_idf_test', 'idf', 'test', 1),
@@ -69,13 +69,13 @@ summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
         
         # Test
         predictions <- predict(model, test_dt)
-        if(alg != 'mlp') { predictions <- predictions[,2] }
+        # predictions <- predictions[,2]
         predictions <- as.vector(predictions)
         auc_score <- as.double(auc(roc(test_dt$target, predictions)))
         
         # Train
         predictions <- predict(model, train_dt)
-        if(alg != 'mlp') { predictions <- predictions[,2] }
+        # predictions <- predictions[,2]
         predictions <- as.vector(predictions)
         auc_score_train <- as.double(auc(roc(train_dt$target, predictions)))
         
