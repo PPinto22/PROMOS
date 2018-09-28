@@ -45,6 +45,14 @@ def avg(l):
     return sum(l) / len(l)
 
 
+def map_avg(table):
+    return [avg(column) for column in transpose(table)]
+
+
+def transpose(list_of_lists):
+    return list(map(list, zip(*list_of_lists)))
+
+
 def mult(l):
     m = 1
     for v in l:

@@ -37,18 +37,18 @@ OUT <- opt$out
 INSTANCES <- set_paths(list(
   # list('../data/2weeks/sw/best_idf_train', '../data/2weeks/sw/best_idf_test', 'idf', 'best', 10),
   # list('../data/2weeks/sw/best_raw_train', '../data/2weeks/sw/best_raw_test', 'raw', 'best', 10),
-  list('../data/2weeks/sw/best_pcp_train', '../data/2weeks/sw/best_pcp_test', 'pcp', 'best', 10)
+  # list('../data/2weeks/sw/best_pcp_train', '../data/2weeks/sw/best_pcp_test', 'pcp', 'best', 10)
   
-  # list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best'),
-  # list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best'),
-  # list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best'),
-  # list('../data/2weeks/test_idf_train', '../data/2weeks/test_idf_test', 'idf', 'test'),
-  # list('../data/2weeks/test_raw_train', '../data/2weeks/test_raw_test', 'raw', 'test'),
-  # list('../data/2weeks/test_pcp_train', '../data/2weeks/test_pcp_test', 'pcp', 'test')
+  list('../data/2weeks/best_idf_train', '../data/2weeks/best_idf_test', 'idf', 'best', 1),
+  list('../data/2weeks/best_raw_train', '../data/2weeks/best_raw_test', 'raw', 'best', 1),
+  list('../data/2weeks/best_pcp_train', '../data/2weeks/best_pcp_test', 'pcp', 'best', 1),
+  list('../data/2weeks/test_idf_train', '../data/2weeks/test_idf_test', 'idf', 'test', 1),
+  list('../data/2weeks/test_raw_train', '../data/2weeks/test_raw_test', 'raw', 'test', 1),
+  list('../data/2weeks/test_pcp_train', '../data/2weeks/test_pcp_test', 'pcp', 'test', 1)
 ))
 # str(INSTANCES)
 # ALGORITHMS <- c('lr', 'naivebayes', 'mlp', 'xgboost')
-ALGORITHMS <- list('mlp')
+ALGORITHMS <- list('lr')
 options(digits=5)
 
 summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
@@ -66,15 +66,24 @@ summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){
 
       summary_row = tryCatch({
         time <- system.time(model <- fit(target ~ ., train_dt,  model = alg, task = 'prob', MaxNWts=5000))[[3]] # MaxNWts is for MLP
+        
+        # Test
         predictions <- predict(model, test_dt)
         if(alg != 'mlp') { predictions <- predictions[,2] }
         predictions <- as.vector(predictions)
         auc_score <- as.double(auc(roc(test_dt$target, predictions)))
-        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=auc_score, time=time/60, error=' ')
+        
+        # Train
+        predictions <- predict(model, train_dt)
+        if(alg != 'mlp') { predictions <- predictions[,2] }
+        predictions <- as.vector(predictions)
+        auc_score_train <- as.double(auc(roc(train_dt$target, predictions)))
+        
+        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=auc_score, auc_train=auc_score_train, time=time/60, error=' ')
         return(summary_row)
       }, error = function(e){
         print(e)
-        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=NA, time=NA, error=as.character(e))
+        summary_row <- data.frame(algorithm=alg, mode=mode, encoding=encoding, window=j, auc=NA, auc_train=NA, time=NA, error=as.character(e))
         return(summary_row)
       })
       return(summary_row)
