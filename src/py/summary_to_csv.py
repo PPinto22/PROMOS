@@ -14,15 +14,14 @@ runs = [
     Run('../../results/2wks_best_pcp', 'best_pcp', 'BEST NEAT PCP', 5),
     Run('../../results/2wks_hn_best_raw', 'best_raw', 'BEST HNEAT RAW', 3),
     Run('../../results/2wks_hn_best_idf', 'best_idf', 'BEST HNEAT IDF', 3),
-    Run('../../results/2wks_hn_best_pcp', 'best_pcp', 'BEST HNEAT PCP', 3),
+    Run('../../results/2wks_hn_best_pcp', 'best_pcp', 'BEST HNEAT PCP', 2),
 
     Run('../../results/2wks_test_raw', 'test_raw', 'TEST NEAT RAW', 3),
     Run('../../results/2wks_test_idf', 'test_idf', 'TEST NEAT IDF', 10),
     Run('../../results/2wks_test_pcp', 'test_pcp', 'TEST NEAT PCP', 10),
     Run('../../results/2wks_hn_test_raw', 'test_raw', 'TEST HNEAT RAW', 3),
     Run('../../results/2wks_hn_test_idf', 'test_idf', 'TEST HNEAT IDF', 3),
-    Run('../../results/2wks_hn_test_pcp', 'test_pcp', 'TEST HNEAT PCP', 3),
-
+    Run('../../results/2wks_hn_test_pcp', 'test_pcp', 'TEST HNEAT PCP', 3)
 ]
 
 OUT_FILE = 'summary.csv'

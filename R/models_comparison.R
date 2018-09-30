@@ -4,7 +4,7 @@ library(data.table)
 source('util.R')
 source('config.R')
 
-MODELS_FILE <- 'out/models/models_windows.csv'
+MODELS_FILE <- 'out/models/lr_windows.csv'
 
 models_dt <- data.table(read.csv(file=MODELS_FILE, header=TRUE, sep=','))
 
@@ -29,14 +29,25 @@ neuro_crop_dt$eval_time <- NULL
 neuro_avg_dt <- neuro_crop_dt[ , .(auc=mean(auc), time=sum(time)), by = list(algorithm, encoding)]
 
 comp_windows_dt <- rbind(models_crop_dt, neuro_crop_dt)
-comp_windows_dt$encoding <- factor(comp_windows_dt$encoding, levels = c('RAW', 'IDF', 'PCP'))
-comp_windows_dt$algorithm <- factor(comp_windows_dt$algorithm, levels = c('NEAT', 'HNEAT', 'MLP', 'XGB', 'LR', 'NB'))
+comp_windows_dt$encoding <- factor(comp_windows_dt$encoding, levels = c('RAW', 'IDF', 'CP'))
+comp_windows_dt$algorithm <- factor(comp_windows_dt$algorithm, levels = c('NEAT', 'HyperNEAT', 'LR'))
 # comp_windows_dt <- comp_windows_dt[type %in% c("LR PCP", "NEAT PCP")]
 
 comp_avg_dt <- rbind(models_avg_dt, neuro_avg_dt)
 # write.table(comp_avg_dt, file='out/models/models_comp_window_avg.csv', sep=',', row.names = FALSE)
 
-ggplot(comp_windows_dt, aes(x=window, col=algorithm, linetype=algorithm, shape=algorithm)) +
+# ggplot(comp_windows_dt, aes(x=window, col=algorithm, linetype=algorithm, shape=algorithm)) +
+#   facet_wrap(~encoding) +
+#   geom_line(aes(y = auc)) +
+#   geom_point(aes(y = auc)) +
+#   scale_color_brewer(palette = "Dark2") +
+#   scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
+#   scale_linetype_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
+#   scale_shape_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
+#   labs(x="Window", y="AUC", col=NULL) +
+#   theme_minimal()
+
+ggplot(comp_windows_dt, aes(x=window, col=algorithm)) +
   facet_wrap(~encoding) +
   geom_line(aes(y = auc)) +
   geom_point(aes(y = auc)) +
@@ -44,6 +55,7 @@ ggplot(comp_windows_dt, aes(x=window, col=algorithm, linetype=algorithm, shape=a
   scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
   scale_linetype_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
   scale_shape_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
+  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   labs(x="Window", y="AUC", col=NULL) +
   theme_minimal()
 
