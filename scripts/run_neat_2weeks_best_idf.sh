@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_idf_train.csv -t ../data/2weeks/best_idf_test.csv -P ../params/neat.txt -o ../results/2wks_best_idf -m neat -g10000 -s2000 -p6 --test-fitness --quiet"
-runs=5
-parallel=5
+options="-d ../data/2weeks/best_idf_train.csv -t ../data/2weeks/best_idf_test.csv -P ../params/neat.txt -o ../results/2wks_best_idf_quick -m neat -g10000 -s2000 -p6 --no-statistics --quiet"
+runs=2
+parallel=2
 
 function run() {
 	children=$(pgrep -c -P$$)
