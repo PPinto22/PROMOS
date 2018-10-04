@@ -55,7 +55,7 @@ ggplot(comp_windows_dt, aes(x=window, col=algorithm)) +
   scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
   scale_linetype_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
   scale_shape_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   labs(x="Window", y="AUC", col=NULL) +
   theme_minimal()
 
