@@ -14,9 +14,7 @@ set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
 # Find Boost 1st try: python3
-find_package(Boost COMPONENTS 
-				serialization
-				python3${PYTHON_VERSION_MINOR})
+find_package(Boost COMPONENTS serialization python3)
 
 # Find Boost 2nd try: python-py3x
 if(NOT Boost_FOUND)
