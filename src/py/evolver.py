@@ -283,7 +283,7 @@ class Evolver:
             self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
         if old_columns is not None:
-            self._update_inputs(old_columns)
+            self.update_inputs(old_columns)
 
     def _init_substrate(self):
         try:
@@ -835,7 +835,7 @@ class Evolver:
         self.first_gen_window = True
         self.save_progress()
 
-    def _update_inputs(self, old_inputs):
+    def update_inputs(self, old_inputs):
         # Which existing columns have changed
         new_inputs = util.diff_indexes(old_inputs, self.train_data.input_labels)
         if len(new_inputs) == len(old_inputs) and not new_inputs:

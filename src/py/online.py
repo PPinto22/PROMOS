@@ -85,7 +85,8 @@ class Online(Thread):
                     self.evolver.online_data = self.window_files
                     if not self.evolver.running:
                         with self.evolver.start_lock:
-                            self.evolver.set_data(train, test, keep_old_if_none=True)
+                            old_columns = self.evolver.encoder.input_order if self.evolver.encoder is not None else None
+                            self.evolver.set_data(train, test, old_columns=old_columns, keep_old_if_none=True)
                             self.evolver.start_lock.notify()
                     else:
                         self.evolver.shift_window(new_train=train, new_test=test)
