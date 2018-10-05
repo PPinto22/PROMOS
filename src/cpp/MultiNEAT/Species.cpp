@@ -375,7 +375,7 @@ namespace NEAT
 
                                 // The other parent should be a different one
                                 // number of tries to find different parent
-                                int t_tries = 1024;
+                                int t_tries = a_Parameters.PopulationSize;
                                 if (!a_Parameters.AllowClones)
                                 {
                                     while (((t_mom.GetID() == t_dad.GetID()) ||
@@ -466,8 +466,12 @@ namespace NEAT
 
                     // sort the baby's genes
                     t_baby.SortGenes();
+
+                    while(t_baby.HasDeadEnds()){
+                        t_baby.Cleanup();
+                    }
                 }
-                while (t_baby_exists_in_pop || (t_baby.FailsConstraints(a_Parameters))); // end do
+                while (t_baby_exists_in_pop || (t_baby.FailsConstraints(a_Parameters, false))); // end do
             }
 
             // clear the baby's fitness

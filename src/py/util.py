@@ -153,7 +153,10 @@ def time(f, as_microseconds=False):
 def try_(f):
     try:
         return f()
-    except:
+    except ValueError as e:
+        raise e
+    except Exception as e:
+        print(e)
         return None
 
 

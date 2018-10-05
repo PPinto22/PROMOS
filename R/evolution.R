@@ -169,7 +169,7 @@ dev.off()
 
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
-evals_fit_sample <- evals_fit[sample(1:nrow(evals_fit), 20000)]
+evals_fit_sample <- evals_fit[sample(1:nrow(evals_fit), 100000)]
 gg_test_fit <- ggplot(data=evals_fit_sample, aes(x=generation,y=fitness_test, col=mean_or_best)) +
   geom_smooth(fill=gsmooth_fill, span=0.01, method='loess') +
   labs(x="Generation", y=FITNESS_FUNC, col='') +
@@ -220,10 +220,10 @@ print(gg_connections_gen)
 dev.off()
 
 # prediction time over gens
-evals_avg_sample <- evals_avg_dt[sample(1:nrow(evals_avg_dt), 20000)]
+evals_avg_sample <- evals_avg_dt[sample(1:nrow(evals_avg_dt), 30000)]
 png(filename = paste(OUT_DIR, 'pred_time_by_gen.png', sep = ''))
 gg_pred_time_gen <- ggplot(data=evals_avg_sample, aes(generation)) + 
-  geom_smooth(aes(y=pred_avg_time), span=0.005, fill=gsmooth_fill, method = 'loess') +
+  geom_smooth(aes(y=pred_avg_time), span=0.001, fill=gsmooth_fill, method = 'loess') +
   geom_hline(yintercept = 50) +
   geom_hline(yintercept = 40) +
   geom_text(aes(3000, 40, label = 'lower limit: 40µs', vjust = -1)) +

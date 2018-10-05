@@ -9,19 +9,29 @@ from collections import namedtuple
 Run = namedtuple('Run', 'dir id label runs')
 
 runs = [
-    Run('../../results/2wks_best_raw', 'best_raw', 'BEST NEAT RAW', 5),
-    Run('../../results/2wks_best_idf', 'best_idf', 'BEST NEAT IDF', 5),
-    Run('../../results/2wks_best_pcp', 'best_pcp', 'BEST NEAT PCP', 5),
-    Run('../../results/2wks_hn_best_raw', 'best_raw', 'BEST HNEAT RAW', 3),
-    Run('../../results/2wks_hn_best_idf', 'best_idf', 'BEST HNEAT IDF', 3),
-    Run('../../results/2wks_hn_best_pcp', 'best_pcp', 'BEST HNEAT PCP', 2),
+    # Run('../../results/2wks_best_raw', 'best_raw', 'BEST NEAT RAW', 5),
+    # Run('../../results/2wks_best_idf', 'best_idf', 'BEST NEAT IDF', 5),
+    # Run('../../results/2wks_best_pcp', 'best_pcp', 'BEST NEAT PCP', 5),
+    # Run('../../results/2wks_hn_best_raw', 'best_raw', 'BEST HNEAT RAW', 3),
+    # Run('../../results/2wks_hn_best_idf', 'best_idf', 'BEST HNEAT IDF', 3),
+    # Run('../../results/2wks_hn_best_pcp', 'best_pcp', 'BEST HNEAT PCP', 2),
+    #
+    # Run('../../results/2wks_test_raw', 'test_raw', 'TEST NEAT RAW', 3),
+    # Run('../../results/2wks_test_idf', 'test_idf', 'TEST NEAT IDF', 10),
+    # Run('../../results/2wks_test_pcp', 'test_pcp', 'TEST NEAT PCP', 10),
+    # Run('../../results/2wks_hn_test_raw', 'test_raw', 'TEST HNEAT RAW', 3),
+    # Run('../../results/2wks_hn_test_idf', 'test_idf', 'TEST HNEAT IDF', 3),
+    # Run('../../results/2wks_hn_test_pcp', 'test_pcp', 'TEST HNEAT PCP', 2)
 
-    Run('../../results/2wks_test_raw', 'test_raw', 'TEST NEAT RAW', 3),
-    Run('../../results/2wks_test_idf', 'test_idf', 'TEST NEAT IDF', 10),
-    Run('../../results/2wks_test_pcp', 'test_pcp', 'TEST NEAT PCP', 10),
-    Run('../../results/2wks_hn_test_raw', 'test_raw', 'TEST HNEAT RAW', 3),
-    Run('../../results/2wks_hn_test_idf', 'test_idf', 'TEST HNEAT IDF', 3),
-    Run('../../results/2wks_hn_test_pcp', 'test_pcp', 'TEST HNEAT PCP', 3)
+    Run('../../results/2wks_best_raw_quick', 'best_raw', 'BEST NEAT RAW', 2),
+    Run('../../results/2wks_best_idf_quick', 'best_idf', 'BEST NEAT IDF', 2),
+    Run('../../results/2wks_best_pcp_quick', 'best_pcp', 'BEST NEAT PCP', 2),
+    Run('../../results/2wks_test_raw_quick', 'test_raw', 'TEST NEAT RAW', 2),
+    Run('../../results/2wks_test_idf_quick', 'test_idf', 'TEST NEAT IDF', 2),
+    Run('../../results/2wks_test_pcp_quick', 'test_pcp', 'TEST NEAT PCP', 2),
+
+    Run('../../results/2wks_hn_best_raw_quick', 'best_raw', 'BEST HNEAT RAW', 2),
+    Run('../../results/2wks_hn_best_idf_quick', 'best_idf', 'BEST HNEAT IDF', 2),
 ]
 
 OUT_FILE = 'summary.csv'

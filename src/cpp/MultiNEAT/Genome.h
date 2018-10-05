@@ -266,16 +266,20 @@ namespace NEAT
         // Returns true if there is any looping path in the network
         bool HasLoops();
 
-        bool FailsConstraints(const Parameters &a_Parameters)
+        bool FailsConstraints(const Parameters &a_Parameters, bool check_dead_ends=true)
         {
             bool fails = false;
 
-            if (HasDeadEnds() || (NumLinks() == 0))
+            if(NumLinks() == 0){
+                return true;
+            }
+
+            if (check_dead_ends && HasDeadEnds())
             {
                 return true; // no reason to continue
             }
 
-            if ((HasLoops() && (a_Parameters.AllowLoops == false)))
+            if (!a_Parameters.AllowLoops && HasLoops())
             {
                 return true;
             }
