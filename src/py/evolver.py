@@ -716,10 +716,10 @@ class Evolver:
 
     def reevaluate_best_list(self):
         evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0, time=True)
-        original_gens = [e.generation for e in self.best_list]
+        original_gens = [e.spawn_gen for e in self.best_list]
         self.best_list.clear()
         for i, e in enumerate(evaluation_list):
-            e.generation = original_gens[i]
+            e.spawn_gen = original_gens[i]
             self.best_list.add(e)
 
     def evaluate_list(self, genome_list, sample_size=None, adjuster=None, time=True):
