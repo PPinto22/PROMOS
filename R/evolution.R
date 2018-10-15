@@ -177,7 +177,7 @@ gg_test_fit <- ggplot(data=evals_fit_sample, aes(x=generation,y=fitness_test, co
   # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-gg_test_fit <- add_window_vlines(gg_test_fit, labels = human_numbers)
+gg_test_fit <- add_window_vlines(gg_test_fit, labels = human_numbers, scale_break_freq = 3)
 print(gg_test_fit)
 dev.off()
 
@@ -220,8 +220,8 @@ print(gg_connections_gen)
 dev.off()
 
 # prediction time over gens
-evals_avg_sample <- evals_avg_dt[sample(1:nrow(evals_avg_dt), 30000)]
 png(filename = paste(OUT_DIR, 'pred_time_by_gen.png', sep = ''))
+evals_avg_sample <- evals_avg_dt[sample(1:nrow(evals_avg_dt), 30000)]
 gg_pred_time_gen <- ggplot(data=evals_avg_sample, aes(generation)) + 
   geom_smooth(aes(y=pred_avg_time), span=0.001, fill=gsmooth_fill, method = 'loess') +
   geom_hline(yintercept = 50) +
@@ -233,7 +233,7 @@ gg_pred_time_gen <- ggplot(data=evals_avg_sample, aes(generation)) +
   scale_x_continuous(breaks=gen_breaks, labels = human_numbers) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen, labels = human_numbers)
+gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen, labels = human_numbers, scale_break_freq = 3)
 print(gg_pred_time_gen)
 dev.off()
 

@@ -76,10 +76,11 @@ append_str <- function(s, sufix){
   s
 }
 
-add_window_vlines <- function(gg, labels=waiver()){
+add_window_vlines <- function(gg, labels=waiver(), scale_break_freq=1){
   if(has_windows){
+    breaks = windows_avg_dt$generations[seq(1, length(windows_avg_dt$generations), by = scale_break_freq)]
     gg <- gg + geom_vline(xintercept=windows_gen_splits, linetype=2, size=0.2) +
-      scale_x_continuous(breaks=windows_avg_dt$generations, minor_breaks = NULL, labels=labels)
+      scale_x_continuous(breaks=breaks, minor_breaks = NULL, labels=labels)
   }
   gg
 }
