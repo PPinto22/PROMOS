@@ -30,7 +30,14 @@ def datetime_to_string(date, pretty=False):
         return '{date:%Y-%m-%d_%H-%M-%S}'.format(date=date)
 
 
-def build_network(genome, method='neat', substrate=None, **kwargs):
+def build_network(genome, *args, **kwargs):
+    if isinstance(genome, list):
+        return build_networks_ensemble(genome, *args, **kwargs)
+    else:
+        return build_network_single(genome, *args, **kwargs)
+
+
+def build_network_single(genome, method='neat', substrate=None, **kwargs):
     net = neat.NeuralNetwork()
     if method == 'neat':
         genome.BuildPhenotype(net)
@@ -39,6 +46,14 @@ def build_network(genome, method='neat', substrate=None, **kwargs):
     else:
         raise ValueError('Invalid method: {}'.format(method))
     return net
+
+
+def build_networks_ensemble(genomes, *args, **kwargs):
+    return [build_network_single(genome, *args, **kwargs) for genome in genomes]
+
+
+def get_individuals_list(pop):
+    return [individual for species in pop.Species for individual in species.Individuals]
 
 
 def avg(l):

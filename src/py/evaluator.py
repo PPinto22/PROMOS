@@ -9,6 +9,8 @@ import random
 from enum import Enum
 from functools import partial
 
+import encoder
+
 try:
     import matplotlib.pyplot as plt
 except:
@@ -19,7 +21,7 @@ from sklearn.metrics import roc_curve, auc, f1_score
 
 import substrate
 import util
-from bloat import FitnessAdjuster
+import bloat
 from data import Data
 from sliding_window import SlidingWindow
 
@@ -121,13 +123,25 @@ class Evaluator:
         if net is None:
             net = util.build_network(genome, **kwargs)
         global_time = datetime.datetime.now() - initial_time if initial_time is not None else None
+        if isinstance(genome, list):
+            genome_neurons = util.avg([g.NumHiddenNeurons() for g in genome])
+            genome_connections = util.avg([g.NumLinks() for g in genome])
+        else:
+            genome_neurons = genome.NumHiddenNeurons()
+            genome_connections = genome.NumLinks()
+        if isinstance(net, list):
+            neurons = util.avg([n.NumHiddenNeurons() for n in net])
+            connections = util.avg([n.NumConnections() for n in net])
+        else:
+            neurons = net.NumHiddenNeurons()
+            connections = net.NumConnections()
 
         return GenomeEvaluation(genome=genome if include_genome else None,
                                 fitness=fitness, fitness_test=fitness_test,
-                                genome_neurons=genome.NumHiddenNeurons(),
-                                genome_connections=genome.NumLinks(),
-                                neurons=net.NumHiddenNeurons(),
-                                connections=net.NumConnections(),
+                                genome_neurons=genome_neurons,
+                                genome_connections=genome_connections,
+                                neurons=neurons,
+                                connections=connections,
                                 generation=generation, window=window, global_time=global_time, build_time=build_time,
                                 pred_time=pred_time, pred_avg_time=pred_avg_time, fit_time=fit_time, **extra)
 
@@ -151,7 +165,14 @@ class Evaluator:
         return predictions
 
     @staticmethod
-    def _predict(net, inputs, length, width):
+    def predict_np(net, inputs, length, width):
+        if isinstance(net, list):
+            return Evaluator.predict_np_ensemble(net, inputs, length, width)
+        else:
+            return Evaluator.predict_np_net(net, inputs, length, width)
+
+    @staticmethod
+    def predict_np_net(net, inputs, length, width):
         predictions = np.zeros(length)
         for i in range(length):
             j = i * width
@@ -162,6 +183,11 @@ class Evaluator:
             predictions[i] = output[0]
         net.Flush()
         return predictions
+
+    @staticmethod
+    def predict_np_ensemble(nets, *args):
+        predictions = np.vstack([Evaluator.predict_np_net(net, *args) for net in nets])
+        return np.mean(predictions, axis=0)
 
     @staticmethod
     def _evaluate_auc(targets, predictions, length, include_roc=False, **kwargs):
@@ -198,7 +224,7 @@ class Evaluator:
 
         evaluator = fitfunc.get_evaluator()
 
-        pred_time, predictions = util.time(lambda: Evaluator._predict(net, Evaluator._inputs, size[0], size[1]),
+        pred_time, predictions = util.time(lambda: Evaluator.predict_np(net, Evaluator._inputs, size[0], size[1]),
                                            as_microseconds=True)
         pred_avg_time = pred_time / size[0]
         fit_time, fitness = util.time(lambda: evaluator(Evaluator._targets, predictions, size[0], **kwargs),
@@ -209,7 +235,7 @@ class Evaluator:
         else:
             extra = {}
 
-        predictions_test = Evaluator._predict(net, Evaluator._test_inputs, test_size[0], test_size[1]) \
+        predictions_test = Evaluator.predict_np(net, Evaluator._test_inputs, test_size[0], test_size[1]) \
             if test_size is not None else None
         fitness_test = evaluator(Evaluator._test_targets, predictions_test, test_size[0]) \
             if test_size is not None else None
@@ -227,9 +253,10 @@ class Evaluator:
     def evaluate(genome, fitfunc, data, test_data=None, **kwargs):
         size, test_size = Evaluator._set_data(data, test_data)
         evaluation = Evaluator._evaluate(genome, fitfunc, size, test_size, **kwargs)
-        genome.SetFitness(evaluation.fitness_adj)
-        genome.SetEvaluated()
-        evaluation.set_genome(genome)
+        if not isinstance(genome, list):
+            genome.SetFitness(evaluation.fitness_adj)
+            genome.SetEvaluated()
+            evaluation.set_genome(genome)
         return evaluation
 
     @staticmethod
@@ -274,7 +301,7 @@ class Evaluator:
 
         for i, (genome, eval, fitness_adj) in \
                 enumerate(zip(genome_list, evaluation_list,
-                              FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list))):
+                              bloat.FitnessAdjuster.maybe_get_pop_adjusted_fitness(adjuster, evaluation_list))):
             if eval is None:
                 eval = Evaluator.create_genome_evaluation(genome, 0, **kwargs)
                 evaluation_list[i] = eval
@@ -305,19 +332,22 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('genome_file', help='path to genome file', metavar='GENOME')
     parser.add_argument('data_file', help='path to data file for evaluation', metavar='DATA'),
-    methods = ['neat', 'hyperneat', 'eshyperneat']
+    methods = ['neat']
     parser.add_argument('-m', '--method', dest='method', metavar='M', choices=methods, default='neat',
                         help='which algorithm was used to generate the network: ' + ', '.join(methods))
+    parser.add_argument('-M', '--mapping', dest='mapping_file', metavar='FILE', default=None,
+                        help='load the encoding mapping in the binary FILE')
     parser.add_argument('-e', '--evaluator', dest='evaluator', choices=FitFunction.list(), default='auc',
                         help='evaluation function: ' + ', '.join(FitFunction.list()), metavar='E')
-    parser.add_argument('-s', '--substrate', dest='substrate_file', metavar='S', default=None,
-                        help='path to a substrate; required if method is hyperneat or eshyperneat')
     parser.add_argument('-W', '--window', dest='width', metavar='W', type=util.uint, default=None,
                         help='Sliding window width (train + test) in hours')
     parser.add_argument('-w', '--test-window', dest='test_width', metavar='W', type=util.uint, default=None,
                         help='Test sliding window width in hours')
     parser.add_argument('-S', '--shift', dest='shift', metavar='S', type=util.uint, default=None,
                         help='Sliding window shift in hours')
+    parser.add_argument('--population', dest='population', action='store_true',
+                        help='read GENOME as a population instead of a single genome. '
+                             'Then, combine all individuals in the population to form an ensemble.')
     parser.add_argument('--plot', dest='plot', action='store_true', help='Show a visualisation')
 
     args = parser.parse_args()
@@ -346,13 +376,18 @@ def draw_roc(evaluation, window=None, wait_input=True):
 
 if __name__ == '__main__':
     args = parse_args()
-    genome = neat.Genome(args.genome_file)
+    if not args.population:
+        genome = neat.Genome(args.genome_file)
+    else:
+        pop = neat.Population(args.genome_file)
+        genome = util.get_individuals_list(pop)
     fit_func = FitFunction(args.evaluator)
     data = Data(args.data_file)
-    subst = substrate.load_substrate(args.substrate_file) if args.substrate_file is not None else None
-
+    mapping = encoder.Mapping.load(args.mapping_file) if args.mapping_file is not None else None
+    mapping is not None and data is not None and data.encode_from_mapping(mapping)
     slider = SlidingWindow(args.width, args.shift, args.test_width,
                            file_path=args.data_file) if args.width is not None else None
+
     if slider is None:
         Evaluator.setup(data)
         evaluation = Evaluator.evaluate(genome, fit_func, data, include_roc=args.plot)

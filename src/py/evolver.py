@@ -371,7 +371,7 @@ class Evolver:
             self.pop = neat.Population(g, self.initial_params, True, 1.0, seed)
 
     def get_genome_list(self):
-        return [individual for species in self.pop.Species for individual in species.Individuals]
+        return util.get_individuals_list(self.pop)
 
     def elapsed_time(self):
         return datetime.datetime.now() - self.initial_time if self.initial_time is not None else None
