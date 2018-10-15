@@ -283,7 +283,7 @@ class Evolver:
             self.encode_data(soft_order=old_columns)
         self.setup_evaluator()
         if old_columns is not None:
-            self._update_inputs(old_columns)
+            self.update_inputs(old_columns)
 
     def _init_substrate(self):
         try:
@@ -371,7 +371,7 @@ class Evolver:
             self.pop = neat.Population(g, self.initial_params, True, 1.0, seed)
 
     def get_genome_list(self):
-        return [individual for species in self.pop.Species for individual in species.Individuals]
+        return util.get_individuals_list(self.pop)
 
     def elapsed_time(self):
         return datetime.datetime.now() - self.initial_time if self.initial_time is not None else None
@@ -716,10 +716,10 @@ class Evolver:
 
     def reevaluate_best_list(self):
         evaluation_list = self.evaluate_list([e.genome for e in self.best_list], sample_size=0, time=True)
-        original_gens = [e.generation for e in self.best_list]
+        original_gens = [e.spawn_gen for e in self.best_list]
         self.best_list.clear()
         for i, e in enumerate(evaluation_list):
-            e.generation = original_gens[i]
+            e.spawn_gen = original_gens[i]
             self.best_list.add(e)
 
     def evaluate_list(self, genome_list, sample_size=None, adjuster=None, time=True):
@@ -835,7 +835,7 @@ class Evolver:
         self.first_gen_window = True
         self.save_progress()
 
-    def _update_inputs(self, old_inputs):
+    def update_inputs(self, old_inputs):
         # Which existing columns have changed
         new_inputs = util.diff_indexes(old_inputs, self.train_data.input_labels)
         if len(new_inputs) == len(old_inputs) and not new_inputs:

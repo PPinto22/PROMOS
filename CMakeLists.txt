@@ -5,18 +5,25 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -pthread")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
-find_package(PythonLibs 3.5 REQUIRED)
+find_package(PythonLibs 3 REQUIRED)
+find_package(PythonInterp 3 REQUIRED)
 include(FindPythonLibs)
 
 set(Boost_USE_STATIC_LIBS       OFF)
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
-find_package(Boost COMPONENTS python3 serialization)
-if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
+# Find Boost 1st try: python3
+find_package(Boost COMPONENTS serialization python3)
+
+# Find Boost 2nd try: python-py3x
+if(NOT Boost_FOUND)
+	find_package(Boost REQUIRED COMPONENTS 
+					serialization
+					python-py3${PYTHON_VERSION_MINOR})
 endif()
 
+include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 add_definitions(-DUSE_BOOST_PYTHON)

@@ -117,7 +117,7 @@ gg_best_train_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_smooth(aes(y=fitness_best, col=run_type), fill=gsmooth_fill) +
   labs(x="Generation", y=fit_label, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Dark2') +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
+  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) + 
   theme_minimal()
 print(gg_best_train_fit_gens)
 dev.off()
@@ -128,10 +128,25 @@ gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill) +
   labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Dark2') +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   scale_x_continuous(breaks=gen_breaks) +
   theme_minimal()
 print(gg_best_test_fit_gens)
+dev.off()
+
+# Best test fitness over gens per algorithm/encoding (AH HOC)
+evals_avg_dt$algorithm <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("NEAT", "HyperNEAT"))
+evals_avg_dt$encoding <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] }), levels=c("RAW", "IDF", "CP"))
+png(filename = paste(OUT_DIR, 'best_test_fit_comp.png', sep=''))
+gg_best_test_fit_comp <- ggplot(data=evals_avg_dt, aes(generation)) + 
+  facet_wrap(~algorithm) +
+  geom_smooth(aes(y=fitness_best, col=encoding), fill=gsmooth_fill, method='loess', span=0.05) + # train
+  labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
+  scale_color_brewer(palette = 'Dark2') +
+  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  scale_x_continuous(breaks=gen_breaks) +
+  theme_minimal()
+print(gg_best_test_fit_comp)
 dev.off()
 
 # best test fitness over gens (zoomed)

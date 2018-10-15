@@ -79,6 +79,17 @@ if(has_windows){
     theme_minimal()
   print(gg_windows)
   dev.off()
+  
+  # Test AUC per window (line)
+  png(filename = paste(OUT_DIR, 'test_per_window.png', sep=''))
+  gg_windows_line = ggplot(data=windows_avg_dt, aes(x=window, y=test_fitness)) +
+    geom_line() +
+    geom_point() +
+    scale_x_continuous(breaks = seq(1, max(windows_avg_dt$window)+1)) +
+    labs(x="Window", y=fit_label) +
+    theme_minimal()
+  print(gg_windows_line)
+  dev.off()
 
   # EA vs eval time (per window)
   png(filename = paste(OUT_DIR, 'windows_ea_eval_time.png', sep=''))
@@ -137,7 +148,7 @@ png(filename = paste(OUT_DIR, 'train_fit_per_gen.png', sep=''))
 gg_train_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) +
   geom_smooth(fill=gsmooth_fill) +
   labs(x="Generation", y=fit_label, col='') +
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Dark2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
 gg_train_fit <- add_window_vlines(gg_train_fit)
@@ -149,7 +160,7 @@ png(filename = paste(OUT_DIR, 'train_fit_line_per_gen.png', sep=''))
 gg_train_fit_line <- ggplot(data=evals_fit, aes(x=generation,y=fitness_train, col=mean_or_best)) +
   geom_line() +
   labs(x="Generation", y=fit_label, col='') +
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Dark2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal()
 gg_train_fit_line <- add_window_vlines(gg_train_fit_line)
@@ -158,13 +169,15 @@ dev.off()
 
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
-gg_test_fit <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
-  geom_smooth(fill=gsmooth_fill) +
+evals_fit_sample <- evals_fit[sample(1:nrow(evals_fit), 100000)]
+gg_test_fit <- ggplot(data=evals_fit_sample, aes(x=generation,y=fitness_test, col=mean_or_best)) +
+  geom_smooth(fill=gsmooth_fill, span=0.01, method='loess') +
   labs(x="Generation", y=FITNESS_FUNC, col='') +
-  scale_color_brewer(palette = 'Set2') +
-  scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
-  theme_minimal()
-gg_test_fit <- add_window_vlines(gg_test_fit)
+  scale_color_brewer(palette = 'Dark2') +
+  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+gg_test_fit <- add_window_vlines(gg_test_fit, labels = human_numbers, scale_break_freq = 3)
 print(gg_test_fit)
 dev.off()
 
@@ -173,10 +186,11 @@ png(filename = paste(OUT_DIR, 'test_fit_line_per_gen.png', sep=''))
 gg_test_fit_line <- ggplot(data=evals_fit, aes(x=generation,y=fitness_test, col=mean_or_best)) +
   geom_line() +
   labs(x="Generation", y=FITNESS_FUNC, col='') +
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Dark2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
-  theme_minimal()
-gg_test_fit_line <- add_window_vlines(gg_test_fit_line)
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+gg_test_fit_line <- add_window_vlines(gg_test_fit_line, labels = human_numbers)
 print(gg_test_fit_line)
 dev.off()
 
@@ -186,7 +200,7 @@ gg_fit <- ggplot(data=evals_fit_long, aes(x=generation,y=fitness, col=mean_or_be
   geom_smooth(fill=gsmooth_fill) +
   facet_wrap(~train_or_test) +
   labs(x="Generation", y=FITNESS_FUNC, col='') +
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Dark2') +
   scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
@@ -207,13 +221,19 @@ dev.off()
 
 # prediction time over gens
 png(filename = paste(OUT_DIR, 'pred_time_by_gen.png', sep = ''))
-gg_pred_time_gen <- ggplot(data=evals_avg_dt, aes(generation)) + 
-  geom_smooth(aes(y=pred_avg_time), fill=gsmooth_fill) +
+evals_avg_sample <- evals_avg_dt[sample(1:nrow(evals_avg_dt), 30000)]
+gg_pred_time_gen <- ggplot(data=evals_avg_sample, aes(generation)) + 
+  geom_smooth(aes(y=pred_avg_time), span=0.001, fill=gsmooth_fill, method = 'loess') +
+  geom_hline(yintercept = 50) +
+  geom_hline(yintercept = 40) +
+  geom_text(aes(3000, 40, label = 'lower limit: 40µs', vjust = -1)) +
+  geom_text(aes(3000, 50, label = 'upper limit: 50µs', vjust = -1)) +
   labs(x="Generation", y="Prediction time (µs)") + 
-  scale_color_brewer(palette = 'Set2') +
-  scale_x_continuous(breaks=gen_breaks) +
-  theme_minimal()
-gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen)
+  scale_color_brewer(palette = 'Dark2') +
+  scale_x_continuous(breaks=gen_breaks, labels = human_numbers) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+gg_pred_time_gen <- add_window_vlines(gg_pred_time_gen, labels = human_numbers, scale_break_freq = 3)
 print(gg_pred_time_gen)
 dev.off()
 
@@ -233,7 +253,7 @@ gg_cons_neurons_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_line(aes(y=connections_mean, col='Connections')) +
   geom_line(aes(y=neurons_mean, col='Neurons')) +
   labs(x="Generation", y="Complexity", col='') +
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Dark2') +
   theme_minimal()
 gg_cons_neurons_gen <- add_window_vlines(gg_cons_neurons_gen)
 print(gg_cons_neurons_gen)
@@ -283,7 +303,7 @@ png(filename = paste(OUT_DIR, 'times_by_gen.png', sep=''))
 gg_eval_times <- ggplot(eval_times, aes(x=generation, y=time, color=state)) +
   geom_smooth(fill=gsmooth_fill) +
   labs(x='Generation', y='Time (μs)', color='Times') +
-  scale_color_brewer(palette = 'Set2') +
+  scale_color_brewer(palette = 'Dark2') +
   theme_minimal()
 gg_eval_times <- add_window_vlines(gg_eval_times)
 print(gg_eval_times)
@@ -293,7 +313,7 @@ dev.off()
 png(filename = paste(OUT_DIR, 'fit_con_time_deviation.png', sep=''))
 gg_devs <- ggplot(evals_dev, aes(x=generation)) +
   geom_smooth(aes(y=value, col=variable), fill=gsmooth_fill) +
-  scale_color_brewer(palette = "Set2", direction=-1) +
+  scale_color_brewer(palette = "Dark2", direction=-1) +
   labs(x='Generation', y='Deviation from mean', col='') +
   theme_minimal()
 gg_devs <- add_window_vlines(gg_devs)
