@@ -101,6 +101,8 @@ def parse_args():
     parser.add_argument('-b,' '--bloat', dest='bloat_file', metavar='FILE', default=None,
                         help='configuration file for limiting the effects of bloat')
     parser.add_argument('--online', dest='online', action='store_true', help='online mode')
+    parser.add_argument('--online-sim', dest='online_sim_dir', metavar='DIR', default=None,
+                        help='simulates online mode by using the data-sets in DIR')
 
     options = parser.parse_args()
 
@@ -225,8 +227,9 @@ class Evolver:
         self._setup_data(window=self.window if self.window > 0 else None)
         if self.is_online:
             with self.start_lock:
-                self.collector = online.Online(self, self.width, self.shift,
-                                               test_ratio=self.test_width, start_files=self.online_data)
+                self.collector = online.Online.init(self, self.width, self.shift,
+                                                    test_ratio=self.test_width, start_files=self.online_data,
+                                                    data_dir=self.options.online_sim_dir)
                 self.collector.setDaemon(True)
                 self.collector.start()
                 if self.train_data is None:
@@ -581,9 +584,9 @@ class Evolver:
             fitness_test=self.best_test.fitness if self.best_test is not None else None,
             # Other info
             params=params.ParametersWrapper(self.pop.Parameters), generations=self.generation,
-            run_time=self.elapsed_time().total_seconds()/60, eval_time=self.eval_time.total_seconds()/60,
+            run_time=self.elapsed_time().total_seconds() / 60, eval_time=self.eval_time.total_seconds() / 60,
 
-            ea_time=self.ea_time.total_seconds()/60, processes=self.options.processes,
+            ea_time=self.ea_time.total_seconds() / 60, processes=self.options.processes,
             sample_size=self.options.sample_size if self.options.sample_size is not None else len(self.train_data),
             window=self.get_current_window() if self.has_windows else None,
             date_begin=date_begin, date_end=date_end, train_size=len(self.train_data),
@@ -927,7 +930,7 @@ class Evolver:
             log_message = "Generation {} -- Cumulative execution times:\n" \
                           "> Evaluation: {:.5f}m\n" \
                           "> EA: {:.5f}m".format(self.generation, self.eval_time.total_seconds() / 60,
-                                               self.ea_time.total_seconds() / 60)
+                                                 self.ea_time.total_seconds() / 60)
             self.log_message(log_message)
 
     def _run(self):

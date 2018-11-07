@@ -283,13 +283,29 @@ class Data:
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
 
-    def split(self, probs, seed=None):
+    def split_random(self, probs, seed=None):
         np.random.seed(seed)
         choices = np.random.choice(range(len(probs)), len(self), replace=True, p=probs)
         splits = [[] for key in range(len(probs))]
         for idx, c in enumerate(choices):
             splits[c].append(idx)
         return (self.get_subset_by_indexes(indexes) for indexes in splits)
+
+    # e.g.:
+    # splits = [0.5, 0.7]
+    # returns 3 data-sets: the first from 0 to 50%, the second from 50% to 70%,
+    # and the third with the remaining data
+    def split(self, splits):
+        if not isinstance(splits, list):
+            splits = [splits]
+        if splits[0] != 0:
+            splits = [0] + splits
+        if splits[-1] != 1:
+            splits = splits + [1]
+
+        indexes_list = [list(range(int(lower * len(self)), int(upper * len(self)))) for (lower, upper) in
+                        zip(splits, splits[1:])]
+        return (self.get_subset_by_indexes(indexes) for indexes in indexes_list)
 
     def get_subset_by_indexes(self, indexes):
         inputs = self.inputs[indexes]
@@ -317,7 +333,7 @@ class Data:
             timestamps = np.zeros(length, dtype=TIMESTAMPS_DTYPE)
 
             # Get file line numbers
-            lines = dict() # Map line number to its order by timestamp
+            lines = dict()  # Map line number to its order by timestamp
             for i in range(start, end + 1):
                 lines[self.order[i]] = i - start
 
@@ -396,7 +412,7 @@ if __name__ == '__main__':
     train_size = 1 - options.val - options.test
     has_split = train_size < 1
 
-    train, val, test = data.split((train_size, options.val, options.test), seed=options.seed)
+    train, val, test = data.split_random((train_size, options.val, options.test), seed=options.seed)
     if encoder is not None:
         mapping = train.encode(encoder)
         val.encode_from_mapping(mapping)

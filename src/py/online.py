@@ -2,7 +2,9 @@ import datetime
 import os
 import subprocess
 import sys
+import time
 import traceback
+import glob
 from math import floor
 from threading import Thread
 
@@ -16,6 +18,13 @@ class Online(Thread):
     TRANSFORM_SCRIPT = 'transform.R'
     PREP_SCRIPT = 'prep.R'
 
+    @classmethod
+    def init(cls, *args, data_dir=None, **kwargs):
+        if data_dir is None:
+            return Online(*args, **kwargs)
+        else:
+            return OnlineSim(*args, data_dir, **kwargs)
+
     def __init__(self, evolver, width, shift, test_ratio=0.3, start_files=None):
         super(Online, self).__init__()
         self.evolver = evolver
@@ -23,7 +32,7 @@ class Online(Thread):
         self.width = width
         self.test_ratio = test_ratio
         self.finished = False
-        self.files_per_window = floor(width/shift)
+        self.files_per_window = floor(width / shift)
         self.start_files = start_files if start_files is not None else []
         self.window_files = []
         self.first_iteration = True
@@ -58,7 +67,7 @@ class Online(Thread):
         if self.test_ratio == 0:
             return data, None
         else:
-            return data.split((1-self.test_ratio, self.test_ratio))
+            return data.split(1 - self.test_ratio)
 
     def add_data(self, file, clean_disk=False):
         self.window_files.append(file)
@@ -98,3 +107,24 @@ class Online(Thread):
                 print(traceback.format_exc(), file=sys.stderr)
                 with self.evolver.start_lock:
                     self.evolver.start_lock.notify()
+
+
+class OnlineSim(Online):
+    def __init__(self, evolver, width, shift, data_dir, **kwargs):
+        super().__init__(evolver, width, shift, **kwargs)
+        self.sleep_secs = self.shift * 60 * 60
+        self.i = self.evolver.window
+        self.data_dir = os.path.abspath(data_dir)
+        self.data_files = sorted(glob.glob(self.data_dir + '/*'))
+
+    def extract_data(self):
+        time.sleep(self.sleep_secs)
+        file_path = self.data_files[self.i]
+        self.i += 1
+        if self.i >= len(self.data_files):
+            self.finished = True
+        return file_path
+
+
+
+
