@@ -169,7 +169,7 @@ dev.off()
 
 # Max and mean test fitness over gens
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
-evals_fit_sample <- evals_fit[sample(1:nrow(evals_fit), 100000)]
+evals_fit_sample <- evals_fit[sample(1:nrow(evals_fit), 200000)]
 gg_test_fit <- ggplot(data=evals_fit_sample, aes(x=generation,y=fitness_test, col=mean_or_best)) +
   geom_smooth(fill=gsmooth_fill, span=0.01, method='loess') +
   labs(x="Generation", y=FITNESS_FUNC, col='') +
@@ -214,8 +214,9 @@ png(filename = paste(OUT_DIR, 'connections_by_gen.png', sep=''))
 gg_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   geom_line(aes(y=connections_mean)) +
   labs(x="Generation", y="Connections", col='') +
-  theme_minimal()
-gg_connections_gen <- add_window_vlines(gg_connections_gen)
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+gg_connections_gen <- add_window_vlines(gg_connections_gen, labels = human_numbers, scale_break_freq = 3)
 print(gg_connections_gen)
 dev.off()
 
