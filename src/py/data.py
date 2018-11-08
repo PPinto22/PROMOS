@@ -70,9 +70,10 @@ class Data:
     # soft_order:                [A, B, C, D]
     # output without soft_order: [A, x, y, C, D]
     # output with soft_order:    [A, x, C, D, y]
-    def encode(self, encoder, soft_order=None):
+    def encode(self, encoder, soft_order=None, diff=None):
         inputs_dt = pd.DataFrame(self.inputs, columns=self.input_labels)
-        inputs_encoded = encoder.encode(inputs_dt, return_mapping=False)
+        diff_inputs_dt = pd.DataFrame(diff.inputs, columns=diff.input_labels) if diff is not None else None
+        inputs_encoded = encoder.encode(inputs_dt, return_mapping=False, diff=diff_inputs_dt)
         if soft_order is not None:
             inputs_encoded = self.soft_sort(inputs_encoded, soft_order)
         elif encoder.input_order is not None:
@@ -316,7 +317,18 @@ class Data:
                     target_label=self.target_label, timestamp_label=self.timestamp_label,
                     positive_class=self.positive_class, date_format=self.date_format, is_sorted=self.is_sorted)
 
-    def get_subset_by_time_interval(self, start, end):
+    def get_subset_by_time_range(self, start=None, end=None):
+        if start is None:
+            start_i = 0
+        else:
+            start_i = self.find_first_datetime(start)
+        if end is None:
+            end_i = len(self) - 1
+        else:
+            end_i = self.find_last_datetime(end)
+        return self.get_subset_by_index_range(start_i, end_i)
+
+    def get_subset_by_index_range(self, start, end):
         assert end > start
         assert start >= 0 and end < len(self)
 
@@ -355,6 +367,13 @@ class Data:
                     input_labels=self.input_labels, target_label=self.target_label,
                     timestamp_label=self.timestamp_label, positive_class=self.positive_class,
                     date_format=self.date_format, is_sorted=self.is_sorted)
+
+    # returns the "newest" data, i.e., the most recent data that is in 'other_data' and not in self
+    def right_diff(self, other_data):
+        assert self.has_timestamps and self.is_sorted and other_data.has_timestamps and other_data.is_sorted
+        last_stamp = self.get_time_range()[1]
+        diff_data = other_data.get_subset_by_time_range(start=last_stamp)
+        return diff_data
 
     def save(self, file_path):
         util.make_dir(file_path=file_path)

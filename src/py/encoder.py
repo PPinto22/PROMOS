@@ -35,7 +35,7 @@ class Encoding(ABC):
         self.values = {}  # Map<Column, Map<Raw_Value, Encoded_Value>>
 
     @abstractmethod
-    def encode(self, column):
+    def encode(self, column, diff=None):
         raise NotImplementedError
 
     @abstractmethod
@@ -61,7 +61,7 @@ class Factor(Encoding):
         super().__init__()
         self.ids = {}
 
-    def encode(self, column):
+    def encode(self, column, diff=None):
         self.init_column(column.name)
         factor_col = np.zeros(len(column), dtype=np.uint64)
         for i, raw_value in enumerate(column):
@@ -90,28 +90,53 @@ class Factor(Encoding):
 
 
 class IDF(Encoding):
-    def __init__(self, keep_first=False):
+    def __init__(self, keep_first=False, smooth_factor=0.8):
         super().__init__()
         self.keep_first = util.str_to_bool(keep_first)
+        self.smooth_factor = float(smooth_factor)
+        self.continuous = self.smooth_factor > 0
         self.length = 0
+        self.frequencies = {}  # Map<Column, Map<Category, Frequency>>
 
-    def encode(self, column):
-        self.keep_first and self.init_column(column.name)
+    def encode(self, column, diff=None):
+        self.init_column(column.name)
         tf = util.table_dict(column)
-        self.length = len(column)
+        tf_diff = util.table_dict(diff) if diff is not None else None
+
+        # Save/Update length of data and frequency of categories
+        if not self.continuous or diff is None:
+            if self.length == 0:
+                self.length = len(column)
+                for category, freq in tf.items():
+                    self.frequencies[column.name][category] = freq
+        else:
+            self.length = self.length * self.smooth_factor + len(diff)
+            for category, freq in tf_diff.items():
+                if category not in self.frequencies[column.name]:
+                    self.frequencies[column.name][category] = freq
+                else:
+                    old_freq = self.frequencies[column.name][category]
+                    self.frequencies[column.name][category] = old_freq * self.smooth_factor + freq
+
+        # Build IDF encodings
         idf = {}
-        for key, freq in tf.items():
-            if self.keep_first and self.exists(column.name, key):
-                idf_value = self.get(column.name, key)
+        for category in tf:
+            if self.keep_first and self.exists(column.name, category):
+                idf_value = self.get(column.name, category)
             else:
-                idf_value = math.log(self.length / freq)
+                idf_value = math.log(self.length / self.frequencies[column.name][category])
                 if self.keep_first:
-                    self.set(column.name, key, idf_value)
-            idf[key] = idf_value
-        idf_col = np.zeros(self.length, dtype=data.INPUTS_DTYPE)
-        for i, key in enumerate(column):
-            idf_col[i] = idf[key]
+                    self.set(column.name, category, idf_value)
+            idf[category] = idf_value
+        idf_col = np.zeros(len(column), dtype=data.INPUTS_DTYPE)
+        for i, category in enumerate(column):
+            idf_col[i] = idf[category]
         return pd.DataFrame({column.name: idf_col})
+
+    def init_column(self, column_name):
+        super(IDF, self).init_column(column_name)
+        if column_name not in self.frequencies:
+            self.frequencies[column_name] = {}
 
     def missing_value(self, column_name, value):
         return math.log(self.length)
@@ -121,7 +146,7 @@ class RAW(Encoding):
     def __init__(self):
         super().__init__()
 
-    def encode(self, column):
+    def encode(self, column, diff=None):
         encoded_col = column.astype(data.INPUTS_DTYPE)
         return pd.DataFrame({column.name: encoded_col})
 
@@ -165,7 +190,7 @@ class PCP(Encoding):
                   'Assuming feature = \'{}\', value = \'{}\''.format(column_name, feature, value))
         return feature, value
 
-    def encode(self, column):
+    def encode(self, column, diff=None):
         pruned = self.prune(column)
         one_hot = pd.get_dummies(pruned, prefix=pruned.name, prefix_sep=PCP.SEP)
         others_col_name = self.get_others_col_name(column.name)
@@ -307,12 +332,12 @@ class Encoder:
             raise ValueError('Column \'{}\' is not specified and the encoder does not have a default encoding'
                              .format(column))
 
-    def encode_column(self, column):
-        encoded_col = self.get_encoding(column.name).encode(column)
+    def encode_column(self, column, diff=None):
+        encoded_col = self.get_encoding(column.name).encode(column, diff)
         return encoded_col
 
-    def encode(self, df, return_mapping=False):
-        encoded_cols = [self.encode_column(df[c]) for c in df]
+    def encode(self, df, diff=None, return_mapping=False):
+        encoded_cols = [self.encode_column(df[c], diff[c] if diff is not None else None) for c in df]
         encoded_df = pd.concat(encoded_cols, axis=1, join_axes=[encoded_cols[0].index])
         if return_mapping:
             return encoded_df, self.get_mapping(df, encoded_df)

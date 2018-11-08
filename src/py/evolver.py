@@ -275,7 +275,14 @@ class Evolver:
                     test_data = Data(self.options.test_file) if self.options.test_file is not None else None
         self.set_data(train_data, test_data)
 
-    def set_data(self, train, test, old_columns=None, keep_old_if_none=False):
+    def set_data(self, train, test, keep_old_if_none=False):
+        old_columns = self.train_data.input_labels if self.train_data is not None else None
+        # Calculate differences between old and new data
+        if self.train_data is not None and train is not None:
+            diff = self.train_data.right_diff(train)
+        else:
+            diff = None
+
         if not keep_old_if_none:
             self.train_data = train
             self.test_data = test
@@ -283,7 +290,7 @@ class Evolver:
             self.train_data = train if train is not None else self.train_data
             self.test_data = test if test is not None else self.test_data
         if self.encoder is not None:
-            self.encode_data(soft_order=old_columns)
+            self.encode_data(soft_order=old_columns, diff=diff)
         self.setup_evaluator()
         if old_columns is not None:
             self.update_inputs(old_columns)
@@ -301,8 +308,8 @@ class Evolver:
             raise ValueError('Invalid substrate choice: {} (should be 0 <= X <= {})'.
                              format(self.options.substrate, len(subst.substrates) - 1)) from None
 
-    def encode_data(self, soft_order=None):
-        self.mapping = self.train_data.encode(self.encoder, soft_order=soft_order)
+    def encode_data(self, soft_order=None, diff=None):
+        self.mapping = self.train_data.encode(self.encoder, soft_order=soft_order, diff=diff)
         if self.test_data is not None:
             self.test_data.encode_from_mapping(self.mapping)
 
@@ -819,7 +826,6 @@ class Evolver:
         self.reset_window_timers()
 
         self.update_output_state('Shifting window')
-        old_columns = self.train_data.input_labels
         if new_train is not None:  # Use data from arguments
             train_data = new_train
             test_data = new_test if new_test is not None else None
@@ -833,7 +839,7 @@ class Evolver:
             log_message += "\n> Rows: {}; Positives: {}; Range: {} -- {} (Validation)".format(
                 len(test_data), len(test_data.positives), *map(str, test_data.get_time_range()))
         self.log_message(log_message)
-        self.set_data(train_data, test_data, old_columns=old_columns, keep_old_if_none=True)
+        self.set_data(train_data, test_data, keep_old_if_none=True)
         self.window += 1
         self.first_gen_window = True
         self.save_progress()

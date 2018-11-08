@@ -62,8 +62,8 @@ class SlidingWindow(data.Data):
         if window_i < 0 or window_i > len(self.windows):
             raise IndexError('Invalid window index: {}'.format(window_i))
         window = self.windows[window_i]
-        train = self.get_subset_by_time_interval(window[0], window[1])
-        test = self.get_subset_by_time_interval(window[2], window[3]) if self.has_test else None
+        train = self.get_subset_by_index_range(window[0], window[1])
+        test = self.get_subset_by_index_range(window[2], window[3]) if self.has_test else None
 
         if update_state:
             self._window = window_i + 1
