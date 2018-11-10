@@ -120,11 +120,12 @@ class IDF(Encoding):
 
         # Build IDF encodings
         idf = {}
-        for category in tf:
+        for category, freq in tf.items():
             if self.keep_first and self.exists(column.name, category):
                 idf_value = self.get(column.name, category)
             else:
-                idf_value = math.log(self.length / self.frequencies[column.name][category])
+                freq = self.frequencies[column.name][category] if category in self.frequencies[column.name] else freq
+                idf_value = math.log(self.length / freq)
                 if self.keep_first:
                     self.set(column.name, category, idf_value)
             idf[category] = idf_value
