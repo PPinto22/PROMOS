@@ -117,9 +117,10 @@ class OnlineSim(Online):
         self.data_files = sorted(glob.glob(self.data_dir + '/*'))
 
     def extract_data(self):
-        time.sleep(self.sleep_secs)
+        self.i > 0 and time.sleep(self.sleep_secs)
         file_path = self.data_files[self.i]
         self.i += 1
         if self.i >= len(self.data_files):
+            self.evolver.force_terminate = True
             self.finished = True
         return file_path
