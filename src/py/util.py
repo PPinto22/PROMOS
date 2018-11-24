@@ -7,12 +7,12 @@ from collections import namedtuple
 import numpy as np
 import pandas as pd
 
-Neuron = namedtuple('Neuron', 'index activation_function a b bias')
+Neuron = namedtuple('Neuron', 'index af a b bias')
 Connection = namedtuple('Connection', 'source target weight')
 
 
 def get_network_neurons(network):
-    return [Neuron(i, str(n.activation_function_type), n.a, n.b, n.bias) for i, n in enumerate(network.neurons)]
+    return [Neuron(i, str(n.af), n.a, n.b, n.bias) for i, n in enumerate(network.neurons)]
 
 
 def get_network_connections(network):
@@ -39,7 +39,7 @@ def build_network(genome, *args, **kwargs):
 
 def build_network_single(genome, method='neat', substrate=None, **kwargs):
     net = neat.NeuralNetwork()
-    if method == 'neat':
+    if method in ['neat', 'gdneat']:
         genome.BuildPhenotype(net)
     elif method == 'hyperneat':
         genome.BuildHyperNEATPhenotype(net, substrate)
@@ -241,3 +241,74 @@ def ratio(value):
         return fvalue
     except ValueError:
         raise_arg_type_error(value)
+
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def sigmoid_derivative(x, overflow_workaround=True):
+    if overflow_workaround and np.abs(x) > 10:
+        return 0.0001
+    return np.exp(-x) / (np.exp(-x) + 1) ** 2
+
+
+def gauss(x, overflow_workaround=True):
+    if overflow_workaround and np.abs(x) > 3:
+        return 0.0001
+    return np.exp(-x ** 2)
+
+
+def gauss_derivative(x, overflow_workaround=True):
+    if overflow_workaround:
+        if x > 3:
+            return -0.0001
+        elif x < -3:
+            return 0.0001
+    return -2 * np.exp(-x ** 2) * x
+
+
+def sin(x):
+    return (np.sin(x) + 1) / 2.0
+
+
+def sin_derivative(x):
+    return np.cos(x) / 2.0
+
+
+def relu(x):
+    return x if x > 0 else 0
+
+
+def relu_derivative(x, leaky=True):
+    return 1 if x > 0 else 0.1 if leaky else 0
+
+
+def af(af, x):
+    if af == neat.ActivationFunction.UNSIGNED_SIGMOID:
+        return sigmoid(x)
+    elif af == neat.ActivationFunction.UNSIGNED_GAUSS:
+        return gauss(x)
+    elif af == neat.ActivationFunction.UNSIGNED_SINE:
+        return sin(x)
+    elif af == neat.ActivationFunction.RELU:
+        return relu(x)
+    else:
+        raise NotImplementedError
+
+
+def afderiv(af, activation):
+    if af == neat.ActivationFunction.UNSIGNED_SIGMOID:
+        return sigmoid_derivative(activation)
+    elif af == neat.ActivationFunction.UNSIGNED_GAUSS:
+        return gauss_derivative(activation)
+    elif af == neat.ActivationFunction.UNSIGNED_SINE:
+        return sin_derivative(activation)
+    elif af == neat.ActivationFunction.RELU:
+        return relu_derivative(activation)
+    else:
+        raise NotImplementedError
+
+
+def constraint(value, limit):
+    return max(min(value, limit), -limit)

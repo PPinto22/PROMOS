@@ -555,6 +555,15 @@ namespace NEAT {
         return t_output;
     }
 
+    std::vector<double> NeuralNetwork::OutputActiveSum() {
+        std::vector<double> t_output;
+
+        for (int i = 0; i < m_num_outputs; i++) {
+            t_output.push_back(m_neurons[i + m_num_inputs].m_activesum);
+        }
+        return t_output;
+    }
+
     void NeuralNetwork::Adapt(Parameters &a_Parameters) {
         // find max absolute magnitude of the weight
         double t_max_weight = -999999999;

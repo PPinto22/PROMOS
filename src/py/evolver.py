@@ -11,6 +11,7 @@ import random
 import threading
 import signal
 from functools import partial
+import numpy as np
 
 import tabulate
 from reprint import reprint, output
@@ -26,6 +27,7 @@ from encoder import Encoder
 from evaluator import Evaluator, FitFunction
 import util
 import bloat
+from backprop import Backprop
 from util import avg
 import substrate as subst
 from data import Data
@@ -39,7 +41,7 @@ def parse_args():
                         help='path to test data file', metavar='FILE')
     parser.add_argument('-o', '--outdir', dest='out_dir', default='.',
                         help='directory where to save results. If NULL, do not save results.', metavar='DIR')
-    methods = ['neat', 'hyperneat']
+    methods = ['neat', 'gdneat', 'hyperneat']
     parser.add_argument('-m', '--method', dest='method', choices=methods, default='neat',
                         help='which algorithm to run: ' + ', '.join(methods), metavar='M')
     parser.add_argument('-P', '--params', dest='params', metavar='FILE', default=None,
@@ -760,10 +762,11 @@ class Evolver:
                                   window=self.get_current_window(), initial_time=self.initial_time)
 
     def evaluate_pop(self):
-        self.update_output_state('Evaluating')
-        self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
-        self.save_evaluations()
-        self.update_best_list()
+        if self.options.method == 'gdneat':
+            self.update_output_state('Evaluating')
+            self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
+            self.save_evaluations()
+            self.update_best_list()
 
     def epoch(self):
         self.update_output_state('Evolving')
@@ -776,6 +779,15 @@ class Evolver:
 
         self.save_generation()
         self.generation += 1
+
+    def gradient_descent(self):
+        self.update_output_state('Grad. Descent')
+        sample = self.options.sample_size
+        data = self.train_data if sample == 0 else self.train_data.get_sample(sample)
+        # Apply only to 10%
+        individuals = np.random.choice(self.get_genome_list(), self.pop.Parameters.PopulationSize // 10)
+        Backprop.sgd_pop(individuals, parallel=self.options.processes, inputs=data.inputs, targets=data.targets,
+                         maxweight=self.pop.Parameters.MaxWeight, maxbias=2)
 
     def print_best(self):
         best = self.get_best()
@@ -948,6 +960,7 @@ class Evolver:
                 self._gen_start()
                 self.evaluate_pop()
                 self.epoch()
+                self.gradient_descent()
                 self._gen_end()
         self.termination_sequence(save_progress=True)
 

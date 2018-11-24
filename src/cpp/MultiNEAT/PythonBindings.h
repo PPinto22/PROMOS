@@ -95,7 +95,8 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def_readwrite("time_const", &Neuron::m_timeconst)
             .def_readwrite("bias", &Neuron::m_bias)
             .def_readwrite("activation", &Neuron::m_activation)
-            .def_readwrite("activation_function_type", &Neuron::m_activation_function_type)
+            .def_readwrite("activesum", &Neuron::m_activesum)
+            .def_readwrite("af", &Neuron::m_activation_function_type)
             .def_readwrite("split_y", &Neuron::m_split_y)
             .def_readwrite("type", &Neuron::m_type)
             .def_readwrite("x", &Neuron::m_x)
@@ -103,6 +104,11 @@ BOOST_PYTHON_MODULE(MultiNEAT)
             .def_readwrite("z", &Neuron::m_z)
             .def_readwrite("substrate_coords", &Neuron::m_substrate_coords)
             ;
+
+
+    void (InnovationDatabase::*Init_With_Genome)(const Genome&) = &InnovationDatabase::Init;
+    class_<InnovationDatabase>("InnovationDatabase", init<>())
+            .def("Init", Init_With_Genome);
 
     void (NeuralNetwork::*NN_Save)(const char*) = &NeuralNetwork::Save;
     bool (NeuralNetwork::*NN_Load)(const char*) = &NeuralNetwork::Load;
@@ -145,6 +151,7 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
             .def("Input", &NeuralNetwork::Input)
             .def("Output", &NeuralNetwork::Output)
+            .def("OutputActiveSum", &NeuralNetwork::OutputActiveSum)
 
             .def("AddNeuron", &NeuralNetwork::AddNeuron)
             .def("AddConnection", &NeuralNetwork::AddConnection)
@@ -220,6 +227,10 @@ BOOST_PYTHON_MODULE(MultiNEAT)
 
             .def("Randomize_LinkWeights", &Genome::Randomize_LinkWeights)
             .def("Randomize_Traits", &Genome::Randomize_Traits)
+            .def("Mutate_AddNeuron", &Genome::Mutate_AddNeuron)
+            .def("Mutate_RemoveSimpleNeuron", &Genome::Mutate_RemoveSimpleNeuron)
+            .def("Mutate_AddLink", &Genome::Mutate_AddLink)
+            .def("Mutate_RemoveLink", &Genome::Mutate_RemoveLink)
             .def("Mutate_NeuronActivations_A", &Genome::Mutate_NeuronActivations_A)
             .def("Mutate_NeuronActivations_B", &Genome::Mutate_NeuronActivations_B)
             .def("Mutate_NeuronActivation_Type", &Genome::Mutate_NeuronActivation_Type)
