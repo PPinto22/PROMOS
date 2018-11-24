@@ -762,11 +762,10 @@ class Evolver:
                                   window=self.get_current_window(), initial_time=self.initial_time)
 
     def evaluate_pop(self):
-        if self.options.method == 'gdneat':
-            self.update_output_state('Evaluating')
-            self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
-            self.save_evaluations()
-            self.update_best_list()
+        self.update_output_state('Evaluating')
+        self.evaluations = self.evaluate_list(self.get_genome_list(), adjuster=self.fitness_adjuster, time=True)
+        self.save_evaluations()
+        self.update_best_list()
 
     def epoch(self):
         self.update_output_state('Evolving')
@@ -781,13 +780,14 @@ class Evolver:
         self.generation += 1
 
     def gradient_descent(self):
-        self.update_output_state('Grad. Descent')
-        sample = self.options.sample_size
-        data = self.train_data if sample == 0 else self.train_data.get_sample(sample)
-        # Apply only to 10%
-        individuals = np.random.choice(self.get_genome_list(), self.pop.Parameters.PopulationSize // 10)
-        Backprop.sgd_pop(individuals, parallel=self.options.processes, inputs=data.inputs, targets=data.targets,
-                         maxweight=self.pop.Parameters.MaxWeight, maxbias=2)
+        if self.options.method in ['gneat']:
+            self.update_output_state('Grad. Descent')
+            sample = self.options.sample_size
+            data = self.train_data if sample == 0 else self.train_data.get_sample(sample)
+            # Apply only to 10%
+            individuals = np.random.choice(self.get_genome_list(), self.pop.Parameters.PopulationSize // 10)
+            Backprop.sgd_pop(individuals, parallel=self.options.processes, inputs=data.inputs, targets=data.targets,
+                             maxweight=self.pop.Parameters.MaxWeight, maxbias=2)
 
     def print_best(self):
         best = self.get_best()
