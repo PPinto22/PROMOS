@@ -780,7 +780,7 @@ class Evolver:
         self.generation += 1
 
     def gradient_descent(self):
-        if self.options.method in ['gneat']:
+        if self.options.method in ['gdneat']:
             self.update_output_state('Grad. Descent')
             sample = self.options.sample_size
             data = self.train_data if sample == 0 else self.train_data.get_sample(sample)
