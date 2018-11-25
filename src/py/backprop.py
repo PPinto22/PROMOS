@@ -25,34 +25,34 @@ class Backprop:
                 bp.update_genome(genome)
         else:
             sgd_partial = partial(_sgd_partial, *args, **kwargs)
-            pool = concurrent.futures.ProcessPoolExecutor(max_workers=parallel)
-            futures = [pool.submit(sgd_partial, genome) for genome in genome_list]
-            concurrent.futures.wait(futures)
-            nets = [util.try_(future.result) for future in futures]
-            for genome, net in zip(genome_list, nets):
-                if net is not None:
-                    weights, biases = net
-                    Backprop.set_weight_and_biases(genome, weights, biases)
+            with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as pool:
+                futures = [pool.submit(sgd_partial, genome) for genome in genome_list]
+                concurrent.futures.wait(futures)
+                nets = [util.try_(future.result) for future in futures]
+                for genome, net in zip(genome_list, nets):
+                    if net is not None:
+                        weights, biases = net
+                        Backprop.set_weight_and_biases(genome, weights, biases)
 
-    def __init__(self, genome, inputs, targets, lr=1, mini_batches=100, epochs=1, maxweight=20, maxbias=5):
+    def __init__(self, genome, inputs, targets, lr=1, batch_size=10, epochs=1, maxweight=20, maxbias=5):
         self.genome = genome
         self.net = util.build_network(genome)
         self.sorted_neurons, self.neuron_links = self.prepare()
         self.lr = lr  # learning rate
-        self.mini_batches = mini_batches
+        self.batch_size = batch_size
         self.epochs = epochs
         self.maxweight = maxweight
         self.maxbias = maxbias
-        self.inputs, self.targets, self.n, self.batch_len = None, None, None, None
+        self.inputs, self.targets, self.n, self.mini_batches = None, None, None, None
         self.set_data(inputs, targets)
 
     def set_data(self, inputs, targets):
         self.inputs = inputs
         self.targets = targets
         assert len(inputs) == len(targets)
-        assert len(inputs) > self.mini_batches
         self.n = len(self.inputs)
-        self.batch_len = self.n // self.mini_batches
+        self.mini_batches = self.n // self.batch_size
+        assert len(inputs) > self.mini_batches
 
     def prepare(self):
         """
@@ -132,11 +132,11 @@ class Backprop:
                 b_grads[idx] += grad
         for idx, grad in w_grads.items():
             old_weight = self.net.connections[idx].weight
-            self.net.connections[idx].weight = util.constraint(old_weight - grad * (self.lr / self.batch_len),
+            self.net.connections[idx].weight = util.constraint(old_weight - grad * (self.lr / self.batch_size),
                                                                self.maxweight)
         for idx, grad in b_grads.items():
             old_bias = self.net.neurons[idx].bias
-            self.net.neurons[idx].bias = util.constraint(old_bias - grad * (self.lr / self.batch_len), self.maxbias)
+            self.net.neurons[idx].bias = util.constraint(old_bias - grad * (self.lr / self.batch_size), self.maxbias)
 
     def backprop(self, inputs, target):
         """
