@@ -43,7 +43,7 @@ class Backprop:
         self.epochs = epochs
         self.maxweight = maxweight
         self.maxbias = maxbias
-        self.inputs, self.targets, self.n = None, None, None
+        self.inputs, self.targets, self.n, self.batch_len = None, None, None, None
         self.set_data(inputs, targets)
 
     def set_data(self, inputs, targets):
@@ -52,6 +52,7 @@ class Backprop:
         assert len(inputs) == len(targets)
         assert len(inputs) > self.mini_batches
         self.n = len(self.inputs)
+        self.batch_len = self.n // self.mini_batches
 
     def prepare(self):
         """
@@ -89,7 +90,7 @@ class Backprop:
     def get_batches(self):
         batch_size = self.n // self.mini_batches
         for k in range(0, self.n, batch_size):
-            yield list(zip(self.inputs[k:k + batch_size], self.targets[k:k + batch_size]))
+            yield zip(self.inputs[k:k + batch_size], self.targets[k:k + batch_size])
 
     def shuffle_data(self):
         pass  # TODO
@@ -131,11 +132,11 @@ class Backprop:
                 b_grads[idx] += grad
         for idx, grad in w_grads.items():
             old_weight = self.net.connections[idx].weight
-            self.net.connections[idx].weight = util.constraint(old_weight - grad * (self.lr / len(mini_batch)),
+            self.net.connections[idx].weight = util.constraint(old_weight - grad * (self.lr / self.batch_len),
                                                                self.maxweight)
         for idx, grad in b_grads.items():
             old_bias = self.net.neurons[idx].bias
-            self.net.neurons[idx].bias = util.constraint(old_bias - grad * (self.lr / len(mini_batch)), self.maxbias)
+            self.net.neurons[idx].bias = util.constraint(old_bias - grad * (self.lr / self.batch_len), self.maxbias)
 
     def backprop(self, inputs, target):
         """
