@@ -787,7 +787,7 @@ class Evolver:
             # Apply only to 10%
             individuals = np.random.choice(self.get_genome_list(), self.pop.Parameters.PopulationSize // 10)
             Backprop.sgd_pop(individuals, parallel=self.options.processes, inputs=data.inputs, targets=data.targets,
-                             maxweight=self.pop.Parameters.MaxWeight, maxbias=2)
+                             maxweight=self.pop.Parameters.MaxWeight, maxbias=2, epochs=1, lr=0.0001)
 
     def print_best(self):
         best = self.get_best()

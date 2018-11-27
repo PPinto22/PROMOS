@@ -28,7 +28,7 @@ gens_avg_dt$run_type <- factor(gens_avg_dt$run_type, levels = RUN_TYPE_LABELS)
 set_gen_breaks(n=5)
 
 # Read windows/summaries
-read_windows_or_summaries()
+# read_windows_or_summaries()
 
 # -- WIDE TO LONG CONVERSIONS -- 
 melt_fitness()
@@ -125,7 +125,7 @@ dev.off()
 # best test fitness over gens
 png(filename = paste(OUT_DIR, 'best_test_fit_by_gens.png', sep=''))
 gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) + 
-  geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill) +
+  geom_smooth(aes(y=fitness_test_best, col=run_type), fill=gsmooth_fill, method='loess', span=0.1) +
   labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Dark2') +
   # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
