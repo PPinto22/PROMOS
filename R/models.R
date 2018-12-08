@@ -48,7 +48,7 @@ INSTANCES <- set_paths(list(
 ))
 # str(INSTANCES)
 # ALGORITHMS <- c('lr', 'naivebayes', 'mlp', 'xgboost')
-ALGORITHMS <- list('lr')
+ALGORITHMS <- list('mlp')
 options(digits=5)
 
 summary_df <- rbindlist(lapply(ALGORITHMS, function(alg){

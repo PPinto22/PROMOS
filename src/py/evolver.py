@@ -785,9 +785,12 @@ class Evolver:
             sample = self.options.sample_size
             data = self.train_data if sample == 0 else self.train_data.get_sample(sample)
             # Apply only to 10%
-            individuals = np.random.choice(self.get_genome_list(), self.pop.Parameters.PopulationSize // 10)
+            # individuals = np.random.choice(self.get_genome_list(), self.pop.Parameters.PopulationSize // 10)
+            top_ids = [e.genome_id for e in  self.evaluations[:self.pop.Parameters.PopulationSize // 10]]
+            individuals = [genome for genome in self.get_genome_list() if genome.GetID() in top_ids]
             Backprop.sgd_pop(individuals, parallel=self.options.processes, inputs=data.inputs, targets=data.targets,
-                             maxweight=self.pop.Parameters.MaxWeight, maxbias=2, epochs=1, lr=0.0001)
+                             maxweight=self.pop.Parameters.MaxWeight, maxbias=2, epochs=1, lr=0.001)
+
 
     def print_best(self):
         best = self.get_best()
@@ -959,8 +962,8 @@ class Evolver:
             with self.gen_lock:
                 self._gen_start()
                 self.evaluate_pop()
-                self.epoch()
                 self.gradient_descent()
+                self.epoch()
                 self._gen_end()
         self.termination_sequence(save_progress=True)
 

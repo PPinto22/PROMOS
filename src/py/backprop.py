@@ -2,16 +2,19 @@ import MultiNEAT as neat
 from functools import partial
 
 import numpy as np
+
+import data
+import evaluator
 import params
 import util
-from evaluator import Evaluator
+from evaluator import Evaluator, FitFunction
 import multiprocessing as mp
 import concurrent.futures
 
 
 def _sgd_partial(genome, *args, **kwargs):
     bp = Backprop(genome, *args, **kwargs)
-    bp.sgd()
+    bp.sgd(update_genome=False)
     return bp.get_weights_and_biases(bp.net)
 
 
@@ -22,7 +25,6 @@ class Backprop:
             for genome in genome_list:
                 bp = Backprop(genome, *args, **kwargs)
                 bp.sgd()
-                bp.update_genome(genome)
         else:
             sgd_partial = partial(_sgd_partial, *args, **kwargs)
             with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as pool:
@@ -34,7 +36,7 @@ class Backprop:
                         weights, biases = net
                         Backprop.set_weight_and_biases(genome, weights, biases)
 
-    def __init__(self, genome, inputs, targets, lr=1, batch_size=10, epochs=1, maxweight=20, maxbias=5):
+    def __init__(self, genome, inputs, targets, lr=0.001, batch_size=10, epochs=1, maxweight=20, maxbias=5):
         self.genome = genome
         self.net = util.build_network(genome)
         self.sorted_neurons, self.neuron_links = self.prepare()
@@ -52,7 +54,7 @@ class Backprop:
         assert len(inputs) == len(targets)
         self.n = len(self.inputs)
         self.mini_batches = self.n // self.batch_size
-        assert len(inputs) > self.mini_batches
+        assert len(inputs) >= self.mini_batches
 
     def prepare(self):
         """
@@ -93,7 +95,9 @@ class Backprop:
             yield zip(self.inputs[k:k + batch_size], self.targets[k:k + batch_size])
 
     def shuffle_data(self):
-        pass  # TODO
+        p = np.random.permutation(self.n)
+        self.inputs = self.inputs[p]
+        self.targets = self.targets[p]
 
     @staticmethod
     def update_genome(genome, net):
@@ -115,11 +119,12 @@ class Backprop:
         biases = [neuron.bias for neuron in net.neurons]
         return weights, biases
 
-    def sgd(self):
+    def sgd(self, update_genome=True):
         for i in range(self.epochs):
-            self.shuffle_data()
+            i > 1 and self.shuffle_data()
             for batch in self.get_batches():
                 self.update_mini_batch(batch)
+        update_genome and self.update_genome(self.genome, self.net)
 
     def update_mini_batch(self, mini_batch):
         w_grads = {i: 0 for i in range(self.net.NumConnections())}
@@ -187,31 +192,21 @@ class Backprop:
                 self.neuron_links[neuron_idx][0]}
 
     def cost_derivative(self, output_activation, target):
-        return 2 * (output_activation - target)
+        return output_activation - target
 
-# if __name__ == '__main__':
-#     p = params._default_params()
-#     g = neat.Genome(0, 2, 0, 1,
-#                     False, neat.ActivationFunction.UNSIGNED_SIGMOID, neat.ActivationFunction.UNSIGNED_SIGMOID, 0,
-#                     params._default_params(), 0)
-#     rng = neat.RNG()
-#     innov = neat.InnovationDatabase()
-#     innov.Init(g)
-#     g.Mutate_AddNeuron(innov, p, rng)
-#     g.Mutate_AddNeuron(innov, p, rng)
-#     g.Mutate_AddNeuron(innov, p, rng)
-#     g.Mutate_AddLink(innov, p, rng)
-#     g.Mutate_AddLink(innov, p, rng)
-#     g.Mutate_AddLink(innov, p, rng)
-#     g.Mutate_AddLink(innov, p, rng)
-#     g.Save("/home/pedro/Desktop/genome.txt")
-#
-#     genome = neat.Genome('/home/pedro/Desktop/genome.txt')
-#
-#     inputs = [[0.4, 0.3] for _ in range(2000)]
-#     targets = [0.7] * 2000
-#     backprop = Backprop(genome, inputs, targets, epochs=100)
-#     print(Evaluator.predict_single(backprop.net, [0.4, 0.3]))
-#     backprop.SGD()
-#     print(Evaluator.predict_single(backprop.net, [0.4, 0.3]))
-#
+
+if __name__ == '__main__':
+    genome = neat.Genome('/home/pedro/Desktop/nnet_genome.txt')
+
+    train = data.Data('/home/pedro/Desktop/PROMOS/data/2weeks/best_idf_small_train.csv')
+    test = data.Data('/home/pedro/Desktop/PROMOS/data/2weeks/best_idf_small_test.csv')
+    Evaluator.setup(train, test, processes=1)
+
+    backprop = Backprop(genome, train.inputs, train.targets, epochs=1, lr=0.1, batch_size=20)
+    for i in range(100):
+        backprop.sgd()
+        evaluation = Evaluator.evaluate(genome, FitFunction.AUC, train, test)
+        print('[Epoch {}] AUC = {:.5f}; AUC TEST = {:.5f}'.format(i, evaluation.fitness, evaluation.fitness_test))
+
+    # for link in genome.LinkGenes:
+    #     print(link.Weight)

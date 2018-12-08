@@ -171,7 +171,7 @@ dev.off()
 png(filename = paste(OUT_DIR, 'test_fit_per_gen.png', sep=''))
 evals_fit_sample <- evals_fit[sample(1:nrow(evals_fit), 200000)]
 gg_test_fit <- ggplot(data=evals_fit_sample, aes(x=generation,y=fitness_test, col=mean_or_best)) +
-  geom_smooth(fill=gsmooth_fill, span=0.01, method='loess') +
+  geom_smooth(fill=gsmooth_fill, span=0.1, method='loess') +
   labs(x="Generation", y=FITNESS_FUNC, col='') +
   scale_color_brewer(palette = 'Dark2') +
   # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
