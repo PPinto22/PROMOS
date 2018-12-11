@@ -38,3 +38,10 @@ ggplot(dt_melt, aes(x=processes, y=time, color=type)) +
   # labs(x = 'Processes', y='Time (m:s)', color=NULL) +
   labs(x = 'Processes', y='Time (s)', color=NULL) +
   theme_minimal()
+
+ggplot(dt, aes(x=processes, y=eval_time)) + 
+  geom_point() + geom_line() +
+  scale_x_continuous(breaks=dt_med$processes, minor_breaks = NULL) +
+  scale_color_brewer(palette = 'Dark2') +
+  labs(x = 'Processes', y='Time (s)', color=NULL) +
+  theme_minimal()
