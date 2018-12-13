@@ -109,7 +109,7 @@ if(has_windows){
 png(filename = paste(OUT_DIR, 'gens_ea_eval_time.png', sep=''))
 gg_gens_ea_eval <- ggplot(gen_times, aes(x=generation, y=time, fill=state)) +
   geom_area(position='stack') +
-  labs(x='Generation', y='Time', fill='State') +
+  labs(x='Generation', y='Time', fill='Phase') +
   scale_fill_brewer(palette = 'Oranges') +
   theme_minimal()
 print(gg_gens_ea_eval)
@@ -119,8 +119,9 @@ dev.off()
 png(filename = paste(OUT_DIR, 'gens_ea_eval_time_smooth.png', sep=''))
 gg_gens_ea_eval_smooth <- ggplot(gen_times, aes(x=generation, y=time, fill=state)) +
   stat_smooth(geom='area', position='stack') +
-  labs(x='Generation', y='Time', fill='State') +
+  labs(x='Generation', y='Time (s)', fill='Phase') +
   scale_fill_brewer(palette = 'Oranges') +
+  scale_x_continuous(breaks=gen_breaks) +
   theme_minimal()
 print(gg_gens_ea_eval_smooth)
 dev.off()

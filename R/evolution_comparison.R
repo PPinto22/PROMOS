@@ -28,7 +28,7 @@ gens_avg_dt$run_type <- factor(gens_avg_dt$run_type, levels = RUN_TYPE_LABELS)
 set_gen_breaks(n=5)
 
 # Read windows/summaries
-# read_windows_or_summaries()
+read_windows_or_summaries()
 
 # -- WIDE TO LONG CONVERSIONS -- 
 melt_fitness()
@@ -130,7 +130,8 @@ gg_best_test_fit_gens <- ggplot(data=evals_avg_dt, aes(generation)) +
   scale_color_brewer(palette = 'Dark2') +
   # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   scale_x_continuous(breaks=gen_breaks) +
-  theme_minimal()
+  theme_minimal() + 
+  theme(legend.position="top")
 print(gg_best_test_fit_gens)
 dev.off()
 
@@ -189,7 +190,8 @@ gg_mean_connections_gen <- ggplot(data=evals_avg_dt, aes(generation)) +
   labs(x="Generation", y="Connections", col=SERIES_LABEL) + 
   scale_color_brewer(palette = 'Dark2') +
   scale_x_continuous(breaks=gen_breaks) +
-  theme_minimal()
+  theme_minimal() + 
+  theme(legend.position="top")
 gg_mean_connections_gen <- add_window_vlines(gg_mean_connections_gen)
 print(gg_mean_connections_gen)
 dev.off()
