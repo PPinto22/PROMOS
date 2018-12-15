@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_idf_train.csv -t ../data/2weeks/best_idf_test.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_best_idf -m hyperneat -g10000 -s2000 -p6 --no-statistics --quiet"
-runs=2
-parallel=2
+options="-d ../data/2weeks/test_raw_train.csv -t ../data/2weeks/test_raw_test.csv -P ../params/hyperneat.txt -o ../results/hn_test_raw_plot -m hyperneat -g10000 -s2000 -p6 --test-fitness --quiet"
+runs=4
+parallel=4
 
 function run() {
 	children=$(pgrep -c -P$$)
@@ -16,7 +16,7 @@ function run() {
 
 for i in $(seq 1 $runs)	
 do
-	run "--id=best_idf(${i})"
+	run "--id=run(${i})"
 done
 wait
 exit 0

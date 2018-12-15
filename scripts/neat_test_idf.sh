@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_raw_train.csv -t ../data/2weeks/best_raw_test.csv -P ../params/neat.txt -o ../results/neat_limited_best_raw -m neat -b ../cfg/bloat_mut_con.cfg -g10000 -s2000 -p6 --no-statistics --quiet"
-runs=10
-parallel=2
+options="-d ../data/2weeks/test_idf_train.csv -t ../data/2weeks/test_idf_test.csv -P ../params/neat.txt -o ../results/neat_test_idf -m neat -g10000 -s2000 -p6 --no-statistics --quiet"
+runs=9
+parallel=3
 
 function run() {
 	children=$(pgrep -c -P$$)
@@ -16,7 +16,7 @@ function run() {
 
 for i in $(seq 1 $runs)	
 do
-	run "--id=best_raw(${i})"
+	run "--id=run(${i})"
 done
 wait
 exit 0

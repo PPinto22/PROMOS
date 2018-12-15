@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_idf_train.csv -t ../data/2weeks/best_idf_test.csv -P ../params/neat.txt -o ../results/neat_limited_best_idf -b ../cfg/bloat_mut_con.cfg -m neat -g10000 -s2000 -p6 --no-statistics --quiet"
+options="-d ../data/2weeks/test_idf_train.csv -t ../data/2weeks/test_idf_test.csv -P ../params/neat.txt -o ../results/nl_test_idf_plot -m neat -b ../cfg/bloat_mut_con.cfg -g10000 -s2000 -p6 --test-fitness --quiet"
 runs=4
-parallel=1
+parallel=4
 
 function run() {
 	children=$(pgrep -c -P$$)
@@ -16,7 +16,7 @@ function run() {
 
 for i in $(seq 1 $runs)	
 do
-	run "--id=best_idf(${i})"
+	run "--id=run(${i})"
 done
 wait
 exit 0
