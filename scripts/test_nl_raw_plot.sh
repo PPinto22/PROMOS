@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/test_idf_train.csv -t ../data/2weeks/test_idf_test.csv -P ../params/hyperneat.txt -o ../results/hn_test_idf_plot -m hyperneat -g10000 -s2000 -p6 --test-fitness --quiet"
+options="-d ../data/2weeks/test_raw_train.csv -t ../data/2weeks/test_raw_test.csv -P ../params/neat.txt -o ../results/test_nl_raw_plot -m neat -b ../cfg/bloat_mut_con.cfg -g10000 -s2000 -p6 --test-fitness --quiet"
 runs=4
 parallel=4
 
