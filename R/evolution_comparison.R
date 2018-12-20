@@ -136,8 +136,9 @@ print(gg_best_test_fit_gens)
 dev.off()
 
 # Best test fitness over gens per algorithm/encoding (AH HOC)
-evals_avg_dt$algorithm <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("NEAT", "HyperNEAT"))
-evals_avg_dt$encoding <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] }), levels=c("RAW", "IDF", "CP"))
+evals_avg_dt$mode <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("BEST"))
+evals_avg_dt$algorithm <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] }), levels=c("NEAT", "NEATP", "HyperNEAT"))
+evals_avg_dt$encoding <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][3] }), levels=c("RAW", "IDF"))
 png(filename = paste(OUT_DIR, 'best_test_fit_comp.png', sep=''))
 gg_best_test_fit_comp <- ggplot(data=evals_avg_dt, aes(generation)) + 
   facet_wrap(~algorithm) +
