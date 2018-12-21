@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best.csv -P ../params/hyperneat.txt -o ../results/best_sw_hneat_raw -E ../cfg/encoder_raw.cfg -m hyperneat -g1000 -s2000 -p6 --no-statistics -W120 -w24 -S24 --quiet"
+options="-d ../data/2weeks/best.csv -P ../params/neat.txt -o ../results/best_sw_neatp_raw -E ../cfg/encoder_raw.cfg -m neat -b ../cfg/bloat_mut_con.cfg -g1000 -s2000 -p6 --no-statistics -W120 -w24 -S24 --quiet"
 runs=9
 parallel=3
 
