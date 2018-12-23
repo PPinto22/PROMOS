@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/test.csv -P ../params/hyperneat.txt -o ../results/2wks_hn_sw_test_pcp -E ../cfg/encoder_pcp.cfg -m hyperneat -g1000 -s2000 -p6 --test-fitness -W120 -w24 -S24 --substrate-width=4 --substrate-length=8"
-runs=2
-parallel=1
+options="-d ../data/2weeks/test.csv -P ../params/neat.txt -o ../results/test_sw_neatp_raw -E ../cfg/encoder_raw.cfg -m neat -b ../cfg/bloat_mut_con.cfg -g1000 -s2000 -p6 --no-statistics -W120 -w24 -S24 --quiet"
+runs=9
+parallel=3
 
 function run() {
 	children=$(pgrep -c -P$$)
@@ -16,7 +16,7 @@ function run() {
 
 for i in $(seq 1 $runs)	
 do
-	run "--id=sw_hn_test_pcp(${i})"
+	run "--id=run(${i})"
 done
 wait
 exit 0

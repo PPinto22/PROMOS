@@ -98,6 +98,15 @@ if(!has_windows){
     theme_minimal()
   print(gg_windows)
   dev.off()
+  
+  # Line plot
+  gg_windows_line = ggplot(data = windows_avg_dt, aes(x=window+1, y=test_fitness, col=run_type)) +
+    geom_point() +
+    geom_line() +
+    labs(x='Window', y='AUC') +
+    scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
+    theme_minimal()
+  print(gg_windows_line)
 }
 
 # best train fitness over time
