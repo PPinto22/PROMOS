@@ -623,7 +623,7 @@ class Evolver:
                           'train_size', 'train_positives', 'train_negatives',
                           'test_size', 'test_positives', 'test_negatives',
                           'train_fitness', 'test_fitness',
-                          'best_neurons', 'best_connections', ]
+                          'best_neurons', 'best_connections']
                 writer.writerow(header)
         with open(file_path, 'a') as file:
             writer = csv.writer(file, delimiter=',')

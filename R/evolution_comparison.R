@@ -100,12 +100,18 @@ if(!has_windows){
   dev.off()
   
   # Line plot
-  gg_windows_line = ggplot(data = windows_avg_dt, aes(x=window+1, y=test_fitness, col=run_type)) +
+  windows_avg_dt$mode <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("BEST"))
+  windows_avg_dt$algorithm <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] }), levels=c("NEAT", "NEATP", "HyperNEAT"))
+  windows_avg_dt$encoding <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][3] }), levels=c("RAW", "IDF"))
+  gg_windows_line = ggplot(data = windows_avg_dt, aes(x=window+1, y=test_fitness, col=algorithm)) +
+    facet_grid(rows=vars(mode), cols=vars(encoding)) +
     geom_point() +
     geom_line() +
-    labs(x='Window', y='AUC') +
+    labs(x='Window', y='AUC', col='') +
     scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
-    theme_minimal()
+    scale_color_brewer(palette = 'Dark2') +
+    theme_minimal() +
+    theme(legend.position="top")
   print(gg_windows_line)
 }
 

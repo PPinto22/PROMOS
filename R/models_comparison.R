@@ -37,16 +37,6 @@ comp_windows_dt <- rbind(models_crop_dt, neuro_crop_dt)
 comp_avg_dt <- rbind(models_avg_dt, neuro_avg_dt)
 # write.table(comp_avg_dt, file='out/models/models_comp_window_avg.csv', sep=',', row.names = FALSE)
 
-# ggplot(comp_windows_dt, aes(x=window, col=algorithm, linetype=algorithm, shape=algorithm)) +
-#   facet_wrap(~encoding) +
-#   geom_line(aes(y = auc)) +
-#   geom_point(aes(y = auc)) +
-#   scale_color_brewer(palette = "Dark2") +
-#   scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
-#   scale_linetype_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
-#   scale_shape_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
-#   labs(x="Window", y="AUC", col=NULL) +
-#   theme_minimal()
 
 ggplot(comp_windows_dt, aes(x=window, col=algorithm)) +
   facet_wrap(~encoding) +
@@ -56,7 +46,6 @@ ggplot(comp_windows_dt, aes(x=window, col=algorithm)) +
   scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
   scale_linetype_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
   scale_shape_manual(NULL, values = 1:length(comp_windows_dt$algorithm)) +
-  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
   labs(x="Window", y="AUC", col=NULL) +
   theme_minimal()
 
@@ -71,3 +60,21 @@ ggplot(comp_windows_dt, aes(x=window, col=algorithm, linetype=algorithm, shape=a
   labs(x="Window", y="Time (min)", col=NULL) +
   theme_minimal()
 
+# Median -> average
+neuro_median <- windows_dt[, c("run_type", "run", "window", "test_fitness", "eval_time", "ea_time", "best_neurons", "best_connections")]
+neuro_median$window <- neuro_median$window+1
+neuro_median$mode <- sapply(neuro_median$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] })
+neuro_median$algorithm <- sapply(neuro_median$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] })
+neuro_median$encoding <- sapply(neuro_median$run_type, function(x){ strsplit(as.character(x), " ")[[1]][3] })
+neuro_median$run_type <- NULL
+neuro_median$auc <- neuro_median$test_fitness
+neuro_median$test_fitness <- NULL
+neuro_median$time <- neuro_median$ea_time + neuro_median$eval_time
+neuro_median$ea_time <- NULL
+neuro_median$eval_time <- NULL
+neuro_median <- neuro_median[, .(auc=median(auc), time=median(time),
+                                 best_neurons=median(best_neurons), best_connections=median(best_connections)),
+                             by = list(run, mode, algorithm, encoding)]
+neuro_median_avg <- neuro_median[, .(auc=mean(auc), time=mean(time),
+                                     best_neurons=mean(best_neurons), best_connections=mean(best_connections)),
+                                 by = list(mode, algorithm, encoding)]

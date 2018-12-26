@@ -219,9 +219,12 @@ group_summaries <- function(summaries_dt, group_by=''){
 }
 
 read_windows <- function(windows_file_names){
-  windows_dt = rbindlist(lapply(windows_file_names, function(file_name){
-    summary_dt = data.table(read.csv(file=file_name, header=TRUE, sep=','))
+  windows_dt = rbindlist(lapply(1:length(windows_file_names), function(i){
+    summary_dt = data.table(read.csv(file=windows_file_names[[i]], header=TRUE, sep=','))
+    summary_dt$run <- rep(i, nrow(summary_dt))
+    return(summary_dt)
   }))
+  
   windows_dt$window_factor = factor(windows_dt$window, ordered = TRUE)
   windows_dt
 }
