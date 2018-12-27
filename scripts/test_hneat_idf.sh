@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/test_idf_train.csv -t ../data/2weeks/test_idf_test.csv -P ../params/hyperneat.txt -o ../results/hn_test_idf -m hyperneat -g10000 -s2000 -p6 --no-statistics --quiet"
+options="-d ../data/2weeks/test_idf_train.csv -t ../data/2weeks/test_idf_test.csv -P ../params/hyperneat.txt -o ../results/test_hn_idf -m hyperneat -g10000 -s2000 -p6 --quiet"
 runs=9
 parallel=3
 

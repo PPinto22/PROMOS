@@ -1,8 +1,8 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/test_raw_train.csv -t ../data/2weeks/test_raw_test.csv -P ../params/neat.txt -o ../results/test_neat_raw_plot -m neat -g10000 -s2000 -p6 --test-fitness --quiet"
-runs=4
-parallel=4
+options="-d ../data/2weeks/test_raw_train.csv -t ../data/2weeks/test_raw_test.csv -P ../params/neat.txt -o ../results/test_neatp_raw -m neat -b ../cfg/bloat_mut_con.cfg -g10000 -s2000 -p6 --quiet"
+runs=9
+parallel=3
 
 function run() {
 	children=$(pgrep -c -P$$)

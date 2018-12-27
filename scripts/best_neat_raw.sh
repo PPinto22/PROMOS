@@ -1,6 +1,6 @@
 #!/bin/bash
 evolver="python ../src/py/evolver.py"
-options="-d ../data/2weeks/best_raw_train.csv -t ../data/2weeks/best_raw_test.csv -P ../params/neat.txt -o ../results/neat_best_raw -m neat -g10000 -s2000 -p6 --no-statistics --quiet"
+options="-d ../data/2weeks/best_raw_train.csv -t ../data/2weeks/best_raw_test.csv -P ../params/neat.txt -o ../results/best_neat_raw -m neat -g10000 -s2000 -p6 --quiet"
 runs=9
 parallel=3
 
