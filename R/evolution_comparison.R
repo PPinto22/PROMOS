@@ -100,7 +100,7 @@ if(!has_windows){
   dev.off()
   
   # Line plot
-  windows_avg_dt$mode <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("BEST"))
+  windows_avg_dt$mode <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("BEST", "TEST"))
   windows_avg_dt$algorithm <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] }), levels=c("NEAT", "NEATP", "HyperNEAT"))
   windows_avg_dt$encoding <- factor(sapply(windows_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][3] }), levels=c("RAW", "IDF"))
   gg_windows_line = ggplot(data = windows_avg_dt, aes(x=window+1, y=test_fitness, col=algorithm)) +
