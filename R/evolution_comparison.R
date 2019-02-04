@@ -109,6 +109,7 @@ if(!has_windows){
     geom_line() +
     labs(x='Window', y='AUC', col='') +
     scale_x_continuous(breaks=seq(1,10), minor_breaks = NULL) +
+    scale_y_continuous(limits=c(0.675, 0.825), breaks=seq(0.6,0.825,0.025)) +
     scale_color_brewer(palette = 'Dark2') +
     theme_minimal() +
     theme(legend.position="top")
@@ -151,20 +152,19 @@ print(gg_best_test_fit_gens)
 dev.off()
 
 # Best test fitness over gens per algorithm/encoding (AH HOC)
-evals_avg_dt$mode <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("BEST"))
+evals_avg_dt$mode <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][1] }), levels=c("BEST", "TEST"))
 evals_avg_dt$algorithm <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][2] }), levels=c("NEAT", "NEATP", "HyperNEAT"))
 evals_avg_dt$encoding <- factor(sapply(evals_avg_dt$run_type, function(x){ strsplit(as.character(x), " ")[[1]][3] }), levels=c("RAW", "IDF"))
-png(filename = paste(OUT_DIR, 'best_test_fit_comp.png', sep=''))
-gg_best_test_fit_comp <- ggplot(data=evals_avg_dt, aes(generation)) + 
-  facet_wrap(~algorithm) +
-  geom_smooth(aes(y=fitness_best, col=encoding), fill=gsmooth_fill, method='loess', span=0.05) + # train
+gg_best_test_fit_comp <- ggplot(data=evals_avg_dt, aes(generation, y=fitness_best, col=algorithm)) + 
+  facet_grid(rows=vars(mode), cols=vars(encoding)) +
+  geom_smooth(fill=gsmooth_fill, method='loess', span=0.001) +
   labs(x="Generation", y=FITNESS_FUNC, col=SERIES_LABEL) +
   scale_color_brewer(palette = 'Dark2') +
-  # scale_y_continuous(limits=c(0.49, 1.0), breaks=seq(0.5,1,0.05)) +
-  scale_x_continuous(breaks=gen_breaks) +
-  theme_minimal()
+  scale_y_continuous(limits=c(0.65, 0.8), breaks=seq(0.6,0.8,0.025)) +
+  scale_x_continuous(breaks=gen_breaks, labels = human_numbers) +
+  theme_minimal() +
+  theme(legend.position="top")
 print(gg_best_test_fit_comp)
-dev.off()
 
 # best test fitness over gens (zoomed)
 png(filename = paste(OUT_DIR, 'best_test_fit_by_gens_zoom.png', sep=''))

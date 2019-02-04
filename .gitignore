@@ -31,6 +31,7 @@ R/out/
 R/*.png
 R/*.pdf
 R/config.R
+R/temp.R
 
 # Distribution / packaging
 .Python
